@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model TaxMaster {
+  id          String   @id @default(cuid())
+  name        String
+  nameMarathi String
+  rate        Float    @default(0)
+  isEnabled   Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  propertyTaxRates PropertyTaxRate[]
+}
+
+model Property {
+  id               String   @id @default(cuid())
+  propertyNumber   String   @unique
+  ownerName        String
+  occupantName     String?
+  mobileNumber     String?
+  ward             String?
+  road             String?
+  citySurveyNo     String?
+  area             Float?
+  boundaries       String?
+  constructionType String?
+  usageType        String?
+  floorInfo        String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  taxRates   PropertyTaxRate[]
+  namuna8s   Namuna8[]
+  namuna9s   Namuna9[]
+  payments   Payment[]
+}
+
+model PropertyTaxRate {
+  id          String   @id @default(cuid())
+  propertyId  String
+  taxMasterId String
+  rate        Float    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  property  Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  taxMaster TaxMaster @relation(fields: [taxMasterId], references: [id], onDelete: Cascade)
+
+  @@unique([propertyId, taxMasterId])
+}
+
+model Namuna8 {
+  id            String   @id @default(cuid())
+  propertyId    String
+  financialYear String
+  taxDetails    String   @default("[]")
+  totalTax      Float    @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+model Namuna9 {
+  id              String   @id @default(cuid())
+  propertyId      String
+  financialYear   String
+  currentTax      Float    @default(0)
+  previousBalance Float    @default(0)
+  penalty         Float    @default(0)
+  totalDemand     Float    @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  property Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  payments Payment[]
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  propertyId    String
+  namuna9Id     String
+  amountPaid    Float
+  balance       Float
+  receiptNumber String
+  paymentDate   DateTime @default(now())
+  paymentMethod String   @default("Cash")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  namuna9  Namuna9  @relation(fields: [namuna9Id], references: [id], onDelete: Cascade)
+}
