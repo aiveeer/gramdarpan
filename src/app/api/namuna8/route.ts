@@ -1,42 +1,25 @@
 import { db } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 
-// GET Namuna 8 records
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const propertyId = searchParams.get('propertyId');
     const financialYear = searchParams.get('financialYear');
 
-    if (propertyId) {
-      const where: Record<string, unknown> = { propertyId };
-      if (financialYear) where.financialYear = financialYear;
-
-      const records = await db.namuna8.findMany({
-        where,
-        include: {
-          property: {
-            include: {
-              taxRates: {
-                include: { taxMaster: true },
-                orderBy: { taxMaster: { order: 'asc' } },
-              },
-            },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-      });
-      return NextResponse.json(records);
-    }
+    const where: Record<string, unknown> = {};
+    if (propertyId) where.propertyId = propertyId;
+    if (financialYear) where.financialYear = financialYear;
 
     const records = await db.namuna8.findMany({
+      where,
       include: {
         property: {
           include: {
-            taxRates: {
-              include: { taxMaster: true },
-              orderBy: { taxMaster: { order: 'asc' } },
-            },
+            ward: true,
+            road: true,
+            owners: { include: { owner: true } },
+            taxRates: { include: { taxMaster: true }, orderBy: { taxMaster: { order: 'asc' } } },
           },
         },
       },
@@ -45,46 +28,34 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(records);
   } catch (error) {
     console.error('Error fetching Namuna 8:', error);
-    return NextResponse.json({ error: 'Failed to fetch Namuna 8' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to fetch' }, { status: 500 });
   }
 }
 
-// POST Generate Namuna 8
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { propertyId, financialYear } = body;
-
+    const { propertyId, financialYear } = await request.json();
     if (!propertyId || !financialYear) {
-      return NextResponse.json({ error: 'Property ID and Financial Year are required' }, { status: 400 });
+      return NextResponse.json({ error: 'Property ID and Financial Year required' }, { status: 400 });
     }
 
-    // Fetch property with tax rates
-    const property = await db.property.findUnique({
+    const property = await db.propertyMaster.findUnique({
       where: { id: propertyId },
       include: {
-        taxRates: {
-          include: { taxMaster: true },
-          orderBy: { taxMaster: { order: 'asc' } },
-        },
+        ward: true,
+        road: true,
+        owners: { include: { owner: true } },
+        taxRates: { include: { taxMaster: true }, orderBy: { taxMaster: { order: 'asc' } } },
       },
     });
 
-    if (!property) {
-      return NextResponse.json({ error: 'Property not found' }, { status: 404 });
-    }
+    if (!property) return NextResponse.json({ error: 'Property not found' }, { status: 404 });
 
-    // Calculate taxes
-    const taxDetails: {
-      taxMasterId: string;
-      taxName: string;
-      taxNameMarathi: string;
-      rate: number;
-      amount: number;
-    }[] = [];
+    const taxDetails: { taxMasterId: string; taxName: string; taxNameMarathi: string; rate: number; amount: number }[] = [];
     let totalTax = 0;
 
     for (const tr of property.taxRates) {
+      if (!tr.taxMaster.isEnabled) continue;
       const amount = (property.area || 0) * tr.rate;
       taxDetails.push({
         taxMasterId: tr.taxMasterId,
@@ -96,38 +67,35 @@ export async function POST(request: NextRequest) {
       totalTax += amount;
     }
 
-    // Check if Namuna 8 already exists for this property and year
-    const existing = await db.namuna8.findFirst({
-      where: { propertyId, financialYear },
+    // Check Ready Reckoner for additional calculation
+    const readyReckoner = await db.readyReckonerMaster.findFirst({
+      where: {
+        usageType: property.usageType || '',
+        constructionType: property.constructionType || '',
+        year: financialYear,
+      },
     });
+
+    const existing = await db.namuna8.findFirst({ where: { propertyId, financialYear } });
+
+    const recordData = {
+      taxDetails: JSON.stringify(taxDetails),
+      totalTax: Math.round(totalTax * 100) / 100,
+    };
 
     if (existing) {
-      // Update existing
-      const updated = await db.namuna8.update({
-        where: { id: existing.id },
-        data: {
-          taxDetails: JSON.stringify(taxDetails),
-          totalTax: Math.round(totalTax * 100) / 100,
-        },
-        include: { property: true },
-      });
-      return NextResponse.json(updated);
+      return NextResponse.json(await db.namuna8.update({ where: { id: existing.id }, data: recordData, include: { property: { include: { ward: true, owners: { include: { owner: true } } } } } }));
     }
 
-    // Create new Namuna 8
-    const namuna8 = await db.namuna8.create({
-      data: {
-        propertyId,
-        financialYear,
-        taxDetails: JSON.stringify(taxDetails),
-        totalTax: Math.round(totalTax * 100) / 100,
-      },
-      include: { property: true },
-    });
-
-    return NextResponse.json(namuna8, { status: 201 });
+    return NextResponse.json(
+      await db.namuna8.create({
+        data: { propertyId, financialYear, ...recordData },
+        include: { property: { include: { ward: true, owners: { include: { owner: true } } } } },
+      }),
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Error generating Namuna 8:', error);
-    return NextResponse.json({ error: 'Failed to generate Namuna 8' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to generate' }, { status: 500 });
   }
 }

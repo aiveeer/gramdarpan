@@ -7,6 +7,203 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ===== AUTH & USERS =====
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  name      String
+  nameMarathi String
+  role      String   @default("operator") // "gpo" or "operator"
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions   UserSession[]
+  auditLogs  AuditLog[]
+}
+
+model UserSession {
+  id        String   @id @default(cuid())
+  userId    String
+  loginAt   DateTime @default(now())
+  logoutAt  DateTime?
+  ipAddress String?
+  userAgent String?
+  action    String   @default("login") // "login", "logout"
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String   // "CREATE", "UPDATE", "DELETE", "LOGIN", "LOGOUT"
+  module    String   // "WARD", "PROPERTY", "OWNER", "TAX", etc.
+  recordId  String?
+  details   String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ===== MASTER TABLES =====
+
+model VillageInfo {
+  id              String   @id @default(cuid())
+  gramPanchayatName String
+  gramPanchayatNameMr String
+  taluka          String
+  district        String
+  state           String   @default("महाराष्ट्र")
+  pinCode         String?
+  population      Int?
+  totalArea       Float?
+  gramSabhaDate   String?
+  sarpanchName    String?
+  sarpanchNameMr  String?
+  secretaryName   String?
+  secretaryNameMr String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model WardMaster {
+  id          String   @id @default(cuid())
+  wardNumber  String   @unique
+  wardName    String
+  wardNameMr  String
+  population  Int?
+  area        Float?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  properties  PropertyMaster[]
+}
+
+model OwnerMaster {
+  id              String   @id @default(cuid())
+  ownerNumber     String   @unique
+  firstName       String
+  middleName      String?
+  lastName        String
+  firstNameMr     String
+  middleNameMr    String?
+  lastNameMr      String?
+  mobileNumber    String?
+  aadhaarNumber   String?
+  panNumber       String?
+  email           String?
+  address         String?
+  addressMr       String?
+  isDisabled      Boolean  @default(false)
+  disabilityType  String?
+  disabilityPercentage Float?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  properties      PropertyOwner[]
+}
+
+model RoadMaster {
+  id          String   @id @default(cuid())
+  roadNumber  String   @unique
+  roadName    String
+  roadNameMr  String
+  roadType    String?  // "पक्का", "अर्धपक्का", "कच्चा"
+  length      Float?
+  width       Float?
+  wardId      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  properties  PropertyMaster[]
+}
+
+model DrainageMaster {
+  id            String   @id @default(cuid())
+  drainageNumber String  @unique
+  drainageName  String
+  drainageNameMr String
+  drainageType  String?  // "उघडा", "बंद"
+  length        Float?
+  wardId        String?
+  status        String   @default("Active")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model WaterSupplyMaster {
+  id              String   @id @default(cuid())
+  connectionNumber String  @unique
+  connectionType  String   // "घरगुती", "व्यावसायिक", "औद्योगिक"
+  connectionStatus String  @default("Active")
+  tapSize         String?
+  propertyId      String?
+  wardId          String?
+  monthlyRate     Float    @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model StreetLightMaster {
+  id            String   @id @default(cuid())
+  lightNumber   String   @unique
+  lightType     String   // "LED", "CFL", "Tube", "इतर"
+  wattage       Float?
+  poleNumber    String?
+  wardId        String?
+  roadId        String?
+  status        String   @default("Working")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model ReadyReckonerMaster {
+  id                String   @id @default(cuid())
+  usageType         String   // "राहणीमान", "व्यावसायिक", "औद्योगिक", "शेती"
+  constructionType  String   // "पक्के", "अर्धपक्के", "कच्चे", "इतर"
+  ratePerSqFt       Float
+  year              String
+  zone              String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([usageType, constructionType, year])
+}
+
+model DisabilityMaster {
+  id                String   @id @default(cuid())
+  disabilityType    String
+  disabilityTypeMr  String
+  percentageRange   String
+  description       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model EmployeeMaster {
+  id            String   @id @default(cuid())
+  employeeId    String   @unique
+  firstName     String
+  middleName    String?
+  lastName      String
+  firstNameMr   String
+  middleNameMr  String?
+  lastNameMr    String?
+  designation   String
+  designationMr String?
+  mobileNumber  String?
+  aadhaarNumber String?
+  joinDate      String?
+  salary        Float?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
 model TaxMaster {
   id          String   @id @default(cuid())
   name        String
@@ -14,33 +211,56 @@ model TaxMaster {
   rate        Float    @default(0)
   isEnabled   Boolean  @default(true)
   order       Int      @default(0)
+  category    String   @default("general") // "general", "penalty", "interest", "other"
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   propertyTaxRates PropertyTaxRate[]
 }
 
-model Property {
+// ===== PROPERTY WITH LINKS TO MASTERS =====
+
+model PropertyMaster {
   id               String   @id @default(cuid())
   propertyNumber   String   @unique
-  ownerName        String
-  occupantName     String?
-  mobileNumber     String?
-  ward             String?
-  road             String?
+  wardId           String?
+  roadId           String?
   citySurveyNo     String?
   area             Float?
+  builtUpArea      Float?
   boundaries       String?
   constructionType String?
   usageType        String?
   floorInfo        String?
+  yearBuilt        String?
+  propertyStatus   String   @default("Active")
+  waterConnectionId String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  taxRates   PropertyTaxRate[]
-  namuna8s   Namuna8[]
-  namuna9s   Namuna9[]
-  payments   Payment[]
+  ward            WardMaster?       @relation(fields: [wardId], references: [id])
+  road            RoadMaster?       @relation(fields: [roadId], references: [id])
+  owners          PropertyOwner[]
+  taxRates        PropertyTaxRate[]
+  namuna8s        Namuna8[]
+  namuna9s        Namuna9[]
+  payments        Payment[]
+}
+
+model PropertyOwner {
+  id           String   @id @default(cuid())
+  propertyId   String
+  ownerId      String
+  ownershipType String  @default("मालक") // "मालक", "भोगवटादार", "कर्ता"
+  startDate    String?
+  endDate      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  property PropertyMaster @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  owner    OwnerMaster    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@unique([propertyId, ownerId, ownershipType])
 }
 
 model PropertyTaxRate {
@@ -51,11 +271,13 @@ model PropertyTaxRate {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  property  Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  taxMaster TaxMaster @relation(fields: [taxMasterId], references: [id], onDelete: Cascade)
+  property  PropertyMaster @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  taxMaster TaxMaster      @relation(fields: [taxMasterId], references: [id], onDelete: Cascade)
 
   @@unique([propertyId, taxMasterId])
 }
+
+// ===== NAMUNA FORMS =====
 
 model Namuna8 {
   id            String   @id @default(cuid())
@@ -66,7 +288,7 @@ model Namuna8 {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  property PropertyMaster @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 }
 
 model Namuna9 {
@@ -76,11 +298,12 @@ model Namuna9 {
   currentTax      Float    @default(0)
   previousBalance Float    @default(0)
   penalty         Float    @default(0)
+  interest        Float    @default(0)
   totalDemand     Float    @default(0)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  property Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  property PropertyMaster @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   payments Payment[]
 }
 
@@ -96,6 +319,6 @@ model Payment {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  namuna9  Namuna9  @relation(fields: [namuna9Id], references: [id], onDelete: Cascade)
+  property PropertyMaster @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  namuna9  Namuna9        @relation(fields: [namuna9Id], references: [id], onDelete: Cascade)
 }
