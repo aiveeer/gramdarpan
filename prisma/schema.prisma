@@ -31,7 +31,7 @@ model UserSession {
   logoutAt  DateTime?
   ipAddress String?
   userAgent String?
-  action    String   @default("login") // "login", "logout"
+  action    String   @default("login")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -39,8 +39,8 @@ model UserSession {
 model AuditLog {
   id        String   @id @default(cuid())
   userId    String
-  action    String   // "CREATE", "UPDATE", "DELETE", "LOGIN", "LOGOUT"
-  module    String   // "WARD", "PROPERTY", "OWNER", "TAX", etc.
+  action    String
+  module    String
   recordId  String?
   details   String?
   createdAt DateTime @default(now())
@@ -112,7 +112,7 @@ model RoadMaster {
   roadNumber  String   @unique
   roadName    String
   roadNameMr  String
-  roadType    String?  // "पक्का", "अर्धपक्का", "कच्चा"
+  roadType    String?
   length      Float?
   width       Float?
   wardId      String?
@@ -127,7 +127,7 @@ model DrainageMaster {
   drainageNumber String  @unique
   drainageName  String
   drainageNameMr String
-  drainageType  String?  // "उघडा", "बंद"
+  drainageType  String?
   length        Float?
   wardId        String?
   status        String   @default("Active")
@@ -138,7 +138,7 @@ model DrainageMaster {
 model WaterSupplyMaster {
   id              String   @id @default(cuid())
   connectionNumber String  @unique
-  connectionType  String   // "घरगुती", "व्यावसायिक", "औद्योगिक"
+  connectionType  String
   connectionStatus String  @default("Active")
   tapSize         String?
   propertyId      String?
@@ -151,7 +151,7 @@ model WaterSupplyMaster {
 model StreetLightMaster {
   id            String   @id @default(cuid())
   lightNumber   String   @unique
-  lightType     String   // "LED", "CFL", "Tube", "इतर"
+  lightType     String
   wattage       Float?
   poleNumber    String?
   wardId        String?
@@ -163,8 +163,8 @@ model StreetLightMaster {
 
 model ReadyReckonerMaster {
   id                String   @id @default(cuid())
-  usageType         String   // "राहणीमान", "व्यावसायिक", "औद्योगिक", "शेती"
-  constructionType  String   // "पक्के", "अर्धपक्के", "कच्चे", "इतर"
+  usageType         String
+  constructionType  String
   ratePerSqFt       Float
   year              String
   zone              String?
@@ -211,11 +211,85 @@ model TaxMaster {
   rate        Float    @default(0)
   isEnabled   Boolean  @default(true)
   order       Int      @default(0)
-  category    String   @default("general") // "general", "penalty", "interest", "other"
+  category    String   @default("general")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   propertyTaxRates PropertyTaxRate[]
+}
+
+// ===== NEW MASTER TABLES FOR ERP =====
+
+model FinancialYear {
+  id          String   @id @default(cuid())
+  year        String   @unique  // "2024-25"
+  startDate   String
+  endDate     String
+  isActive    Boolean  @default(true)
+  isLocked    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model BankAccount {
+  id            String   @id @default(cuid())
+  accountNumber String   @unique
+  bankName      String
+  branchName    String?
+  ifscCode      String?
+  accountType   String   @default("Savings") // Savings, Current, FD
+  balance       Float    @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model BudgetHead {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  nameMr      String
+  category    String   // "income", "expenditure", "asset", "liability"
+  type        String   // "revenue", "capital"
+  parentCode  String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SchemeInfo {
+  id              String   @id @default(cuid())
+  schemeNumber    String   @unique
+  schemeName      String
+  schemeNameMr    String
+  schemeType      String?  // "Central", "State", "GP"
+  fundSource      String?
+  totalAllocation Float    @default(0)
+  financialYear   String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model FloorInfo {
+  id          String   @id @default(cuid())
+  floorNumber String
+  floorName   String
+  floorNameMr String
+  floorIndex  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model DemandCategory {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  nameMr      String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 // ===== PROPERTY WITH LINKS TO MASTERS =====
@@ -235,6 +309,28 @@ model PropertyMaster {
   yearBuilt        String?
   propertyStatus   String   @default("Active")
   waterConnectionId String?
+  boundaryEast     String?
+  boundaryWest     String?
+  boundarySouth    String?
+  boundaryNorth    String?
+  lengthEast       Float?
+  widthEast        Float?
+  lengthWest       Float?
+  widthWest        Float?
+  lengthSouth      Float?
+  widthSouth       Float?
+  lengthNorth      Float?
+  widthNorth       Float?
+  totalLength      Float?
+  totalWidth       Float?
+  depreciationRate Float?   @default(0)
+  usageFactor      Float?   @default(1)
+  taxRate          Float?   @default(0)
+  houseTax         Float?   @default(0)
+  lightTax         Float?   @default(0)
+  healthTax        Float?   @default(0)
+  waterTax         Float?   @default(0)
+  constructionDetails String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -251,7 +347,7 @@ model PropertyOwner {
   id           String   @id @default(cuid())
   propertyId   String
   ownerId      String
-  ownershipType String  @default("मालक") // "मालक", "भोगवटादार", "कर्ता"
+  ownershipType String  @default("मालक")
   startDate    String?
   endDate      String?
   createdAt    DateTime @default(now())
@@ -285,6 +381,26 @@ model Namuna8 {
   financialYear String
   taxDetails    String   @default("[]")
   totalTax      Float    @default(0)
+  totalArea        Float?   @default(0)
+  landRate         Float?   @default(0)
+  buildingRate     Float?   @default(0)
+  constructionRate Float?   @default(0)
+  depreciationRate Float?   @default(0)
+  usageFactor      Float?   @default(1)
+  capitalValue     Float?   @default(0)
+  taxRatePercent   Float?   @default(0)
+  houseTaxAmt      Float?   @default(0)
+  lightTaxAmt      Float?   @default(0)
+  healthTaxAmt     Float?   @default(0)
+  waterTaxAmt      Float?   @default(0)
+  totalTaxAmt      Float?   @default(0)
+  constructionDetails String?
+  appealHouseTax   Float?   @default(0)
+  appealLightTax   Float?   @default(0)
+  appealHealthTax  Float?   @default(0)
+  appealWaterTax   Float?   @default(0)
+  appealTotalTax   Float?   @default(0)
+  remarks          String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -321,4 +437,260 @@ model Payment {
 
   property PropertyMaster @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   namuna9  Namuna9        @relation(fields: [namuna9Id], references: [id], onDelete: Cascade)
+}
+
+// ===== DAILY TRANSACTION ENTRIES =====
+
+model ReceiptEntry {
+  id              String   @id @default(cuid())
+  voucherNumber   String
+  receiptDate     String
+  financialYear   String
+  receivedFrom    String
+  receivedFromMr  String?
+  amount          Float    @default(0)
+  headOfAccount   String?
+  headOfAccountMr String?
+  description     String?
+  descriptionMr   String?
+  paymentMethod   String   @default("Cash")
+  bankAccountId   String?
+  chequeNumber    String?
+  isPosted        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model PaymentEntry {
+  id              String   @id @default(cuid())
+  voucherNumber   String
+  paymentDate     String
+  financialYear   String
+  paidTo          String
+  paidToMr        String?
+  amount          Float    @default(0)
+  headOfAccount   String?
+  headOfAccountMr String?
+  description     String?
+  descriptionMr   String?
+  paymentMethod   String   @default("Cash")
+  bankAccountId   String?
+  chequeNumber    String?
+  isPosted        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model JournalEntry {
+  id              String   @id @default(cuid())
+  voucherNumber   String
+  entryDate       String
+  financialYear   String
+  debitAccount    String?
+  creditAccount   String?
+  amount          Float    @default(0)
+  description     String?
+  descriptionMr   String?
+  isPosted        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model AssetEntry {
+  id              String   @id @default(cuid())
+  assetNumber     String   @unique
+  assetName       String
+  assetNameMr     String
+  assetType       String?  // "Building", "Vehicle", "Equipment", "Furniture", "Land", "Other"
+  purchaseDate    String?
+  purchaseCost    Float    @default(0)
+  currentValue    Float    @default(0)
+  depreciationRate Float?  @default(10)
+  location        String?
+  locationMr      String?
+  wardId          String?
+  status          String   @default("Active")
+  description     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model StockEntry {
+  id              String   @id @default(cuid())
+  stockNumber     String   @unique
+  itemName        String
+  itemNameMr      String
+  category        String?
+  quantity        Int      @default(0)
+  unit            String?  // "Pieces", "Kg", "Liter"
+  unitPrice       Float    @default(0)
+  totalValue      Float    @default(0)
+  receivedDate    String?
+  issuedDate      String?
+  issuedTo        String?
+  status          String   @default("In Stock")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model SchemeFundEntry {
+  id              String   @id @default(cuid())
+  schemeId        String?
+  voucherNumber   String
+  entryDate       String
+  financialYear   String
+  amount          Float    @default(0)
+  entryType       String   @default("Receipt") // "Receipt", "Payment"
+  description     String?
+  descriptionMr   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model WaterBillEntry {
+  id              String   @id @default(cuid())
+  propertyId      String?
+  connectionId    String?
+  billNumber      String
+  billDate        String
+  financialYear   String
+  amount          Float    @default(0)
+  penalty         Float    @default(0)
+  totalAmount     Float    @default(0)
+  paidAmount      Float    @default(0)
+  paidDate        String?
+  status          String   @default("Pending")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model CollectionEntry {
+  id              String   @id @default(cuid())
+  collectionNumber String  @unique
+  propertyId      String?
+  financialYear   String
+  collectionDate  String
+  amount          Float    @default(0)
+  collectionType  String?  // "Tax", "Water", "Light", "Health", "Other"
+  receiptNumber   String?
+  paymentMethod   String   @default("Cash")
+  description     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ===== BUDGET ENTRY (नमुना १, २, ३ अंदाजपत्रक) =====
+
+model BudgetEntry {
+  id              String   @id @default(cuid())
+  financialYear   String
+  budgetHeadCode  String
+  budgetHeadName  String?
+  budgetHeadNameMr String?
+  category        String   @default("income") // "income", "expenditure"
+  type            String   @default("revenue") // "revenue", "capital"
+  originalBudget  Float    @default(0)
+  revisedBudget   Float    @default(0)
+  actualAmount    Float    @default(0)
+  description     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ===== WORK ENTRY (विकास कामे) =====
+
+model WorkEntry {
+  id                String   @id @default(cuid())
+  workNumber        String   @unique
+  workName          String
+  workNameMr        String
+  schemeId          String?
+  contractorId      String?
+  workType          String?  // "New", "Repair", "Maintenance"
+  sanctionDate      String?
+  sanctionAmount    Float    @default(0)
+  workOrderDate     String?
+  completionDate    String?
+  progressPercent   Float    @default(0)
+  totalExpenditure  Float    @default(0)
+  status            String   @default("Sanctioned") // "Sanctioned", "InProgress", "Completed", "Billed"
+  financialYear     String?
+  description       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// ===== CONTRACTOR MASTER =====
+
+model ContractorMaster {
+  id              String   @id @default(cuid())
+  contractorId    String   @unique
+  firstName       String
+  middleName      String?
+  lastName        String
+  firstNameMr     String?
+  middleNameMr    String?
+  lastNameMr      String?
+  firmName        String?
+  firmNameMr      String?
+  mobileNumber    String?
+  aadhaarNumber   String?
+  panNumber       String?
+  gstNumber       String?
+  address         String?
+  addressMr       String?
+  bankName        String?
+  bankAccountNo   String?
+  ifscCode        String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ===== SALARY ENTRY =====
+
+model SalaryEntry {
+  id              String   @id @default(cuid())
+  employeeId      String
+  financialYear   String
+  month           String   // "January", "February" etc.
+  basicPay        Float    @default(0)
+  da              Float    @default(0)  // Dearness Allowance
+  hra             Float    @default(0)  // House Rent Allowance
+  ta              Float    @default(0)  // Travel Allowance
+  ma              Float    @default(0)  // Medical Allowance
+  otherAllowance  Float    @default(0)
+  grossSalary     Float    @default(0)
+  pf              Float    @default(0)  // Provident Fund
+  esi             Float    @default(0)  // Employee State Insurance
+  tds             Float    @default(0)  // Tax Deducted at Source
+  professionalTax Float    @default(0)
+  otherDeduction  Float    @default(0)
+  totalDeduction  Float    @default(0)
+  netSalary       Float    @default(0)
+  paymentDate     String?
+  paymentMethod   String   @default("Bank")
+  status          String   @default("Pending") // "Pending", "Paid"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ===== LEDGER ENTRY (Auto-generated from vouchers) =====
+
+model LedgerEntry {
+  id              String   @id @default(cuid())
+  financialYear   String
+  accountCode     String
+  accountName     String?
+  accountNameMr   String?
+  entryDate       String
+  voucherNumber   String
+  voucherType     String   // "Receipt", "Payment", "Journal"
+  debitAmount     Float    @default(0)
+  creditAmount    Float    @default(0)
+  balance         Float    @default(0)
+  description     String?
+  isPosted        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }

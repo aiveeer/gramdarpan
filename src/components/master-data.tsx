@@ -20,7 +20,7 @@ import {
   Droplets, Lightbulb, Calculator, Accessibility, Users, Settings,
   Building2, Save, X, Loader2, Landmark, Zap, Droplet, Sun,
   FileText, AlertTriangle, Percent, MoreHorizontal, Eye, ToggleLeft,
-  Compass
+  Compass, CalendarDays, PiggyBank, BanknoteIcon, FolderOpen, HardHat
 } from 'lucide-react';
 
 // ===== TAB COLOR DEFINITIONS =====
@@ -38,6 +38,7 @@ const tabColors = {
   disability: { bg: 'bg-pink-50', header: 'from-pink-600 to-pink-700', text: 'text-pink-800', icon: 'bg-pink-500', badge: 'bg-pink-100 text-pink-800', border: 'border-pink-200', headerBg: 'bg-pink-600', headerText: 'text-white', ring: 'ring-pink-500' },
   employee: { bg: 'bg-indigo-50', header: 'from-indigo-600 to-indigo-700', text: 'text-indigo-800', icon: 'bg-indigo-500', badge: 'bg-indigo-100 text-indigo-800', border: 'border-indigo-200', headerBg: 'bg-indigo-600', headerText: 'text-white', ring: 'ring-indigo-500' },
   tax: { bg: 'bg-rose-50', header: 'from-rose-600 to-rose-700', text: 'text-rose-800', icon: 'bg-rose-500', badge: 'bg-rose-100 text-rose-800', border: 'border-rose-200', headerBg: 'bg-rose-600', headerText: 'text-white', ring: 'ring-rose-500' },
+  bank: { bg: 'bg-emerald-50', header: 'from-emerald-600 to-emerald-700', text: 'text-emerald-800', icon: 'bg-emerald-500', badge: 'bg-emerald-100 text-emerald-800', border: 'border-emerald-200', headerBg: 'bg-emerald-600', headerText: 'text-white', ring: 'ring-emerald-500' },
 };
 
 type TabColorKey = keyof typeof tabColors;
@@ -938,6 +939,12 @@ function ReadyReckonerTab() {
           { value: 'शेती', label: 'शेती' },
         ]},
         { key: 'constructionType', label: 'बांधकाम प्रकार', type: 'select', required: true, options: [
+          { value: 'झोपडी किंवा मातीचे घर', label: 'झोपडी किंवा मातीचे घर' },
+          { value: 'दगड विटा/मातीचे बांधकाम', label: 'दगड विटा/मातीचे बांधकाम' },
+          { value: 'दगड विट/सिमेंटचे बांधकाम', label: 'दगड विट/सिमेंटचे बांधकाम' },
+          { value: 'आर.सि.सि. बांधकाम', label: 'आर.सि.सि. बांधकाम' },
+          { value: 'पहिला मजला', label: 'पहिला मजला' },
+          { value: 'जमीन/खुली जागा', label: 'जमीन/खुली जागा' },
           { value: 'पक्के', label: 'पक्के' },
           { value: 'अर्धपक्के', label: 'अर्धपक्के' },
           { value: 'कच्चे', label: 'कच्चे' },
@@ -1386,6 +1393,28 @@ interface PropertyItem {
   yearBuilt?: string;
   propertyStatus?: string;
   waterConnectionId?: string;
+  boundaryEast?: string;
+  boundaryWest?: string;
+  boundarySouth?: string;
+  boundaryNorth?: string;
+  lengthEast?: number;
+  widthEast?: number;
+  lengthWest?: number;
+  widthWest?: number;
+  lengthSouth?: number;
+  widthSouth?: number;
+  lengthNorth?: number;
+  widthNorth?: number;
+  totalLength?: number;
+  totalWidth?: number;
+  depreciationRate?: number;
+  usageFactor?: number;
+  taxRate?: number;
+  houseTax?: number;
+  lightTax?: number;
+  healthTax?: number;
+  waterTax?: number;
+  constructionDetails?: string;
   ward?: { id: string; wardNumber: string; wardName: string; wardNameMr: string };
   road?: { id: string; roadNumber: string; roadName: string; roadNameMr: string };
   owners?: { id: string; ownerId: string; ownershipType: string; owner: { id: string; ownerNumber: string; firstName: string; lastName: string; firstNameMr: string; lastNameMr: string } }[];
@@ -1436,6 +1465,23 @@ function PropertyTab() {
     boundaryWest: '',
     boundaryNorth: '',
     boundarySouth: '',
+    lengthEast: '',
+    widthEast: '',
+    lengthWest: '',
+    widthWest: '',
+    lengthSouth: '',
+    widthSouth: '',
+    lengthNorth: '',
+    widthNorth: '',
+    totalLength: '',
+    totalWidth: '',
+    depreciationRate: '',
+    usageFactor: '',
+    taxRate: '',
+    houseTax: '',
+    lightTax: '',
+    healthTax: '',
+    waterTax: '',
   });
   const [selectedOwners, setSelectedOwners] = useState<{ ownerId: string; ownershipType: string }[]>([]);
   const [selectedTaxRates, setSelectedTaxRates] = useState<{ taxMasterId: string; rate: number }[]>([]);
@@ -1474,6 +1520,10 @@ function PropertyTab() {
       area: '', builtUpArea: '', boundaries: '', constructionType: '',
       usageType: '', floorInfo: '', yearBuilt: '', propertyStatus: 'Active',
       waterConnectionId: '', boundaryEast: '', boundaryWest: '', boundaryNorth: '', boundarySouth: '',
+      lengthEast: '', widthEast: '', lengthWest: '', widthWest: '',
+      lengthSouth: '', widthSouth: '', lengthNorth: '', widthNorth: '',
+      totalLength: '', totalWidth: '', depreciationRate: '', usageFactor: '1',
+      taxRate: '', houseTax: '', lightTax: '', healthTax: '', waterTax: '',
     });
     setSelectedOwners([]);
     setSelectedTaxRates(taxMasters.map((t) => ({ taxMasterId: t.id, rate: t.rate })));
@@ -1513,10 +1563,27 @@ function PropertyTab() {
       yearBuilt: item.yearBuilt || '',
       propertyStatus: item.propertyStatus || 'Active',
       waterConnectionId: item.waterConnectionId || '',
-      boundaryEast,
-      boundaryWest,
-      boundaryNorth,
-      boundarySouth,
+      boundaryEast: item.boundaryEast || boundaryEast,
+      boundaryWest: item.boundaryWest || boundaryWest,
+      boundaryNorth: item.boundaryNorth || boundaryNorth,
+      boundarySouth: item.boundarySouth || boundarySouth,
+      lengthEast: (item as Record<string, unknown>).lengthEast ?? '',
+      widthEast: (item as Record<string, unknown>).widthEast ?? '',
+      lengthWest: (item as Record<string, unknown>).lengthWest ?? '',
+      widthWest: (item as Record<string, unknown>).widthWest ?? '',
+      lengthSouth: (item as Record<string, unknown>).lengthSouth ?? '',
+      widthSouth: (item as Record<string, unknown>).widthSouth ?? '',
+      lengthNorth: (item as Record<string, unknown>).lengthNorth ?? '',
+      widthNorth: (item as Record<string, unknown>).widthNorth ?? '',
+      totalLength: (item as Record<string, unknown>).totalLength ?? '',
+      totalWidth: (item as Record<string, unknown>).totalWidth ?? '',
+      depreciationRate: (item as Record<string, unknown>).depreciationRate ?? '',
+      usageFactor: (item as Record<string, unknown>).usageFactor ?? '1',
+      taxRate: (item as Record<string, unknown>).taxRate ?? '',
+      houseTax: (item as Record<string, unknown>).houseTax ?? '',
+      lightTax: (item as Record<string, unknown>).lightTax ?? '',
+      healthTax: (item as Record<string, unknown>).healthTax ?? '',
+      waterTax: (item as Record<string, unknown>).waterTax ?? '',
     });
     setSelectedOwners(
       item.owners?.map((o) => ({ ownerId: o.ownerId, ownershipType: o.ownershipType })) || []
@@ -1756,6 +1823,12 @@ function PropertyTab() {
                     <SelectTrigger><SelectValue placeholder="निवडा" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__none__">कोणताही नाही</SelectItem>
+                      <SelectItem value="झोपडी किंवा मातीचे घर">झोपडी किंवा मातीचे घर</SelectItem>
+                      <SelectItem value="दगड विटा/मातीचे बांधकाम">दगड विटा/मातीचे बांधकाम</SelectItem>
+                      <SelectItem value="दगड विट/सिमेंटचे बांधकाम">दगड विट/सिमेंटचे बांधकाम</SelectItem>
+                      <SelectItem value="आर.सि.सि. बांधकाम">आर.सि.सि. बांधकाम</SelectItem>
+                      <SelectItem value="पहिला मजला">पहिला मजला</SelectItem>
+                      <SelectItem value="जमीन/खुली जागा">जमीन/खुली जागा</SelectItem>
                       <SelectItem value="पक्के">पक्के</SelectItem>
                       <SelectItem value="अर्धपक्के">अर्धपक्के</SelectItem>
                       <SelectItem value="कच्चे">कच्चे</SelectItem>
@@ -1804,24 +1877,74 @@ function PropertyTab() {
             <div>
               <h4 className={`font-semibold mb-3 flex items-center gap-2 ${c.text}`}>
                 <div className={`${c.icon} p-1 rounded text-white`}><Compass className="h-3.5 w-3.5" /></div>
-                चतु:सीमा (Boundaries)
+                चतु:सीमा (Boundaries) - नमुना ८
               </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-4">
+                {[
+                  { dir: 'East', label: 'पूर्व', bKey: 'boundaryEast', lKey: 'lengthEast', wKey: 'widthEast' },
+                  { dir: 'West', label: 'पश्चिम', bKey: 'boundaryWest', lKey: 'lengthWest', wKey: 'widthWest' },
+                  { dir: 'South', label: 'दक्षिण', bKey: 'boundarySouth', lKey: 'lengthSouth', wKey: 'widthSouth' },
+                  { dir: 'North', label: 'उत्तर', bKey: 'boundaryNorth', lKey: 'lengthNorth', wKey: 'widthNorth' },
+                ].map((b) => (
+                  <div key={b.dir} className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-lg border bg-white/50">
+                    <div className="space-y-1">
+                      <Label className="text-sm font-semibold">{b.label} ({b.dir}) सीमा नाव</Label>
+                      <Input value={String(formData[b.bKey] || '')} onChange={(e) => setFormData((p) => ({ ...p, [b.bKey]: e.target.value }))} placeholder={`${b.label}ेकडील सीमा`} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-sm">लांबी (मी./फूट)</Label>
+                      <Input type="number" value={String(formData[b.lKey] ?? '')} onChange={(e) => setFormData((p) => ({ ...p, [b.lKey]: e.target.value }))} placeholder="लांबी" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-sm">रुंदी (मी./फूट)</Label>
+                      <Input type="number" value={String(formData[b.wKey] ?? '')} onChange={(e) => setFormData((p) => ({ ...p, [b.wKey]: e.target.value }))} placeholder="रुंदी" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Namuna 8 Tax Calculation Fields */}
+            <div>
+              <h4 className={`font-semibold mb-3 flex items-center gap-2 ${c.text}`}>
+                <div className={`${c.icon} p-1 rounded text-white`}><Calculator className="h-3.5 w-3.5" /></div>
+                नमुना ८ कर गणना (Tax Calculation)
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-1">
-                  <Label className="text-sm">पूर्व (East)</Label>
-                  <Input value={String(formData.boundaryEast || '')} onChange={(e) => setFormData((p) => ({ ...p, boundaryEast: e.target.value }))} placeholder="पूर्वेकडील सीमा" />
+                  <Label className="text-sm">घसारा दर (Depreciation)</Label>
+                  <Input type="number" step="0.1" value={String(formData.depreciationRate ?? '')} onChange={(e) => setFormData((p) => ({ ...p, depreciationRate: e.target.value }))} placeholder="उदा. 0.7" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-sm">पश्चिम (West)</Label>
-                  <Input value={String(formData.boundaryWest || '')} onChange={(e) => setFormData((p) => ({ ...p, boundaryWest: e.target.value }))} placeholder="पश्चिमेकडील सीमा" />
+                  <Label className="text-sm">वापरानुसार भारांक (Usage Factor)</Label>
+                  <Input type="number" step="0.1" value={String(formData.usageFactor ?? '1')} onChange={(e) => setFormData((p) => ({ ...p, usageFactor: e.target.value }))} placeholder="उदा. 1.0" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-sm">उत्तर (North)</Label>
-                  <Input value={String(formData.boundaryNorth || '')} onChange={(e) => setFormData((p) => ({ ...p, boundaryNorth: e.target.value }))} placeholder="उत्तरेकडील सीमा" />
+                  <Label className="text-sm">कर दर % (Tax Rate)</Label>
+                  <Input type="number" step="0.1" value={String(formData.taxRate ?? '')} onChange={(e) => setFormData((p) => ({ ...p, taxRate: e.target.value }))} placeholder="उदा. 1.2" />
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-sm">दक्षिण (South)</Label>
-                  <Input value={String(formData.boundarySouth || '')} onChange={(e) => setFormData((p) => ({ ...p, boundarySouth: e.target.value }))} placeholder="दक्षिणेकडील सीमा" />
+              </div>
+              <div className="mt-4 p-3 rounded-lg border bg-gradient-to-r from-amber-50 to-orange-50">
+                <p className="text-xs font-semibold text-amber-800 mb-2">कर रक्कम (Tax Amounts in ₹)</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">घरपट्टी (House Tax)</Label>
+                    <Input type="number" value={String(formData.houseTax ?? '')} onChange={(e) => setFormData((p) => ({ ...p, houseTax: e.target.value }))} placeholder="₹" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">दिवाबत्ती कर (Light Tax)</Label>
+                    <Input type="number" value={String(formData.lightTax ?? '')} onChange={(e) => setFormData((p) => ({ ...p, lightTax: e.target.value }))} placeholder="₹" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">आरोग्यरक्षण कर (Health Tax)</Label>
+                    <Input type="number" value={String(formData.healthTax ?? '')} onChange={(e) => setFormData((p) => ({ ...p, healthTax: e.target.value }))} placeholder="₹" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">सा. पाणीपट्टी (Water Tax)</Label>
+                    <Input type="number" value={String(formData.waterTax ?? '')} onChange={(e) => setFormData((p) => ({ ...p, waterTax: e.target.value }))} placeholder="₹" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -1940,25 +2063,250 @@ function PropertyTab() {
 }
 
 // ================================================================
+// TAB 13: FINANCIAL YEAR (वित्तीय वर्ष) - uses 'village' color key (teal)
+// ================================================================
+
+function FinancialYearTab() {
+  return (
+    <CrudList
+      title="वित्तीय वर्ष"
+      table="fy"
+      colorKey="village"
+      icon={<CalendarDays className="h-5 w-5" />}
+      seedOnEmpty
+      columns={[
+        { key: 'year', label: 'वर्ष' },
+        { key: 'startDate', label: 'सुरू दिनांक' },
+        { key: 'endDate', label: 'शेवटचा दिनांक' },
+        { key: 'isActive', label: 'सक्रिय', render: (i) => i.isActive ? <Badge className="bg-green-100 text-green-800 border-0">होय</Badge> : 'नाही' },
+        { key: 'isLocked', label: 'लॉक', render: (i) => i.isLocked ? <Badge className="bg-red-100 text-red-800 border-0">लॉक</Badge> : <Badge className="bg-gray-100 text-gray-600 border-0">उघडे</Badge> },
+      ]}
+      formFields={[
+        { key: 'year', label: 'वित्तीय वर्ष (उदा. 2024-25)', required: true },
+        { key: 'startDate', label: 'सुरू दिनांक (YYYY-MM-DD)', required: true, placeholder: '2024-04-01' },
+        { key: 'endDate', label: 'शेवटचा दिनांक (YYYY-MM-DD)', required: true, placeholder: '2025-03-31' },
+        { key: 'isActive', label: 'सक्रिय वर्ष', type: 'checkbox', placeholder: 'हे सध्याचे सक्रिय वर्ष आहे' },
+        { key: 'isLocked', label: 'लॉक', type: 'checkbox', placeholder: 'हे वर्ष लॉक करा' },
+      ]}
+      defaultFormData={{ isActive: false, isLocked: false }}
+    />
+  );
+}
+
+// ================================================================
+// TAB 14: BANK ACCOUNT (बँक खाते) - uses 'bank' color key (emerald)
+// ================================================================
+
+function BankAccountTab() {
+  return (
+    <CrudList
+      title="बँक खाते"
+      table="bank"
+      colorKey="bank"
+      icon={<PiggyBank className="h-5 w-5" />}
+      columns={[
+        { key: 'accountNumber', label: 'खाते क्र.' },
+        { key: 'bankName', label: 'बँकेचे नाव' },
+        { key: 'branchName', label: 'शाखा' },
+        { key: 'ifscCode', label: 'IFSC कोड' },
+        { key: 'accountType', label: 'खाते प्रकार' },
+        { key: 'balance', label: 'शिल्लक', render: (i) => `₹${Number(i.balance || 0).toLocaleString('mr-IN')}` },
+        { key: 'isActive', label: 'सक्रिय', render: (i) => i.isActive ? <Badge className="bg-green-100 text-green-800 border-0">होय</Badge> : 'नाही' },
+      ]}
+      formFields={[
+        { key: 'accountNumber', label: 'खाते क्रमांक', required: true },
+        { key: 'bankName', label: 'बँकेचे नाव', required: true },
+        { key: 'branchName', label: 'शाखेचे नाव' },
+        { key: 'ifscCode', label: 'IFSC कोड' },
+        { key: 'accountType', label: 'खाते प्रकार', type: 'select', required: true, options: [
+          { value: 'Savings', label: 'बचत (Savings)' },
+          { value: 'Current', label: 'चालू (Current)' },
+          { value: 'FD', label: 'मुदत ठेव (FD)' },
+        ]},
+        { key: 'balance', label: 'शिल्लक रक्कम (₹)', type: 'number' },
+        { key: 'isActive', label: 'सक्रिय', type: 'checkbox', placeholder: 'खाते सक्रिय आहे' },
+      ]}
+      defaultFormData={{ accountType: 'Savings', balance: 0, isActive: true }}
+    />
+  );
+}
+
+// ================================================================
+// TAB 15: BUDGET HEAD (बजेट शिर्ष) - uses 'tax' color key (rose)
+// ================================================================
+
+function BudgetHeadTab() {
+  return (
+    <CrudList
+      title="बजेट शिर्ष"
+      table="budget-head"
+      colorKey="tax"
+      icon={<BanknoteIcon className="h-5 w-5" />}
+      seedOnEmpty
+      columns={[
+        { key: 'code', label: 'कोड' },
+        { key: 'name', label: 'नाव' },
+        { key: 'nameMr', label: 'नाव (मराठी)' },
+        { key: 'category', label: 'वर्ग', render: (i) => {
+          const catMap: Record<string, { label: string; cls: string }> = {
+            income: { label: 'उत्पन्न', cls: 'bg-green-100 text-green-800' },
+            expenditure: { label: 'खर्च', cls: 'bg-red-100 text-red-800' },
+            asset: { label: 'मालमत्ता', cls: 'bg-amber-100 text-amber-800' },
+            liability: { label: 'दायित्व', cls: 'bg-purple-100 text-purple-800' },
+          };
+          const cat = catMap[String(i.category)] || { label: String(i.category ?? '-'), cls: 'bg-gray-100 text-gray-800' };
+          return <Badge className={`${cat.cls} border-0`}>{cat.label}</Badge>;
+        }},
+        { key: 'type', label: 'प्रकार', render: (i) => {
+          const typeMap: Record<string, { label: string; cls: string }> = {
+            revenue: { label: 'महसूल', cls: 'bg-teal-100 text-teal-800' },
+            capital: { label: 'भांडवल', cls: 'bg-indigo-100 text-indigo-800' },
+          };
+          const t = typeMap[String(i.type)] || { label: String(i.type ?? '-'), cls: 'bg-gray-100 text-gray-800' };
+          return <Badge className={`${t.cls} border-0`}>{t.label}</Badge>;
+        }},
+        { key: 'isActive', label: 'सक्रिय', render: (i) => i.isActive ? <Badge className="bg-green-100 text-green-800 border-0">होय</Badge> : 'नाही' },
+      ]}
+      formFields={[
+        { key: 'code', label: 'शिर्ष कोड', required: true },
+        { key: 'name', label: 'शिर्ष नाव (English)', required: true },
+        { key: 'nameMr', label: 'शिर्ष नाव (मराठी)', required: true },
+        { key: 'category', label: 'वर्ग', type: 'select', required: true, options: [
+          { value: 'income', label: 'उत्पन्न (Income)' },
+          { value: 'expenditure', label: 'खर्च (Expenditure)' },
+          { value: 'asset', label: 'मालमत्ता (Asset)' },
+          { value: 'liability', label: 'दायित्व (Liability)' },
+        ]},
+        { key: 'type', label: 'प्रकार', type: 'select', required: true, options: [
+          { value: 'revenue', label: 'महसूल (Revenue)' },
+          { value: 'capital', label: 'भांडवल (Capital)' },
+        ]},
+        { key: 'parentCode', label: 'पालक शिर्ष कोड' },
+        { key: 'isActive', label: 'सक्रिय', type: 'checkbox', placeholder: 'शिर्ष सक्रिय आहे' },
+      ]}
+      defaultFormData={{ category: 'income', type: 'revenue', isActive: true }}
+    />
+  );
+}
+
+// ================================================================
+// TAB 16: SCHEME (योजना) - uses 'owner' color key (purple)
+// ================================================================
+
+function SchemeTab() {
+  return (
+    <CrudList
+      title="योजना"
+      table="scheme"
+      colorKey="owner"
+      icon={<FolderOpen className="h-5 w-5" />}
+      columns={[
+        { key: 'schemeNumber', label: 'योजना क्र.' },
+        { key: 'schemeName', label: 'योजना नाव' },
+        { key: 'schemeNameMr', label: 'योजना नाव (मराठी)' },
+        { key: 'schemeType', label: 'प्रकार', render: (i) => {
+          const typeMap: Record<string, { label: string; cls: string }> = {
+            Central: { label: 'केंद्र', cls: 'bg-amber-100 text-amber-800' },
+            State: { label: 'राज्य', cls: 'bg-blue-100 text-blue-800' },
+            GP: { label: 'ग्रामपंचायत', cls: 'bg-green-100 text-green-800' },
+          };
+          const t = typeMap[String(i.schemeType)] || { label: String(i.schemeType ?? '-'), cls: 'bg-gray-100 text-gray-800' };
+          return <Badge className={`${t.cls} border-0`}>{t.label}</Badge>;
+        }},
+        { key: 'totalAllocation', label: 'एकूण तरतूद', render: (i) => `₹${Number(i.totalAllocation || 0).toLocaleString('mr-IN')}` },
+        { key: 'financialYear', label: 'वित्तीय वर्ष' },
+        { key: 'isActive', label: 'सक्रिय', render: (i) => i.isActive ? <Badge className="bg-green-100 text-green-800 border-0">होय</Badge> : 'नाही' },
+      ]}
+      formFields={[
+        { key: 'schemeNumber', label: 'योजना क्रमांक', required: true },
+        { key: 'schemeName', label: 'योजना नाव (English)', required: true },
+        { key: 'schemeNameMr', label: 'योजना नाव (मराठी)', required: true },
+        { key: 'schemeType', label: 'योजना प्रकार', type: 'select', required: true, options: [
+          { value: 'Central', label: 'केंद्र सरकार (Central)' },
+          { value: 'State', label: 'राज्य सरकार (State)' },
+          { value: 'GP', label: 'ग्रामपंचायत (GP)' },
+        ]},
+        { key: 'fundSource', label: 'निधी स्रोत' },
+        { key: 'totalAllocation', label: 'एकूण तरतूद (₹)', type: 'number' },
+        { key: 'financialYear', label: 'वित्तीय वर्ष' },
+        { key: 'isActive', label: 'सक्रिय', type: 'checkbox', placeholder: 'योजना सक्रिय आहे' },
+      ]}
+      defaultFormData={{ schemeType: 'State', totalAllocation: 0, isActive: true }}
+    />
+  );
+}
+
+// ================================================================
+// TAB 17: CONTRACTOR (कंत्राटदार) - uses 'employee' color key (indigo)
+// ================================================================
+
+function ContractorTab() {
+  return (
+    <CrudList
+      title="कंत्राटदार"
+      table="contractor"
+      colorKey="employee"
+      icon={<HardHat className="h-5 w-5" />}
+      columns={[
+        { key: 'contractorId', label: 'कंत्राटदार क्र.' },
+        { key: 'firstName', label: 'नाव', render: (i) => `${i.firstName || ''} ${i.middleName || ''} ${i.lastName || ''}`.trim() },
+        { key: 'firmName', label: 'फर्म नाव' },
+        { key: 'mobileNumber', label: 'मोबाईल' },
+        { key: 'panNumber', label: 'PAN' },
+        { key: 'gstNumber', label: 'GST' },
+        { key: 'isActive', label: 'सक्रिय', render: (i) => i.isActive ? <Badge className="bg-green-100 text-green-800 border-0">होय</Badge> : 'नाही' },
+      ]}
+      formFields={[
+        { key: 'contractorId', label: 'कंत्राटदार क्रमांक', required: true },
+        { key: 'firstName', label: 'पहिले नाव', required: true },
+        { key: 'middleName', label: 'मधले नाव' },
+        { key: 'lastName', label: 'आडनाव', required: true },
+        { key: 'firstNameMr', label: 'पहिले नाव (मराठी)' },
+        { key: 'middleNameMr', label: 'मधले नाव (मराठी)' },
+        { key: 'lastNameMr', label: 'आडनाव (मराठी)' },
+        { key: 'firmName', label: 'फर्म / कंपनीचे नाव' },
+        { key: 'firmNameMr', label: 'फर्म नाव (मराठी)' },
+        { key: 'mobileNumber', label: 'मोबाईल क्रमांक', placeholder: '10 अंकी क्रमांक' },
+        { key: 'aadhaarNumber', label: 'आधार क्रमांक' },
+        { key: 'panNumber', label: 'PAN क्रमांक' },
+        { key: 'gstNumber', label: 'GST क्रमांक' },
+        { key: 'address', label: 'पत्ता', type: 'textarea', colSpan: 2 },
+        { key: 'addressMr', label: 'पत्ता (मराठी)', type: 'textarea', colSpan: 2 },
+        { key: 'bankName', label: 'बँकेचे नाव' },
+        { key: 'bankAccountNo', label: 'बँक खाते क्र.' },
+        { key: 'ifscCode', label: 'IFSC कोड' },
+        { key: 'isActive', label: 'सक्रिय', type: 'checkbox', placeholder: 'कंत्राटदार सक्रिय आहे' },
+      ]}
+      defaultFormData={{ isActive: true }}
+    />
+  );
+}
+
+// ================================================================
 // MAIN COMPONENT - Master Data with Colored Tabs
 // ================================================================
 
 export default function MasterData() {
   const [activeTab, setActiveTab] = useState('village');
 
-  const tabs: { value: TabColorKey; label: string; icon: React.ReactNode }[] = [
-    { value: 'village', label: 'गाव माहिती', icon: <Landmark className="h-4 w-4" /> },
-    { value: 'ward', label: 'वार्ड', icon: <MapPin className="h-4 w-4" /> },
-    { value: 'owner', label: 'मालक', icon: <User className="h-4 w-4" /> },
-    { value: 'property', label: 'मालमत्ता', icon: <Building2 className="h-4 w-4" /> },
-    { value: 'road', label: 'रस्ते', icon: <Route className="h-4 w-4" /> },
-    { value: 'drainage', label: 'कालवे', icon: <Droplets className="h-4 w-4" /> },
-    { value: 'waterSupply', label: 'पाणीपुरवठा', icon: <Droplet className="h-4 w-4" /> },
-    { value: 'streetLight', label: 'दिवाबत्ती', icon: <Sun className="h-4 w-4" /> },
-    { value: 'readyReckoner', label: 'रेडीरेकनर', icon: <Calculator className="h-4 w-4" /> },
-    { value: 'disability', label: 'अपंगत्व', icon: <Accessibility className="h-4 w-4" /> },
-    { value: 'employee', label: 'कर्मचारी', icon: <Users className="h-4 w-4" /> },
-    { value: 'tax', label: 'कर मास्टर', icon: <Settings className="h-4 w-4" /> },
+  const tabs: { value: string; colorKey: TabColorKey; label: string; icon: React.ReactNode }[] = [
+    { value: 'village', colorKey: 'village', label: 'गाव माहिती', icon: <Landmark className="h-4 w-4" /> },
+    { value: 'ward', colorKey: 'ward', label: 'वार्ड', icon: <MapPin className="h-4 w-4" /> },
+    { value: 'owner', colorKey: 'owner', label: 'मालक', icon: <User className="h-4 w-4" /> },
+    { value: 'property', colorKey: 'property', label: 'मालमत्ता', icon: <Building2 className="h-4 w-4" /> },
+    { value: 'road', colorKey: 'road', label: 'रस्ते', icon: <Route className="h-4 w-4" /> },
+    { value: 'drainage', colorKey: 'drainage', label: 'कालवे', icon: <Droplets className="h-4 w-4" /> },
+    { value: 'waterSupply', colorKey: 'waterSupply', label: 'पाणीपुरवठा', icon: <Droplet className="h-4 w-4" /> },
+    { value: 'streetLight', colorKey: 'streetLight', label: 'दिवाबत्ती', icon: <Sun className="h-4 w-4" /> },
+    { value: 'readyReckoner', colorKey: 'readyReckoner', label: 'रेडीरेकनर', icon: <Calculator className="h-4 w-4" /> },
+    { value: 'disability', colorKey: 'disability', label: 'अपंगत्व', icon: <Accessibility className="h-4 w-4" /> },
+    { value: 'employee', colorKey: 'employee', label: 'कर्मचारी', icon: <Users className="h-4 w-4" /> },
+    { value: 'tax', colorKey: 'tax', label: 'कर मास्टर', icon: <Settings className="h-4 w-4" /> },
+    { value: 'fy', colorKey: 'village', label: 'वित्तीय वर्ष', icon: <CalendarDays className="h-4 w-4" /> },
+    { value: 'bank', colorKey: 'bank', label: 'बँक खाते', icon: <PiggyBank className="h-4 w-4" /> },
+    { value: 'budget-head', colorKey: 'tax', label: 'बजेट शिर्ष', icon: <BanknoteIcon className="h-4 w-4" /> },
+    { value: 'scheme', colorKey: 'owner', label: 'योजना', icon: <FolderOpen className="h-4 w-4" /> },
+    { value: 'contractor', colorKey: 'employee', label: 'कंत्राटदार', icon: <HardHat className="h-4 w-4" /> },
   ];
 
   return (
@@ -1967,7 +2315,7 @@ export default function MasterData() {
         <div className="overflow-x-auto pb-2">
           <TabsList className="flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
             {tabs.map((tab) => {
-              const c = tabColors[tab.value];
+              const c = tabColors[tab.colorKey];
               const isActive = activeTab === tab.value;
               return (
                 <TabsTrigger
@@ -2002,6 +2350,11 @@ export default function MasterData() {
         <TabsContent value="disability"><DisabilityTab /></TabsContent>
         <TabsContent value="employee"><EmployeeTab /></TabsContent>
         <TabsContent value="tax"><TaxTab /></TabsContent>
+        <TabsContent value="fy"><FinancialYearTab /></TabsContent>
+        <TabsContent value="bank"><BankAccountTab /></TabsContent>
+        <TabsContent value="budget-head"><BudgetHeadTab /></TabsContent>
+        <TabsContent value="scheme"><SchemeTab /></TabsContent>
+        <TabsContent value="contractor"><ContractorTab /></TabsContent>
       </Tabs>
     </div>
   );

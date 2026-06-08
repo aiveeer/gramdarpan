@@ -15,19 +15,53 @@ export async function GET(request: NextRequest) {
 
     const where: Record<string, unknown> = {};
     if (id) where.id = id;
+    // Map short table names to full names
+    const tableAlias: Record<string, string> = {
+      'fy': 'financialYear',
+      'bank': 'bankAccount',
+      'budget-head': 'budgetHead',
+      'scheme': 'schemeInfo',
+      'contractor': 'contractorMaster',
+    };
+    const resolvedTable = tableAlias[table] || table;
+
     if (search) {
-      switch (table) {
+      switch (resolvedTable) {
         case 'ward':
           where.OR = [{ wardNumber: { contains: search } }, { wardName: { contains: search } }, { wardNameMr: { contains: search } }];
           break;
         case 'owner':
-          where.OR = [{ ownerNumber: { contains: search } }, { firstName: { contains: search } }, { lastName: { contains: search } }, { mobileNumber: { contains: search } }];
+          where.OR = [{ ownerNumber: { contains: search } }, { firstName: { contains: search } }, { lastName: { contains: search } }, { mobileNumber: { contains: search } }, { firstNameMr: { contains: search } }, { lastNameMr: { contains: search } }];
           break;
         case 'road':
           where.OR = [{ roadNumber: { contains: search } }, { roadName: { contains: search } }];
           break;
         case 'property':
           where.OR = [{ propertyNumber: { contains: search } }];
+          break;
+        case 'financialYear':
+          where.OR = [{ year: { contains: search } }];
+          break;
+        case 'bankAccount':
+          where.OR = [{ accountNumber: { contains: search } }, { bankName: { contains: search } }, { branchName: { contains: search } }];
+          break;
+        case 'budgetHead':
+          where.OR = [{ code: { contains: search } }, { name: { contains: search } }, { nameMr: { contains: search } }];
+          break;
+        case 'schemeInfo':
+          where.OR = [{ schemeNumber: { contains: search } }, { schemeName: { contains: search } }, { schemeNameMr: { contains: search } }];
+          break;
+        case 'contractorMaster':
+          where.OR = [{ contractorId: { contains: search } }, { firstName: { contains: search } }, { lastName: { contains: search } }, { firmName: { contains: search } }, { mobileNumber: { contains: search } }];
+          break;
+        case 'floorInfo':
+          where.OR = [{ floorNumber: { contains: search } }, { floorName: { contains: search } }, { floorNameMr: { contains: search } }];
+          break;
+        case 'demandCategory':
+          where.OR = [{ code: { contains: search } }, { name: { contains: search } }, { nameMr: { contains: search } }];
+          break;
+        case 'contractor':
+          where.OR = [{ contractorId: { contains: search } }, { firstName: { contains: search } }, { lastName: { contains: search } }, { firmName: { contains: search } }, { mobileNumber: { contains: search } }];
           break;
       }
     }
@@ -43,7 +77,7 @@ export async function GET(request: NextRequest) {
     }
 
     let data;
-    switch (table) {
+    switch (resolvedTable) {
       case 'village':
         data = id ? await db.villageInfo.findUnique({ where: { id } }) : await db.villageInfo.findFirst();
         break;
@@ -80,6 +114,31 @@ export async function GET(request: NextRequest) {
       case 'property':
         data = id ? await db.propertyMaster.findUnique({ where: { id }, include }) : await db.propertyMaster.findMany({ where, include, orderBy: { createdAt: 'desc' } });
         break;
+      // New master tables
+      case 'financialYear':
+        data = id ? await db.financialYear.findUnique({ where: { id } }) : await db.financialYear.findMany({ where, orderBy: { year: 'desc' } });
+        break;
+      case 'bankAccount':
+        data = id ? await db.bankAccount.findUnique({ where: { id } }) : await db.bankAccount.findMany({ where, orderBy: { bankName: 'asc' } });
+        break;
+      case 'budgetHead':
+        data = id ? await db.budgetHead.findUnique({ where: { id } }) : await db.budgetHead.findMany({ where, orderBy: { code: 'asc' } });
+        break;
+      case 'schemeInfo':
+        data = id ? await db.schemeInfo.findUnique({ where: { id } }) : await db.schemeInfo.findMany({ where, orderBy: { schemeNumber: 'asc' } });
+        break;
+      case 'contractorMaster':
+        data = id ? await db.contractorMaster.findUnique({ where: { id } }) : await db.contractorMaster.findMany({ where, orderBy: { contractorId: 'asc' } });
+        break;
+      case 'floorInfo':
+        data = id ? await db.floorInfo.findUnique({ where: { id } }) : await db.floorInfo.findMany({ where, orderBy: { floorIndex: 'asc' } });
+        break;
+      case 'demandCategory':
+        data = id ? await db.demandCategory.findUnique({ where: { id } }) : await db.demandCategory.findMany({ where, orderBy: { code: 'asc' } });
+        break;
+      case 'contractor':
+        data = id ? await db.contractorMaster.findUnique({ where: { id } }) : await db.contractorMaster.findMany({ where, orderBy: { contractorId: 'asc' } });
+        break;
       default:
         return NextResponse.json({ error: 'Invalid table' }, { status: 400 });
     }
@@ -105,7 +164,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Table and data required' }, { status: 400 });
     }
 
-    const result = await handleUpsert(table, data);
+    // Map short table names to full names
+    const tableAlias: Record<string, string> = {
+      'fy': 'financialYear',
+      'bank': 'bankAccount',
+      'budget-head': 'budgetHead',
+      'scheme': 'schemeInfo',
+      'contractor': 'contractorMaster',
+    };
+    const resolvedTable = tableAlias[table] || table;
+
+    const result = await handleUpsert(resolvedTable, data);
     return NextResponse.json(result, { status: data.id ? 200 : 201 });
   } catch (error: unknown) {
     console.error('Master POST error:', error);
@@ -127,7 +196,17 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Table and ID required' }, { status: 400 });
     }
 
-    await handleDelete(table, id);
+    // Map short table names to full names
+    const tableAlias: Record<string, string> = {
+      'fy': 'financialYear',
+      'bank': 'bankAccount',
+      'budget-head': 'budgetHead',
+      'scheme': 'schemeInfo',
+      'contractor': 'contractorMaster',
+    };
+    const resolvedTable = tableAlias[table] || table;
+
+    await handleDelete(resolvedTable, id);
     return NextResponse.json({ message: 'Record deleted' });
   } catch (error) {
     console.error('Master DELETE error:', error);
@@ -136,7 +215,17 @@ export async function DELETE(request: NextRequest) {
 }
 
 async function handleSeed(table: string) {
-  switch (table) {
+  // Map short table names to full names
+  const tableAlias: Record<string, string> = {
+    'fy': 'financialYear',
+    'bank': 'bankAccount',
+    'budget-head': 'budgetHead',
+    'scheme': 'schemeInfo',
+    'contractor': 'contractorMaster',
+  };
+  const resolvedTable = tableAlias[table] || table;
+
+  switch (resolvedTable) {
     case 'tax': {
       const existing = await db.taxMaster.count();
       if (existing > 0) return NextResponse.json({ message: 'Already seeded', count: existing });
@@ -172,6 +261,72 @@ async function handleSeed(table: string) {
       await db.disabilityMaster.createMany({ data: types });
       return NextResponse.json({ message: 'Disability types seeded' });
     }
+    case 'financialYear': {
+      const existing = await db.financialYear.count();
+      if (existing > 0) return NextResponse.json({ message: 'Already seeded', count: existing });
+      const years = [
+        { year: '2023-24', startDate: '2023-04-01', endDate: '2024-03-31', isActive: false, isLocked: true },
+        { year: '2024-25', startDate: '2024-04-01', endDate: '2025-03-31', isActive: true, isLocked: false },
+        { year: '2025-26', startDate: '2025-04-01', endDate: '2026-03-31', isActive: false, isLocked: false },
+      ];
+      const created = await db.financialYear.createMany({ data: years });
+      return NextResponse.json({ message: 'Financial years seeded', count: created.count });
+    }
+    case 'floorInfo': {
+      const existing = await db.floorInfo.count();
+      if (existing > 0) return NextResponse.json({ message: 'Already seeded', count: existing });
+      const floors = [
+        { floorNumber: '0', floorName: 'Ground Floor', floorNameMr: 'तळमजला', floorIndex: 0 },
+        { floorNumber: '1', floorName: 'First Floor', floorNameMr: 'पहिला मजला', floorIndex: 1 },
+        { floorNumber: '2', floorName: 'Second Floor', floorNameMr: 'दुसरा मजला', floorIndex: 2 },
+        { floorNumber: '3', floorName: 'Third Floor', floorNameMr: 'तिसरा मजला', floorIndex: 3 },
+        { floorNumber: '4', floorName: 'Fourth Floor', floorNameMr: 'चौथा मजला', floorIndex: 4 },
+      ];
+      const created = await db.floorInfo.createMany({ data: floors });
+      return NextResponse.json({ message: 'Floor info seeded', count: created.count });
+    }
+    case 'demandCategory': {
+      const existing = await db.demandCategory.count();
+      if (existing > 0) return NextResponse.json({ message: 'Already seeded', count: existing });
+      const categories = [
+        { code: 'HOUSE_TAX', name: 'House Tax', nameMr: 'गृहकर', description: 'Annual house tax demand' },
+        { code: 'WATER_TAX', name: 'Water Tax', nameMr: 'पाणीकर', description: 'Water supply tax demand' },
+        { code: 'LIGHT_TAX', name: 'Light Tax', nameMr: 'दिवाबती कर', description: 'Street light tax demand' },
+        { code: 'HEALTH_TAX', name: 'Health Tax', nameMr: 'आरोग्य कर', description: 'Health & sanitation tax demand' },
+        { code: 'EDUCATION_TAX', name: 'Education Tax', nameMr: 'शिक्षण कर', description: 'Education cess demand' },
+        { code: 'PENALTY', name: 'Penalty', nameMr: 'दंड', description: 'Late payment penalty' },
+        { code: 'INTEREST', name: 'Interest', nameMr: 'व्याज', description: 'Interest on arrears' },
+        { code: 'WATER_BILL', name: 'Water Bill', nameMr: 'पाणी बिल', description: 'Water consumption bill' },
+        { code: 'OTHER', name: 'Other', nameMr: 'इतर', description: 'Other charges' },
+      ];
+      const created = await db.demandCategory.createMany({ data: categories });
+      return NextResponse.json({ message: 'Demand categories seeded', count: created.count });
+    }
+    case 'budgetHead': {
+      const existing = await db.budgetHead.count();
+      if (existing > 0) return NextResponse.json({ message: 'Already seeded', count: existing });
+      const heads = [
+        { code: '1001', name: 'Property Tax', nameMr: 'मालमत्ता कर', category: 'income', type: 'revenue' },
+        { code: '1002', name: 'Water Tax', nameMr: 'पाणीकर', category: 'income', type: 'revenue' },
+        { code: '1003', name: 'Light Tax', nameMr: 'दिवाबती कर', category: 'income', type: 'revenue' },
+        { code: '1004', name: 'Health Tax', nameMr: 'आरोग्य कर', category: 'income', type: 'revenue' },
+        { code: '1005', name: 'Education Tax', nameMr: 'शिक्षण कर', category: 'income', type: 'revenue' },
+        { code: '1006', name: 'Other Income', nameMr: 'इतर उत्पन्न', category: 'income', type: 'revenue' },
+        { code: '1007', name: 'Grant Income', nameMr: 'अनुदान उत्पन्न', category: 'income', type: 'capital' },
+        { code: '2001', name: 'Salary', nameMr: 'पगार', category: 'expenditure', type: 'revenue' },
+        { code: '2002', name: 'Electricity', nameMr: 'वीज', category: 'expenditure', type: 'revenue' },
+        { code: '2003', name: 'Water Supply', nameMr: 'पाणीपुरवठा', category: 'expenditure', type: 'revenue' },
+        { code: '2004', name: 'Road Maintenance', nameMr: 'रस्ता देखभाल', category: 'expenditure', type: 'revenue' },
+        { code: '2005', name: 'Sanitation', nameMr: 'स्वच्छता', category: 'expenditure', type: 'revenue' },
+        { code: '2006', name: 'Development Works', nameMr: 'विकास कामे', category: 'expenditure', type: 'capital' },
+        { code: '3001', name: 'Buildings', nameMr: 'इमारती', category: 'asset', type: 'capital' },
+        { code: '3002', name: 'Land', nameMr: 'जमीन', category: 'asset', type: 'capital' },
+        { code: '3003', name: 'Vehicles', nameMr: 'वाहने', category: 'asset', type: 'capital' },
+        { code: '4001', name: 'Bank Balance', nameMr: 'बँक शिल्लक', category: 'liability', type: 'revenue' },
+      ];
+      const created = await db.budgetHead.createMany({ data: heads });
+      return NextResponse.json({ message: 'Budget heads seeded', count: created.count });
+    }
     default:
       return NextResponse.json({ error: 'No seed for this table' }, { status: 400 });
   }
@@ -192,10 +347,11 @@ async function handleUpsert(table: string, data: Record<string, unknown>) {
     };
 
     // Convert numeric strings to numbers
+    const numericFields = ['area', 'builtUpArea', 'lengthEast', 'widthEast', 'lengthWest', 'widthWest', 'lengthSouth', 'widthSouth', 'lengthNorth', 'widthNorth', 'totalLength', 'totalWidth', 'depreciationRate', 'usageFactor', 'taxRate', 'houseTax', 'lightTax', 'healthTax', 'waterTax'];
     const cleanPropData: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(propData)) {
       if (key === 'id') continue;
-      if (key === 'area' || key === 'builtUpArea') {
+      if (numericFields.includes(key)) {
         cleanPropData[key] = value ? parseFloat(String(value)) : null;
       } else {
         cleanPropData[key] = value || null;
@@ -203,10 +359,8 @@ async function handleUpsert(table: string, data: Record<string, unknown>) {
     }
 
     if (isUpdate && id) {
-      // Update property
       await db.propertyMaster.update({ where: { id }, data: cleanPropData });
 
-      // Recreate owners
       if (owners && Array.isArray(owners)) {
         await db.propertyOwner.deleteMany({ where: { propertyId: id } });
         for (const o of owners) {
@@ -216,7 +370,6 @@ async function handleUpsert(table: string, data: Record<string, unknown>) {
         }
       }
 
-      // Recreate tax rates
       if (taxRates && Array.isArray(taxRates)) {
         await db.propertyTaxRate.deleteMany({ where: { propertyId: id } });
         for (const tr of taxRates) {
@@ -234,10 +387,8 @@ async function handleUpsert(table: string, data: Record<string, unknown>) {
       });
     }
 
-    // Create property
     const property = await db.propertyMaster.create({ data: cleanPropData as Parameters<typeof db.propertyMaster.create>[0]['data'] });
 
-    // Create owners
     if (owners && Array.isArray(owners)) {
       for (const o of owners) {
         await db.propertyOwner.create({
@@ -246,7 +397,6 @@ async function handleUpsert(table: string, data: Record<string, unknown>) {
       }
     }
 
-    // Create tax rates
     if (taxRates && Array.isArray(taxRates)) {
       for (const tr of taxRates) {
         if (tr.rate > 0) {
@@ -263,36 +413,119 @@ async function handleUpsert(table: string, data: Record<string, unknown>) {
     });
   }
 
+  // Numeric field conversion for ALL tables
+  const numericFieldsForTable: Record<string, string[]> = {
+    ward: ['population', 'area'],
+    owner: ['disabilityPercentage'],
+    road: ['length', 'width'],
+    drainage: ['length'],
+    waterSupply: ['monthlyRate'],
+    streetLight: ['wattage'],
+    readyReckoner: ['ratePerSqFt'],
+    employee: ['salary'],
+    tax: ['rate', 'order'],
+    village: ['population', 'totalArea'],
+    bankAccount: ['balance'],
+    budgetHead: [],
+    schemeInfo: ['totalAllocation'],
+    contractorMaster: [],
+    financialYear: [],
+    floorInfo: ['floorIndex'],
+    demandCategory: [],
+  };
+  const numericFields = numericFieldsForTable[table] || [];
+
+  // Integer fields (must be converted to Int, not Float)
+  const intFieldsForTable: Record<string, string[]> = {
+    ward: ['population'],
+    employee: [],
+    tax: ['order'],
+    floorInfo: ['floorIndex'],
+  };
+  // Boolean fields that must not be converted to null when false
+  const boolFieldsForTable: Record<string, string[]> = {
+    owner: ['isDisabled'],
+    employee: ['isActive'],
+    financialYear: ['isActive', 'isLocked'],
+    bankAccount: ['isActive'],
+    budgetHead: ['isActive'],
+    schemeInfo: ['isActive'],
+    contractorMaster: ['isActive'],
+    contractor: ['isActive'],
+  };
+  const boolFields = boolFieldsForTable[table] || [];
+  const intFields = intFieldsForTable[table] || [];
+
+  const cleanData: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(createData)) {
+    if (boolFields.includes(key)) {
+      cleanData[key] = value === true || value === 'true' || value === 1;
+    } else if (intFields.includes(key)) {
+      cleanData[key] = value ? parseInt(String(value)) : null;
+    } else if (numericFields.includes(key)) {
+      cleanData[key] = value ? parseFloat(String(value)) : null;
+    } else {
+      cleanData[key] = (value === null || value === undefined) ? null : value;
+    }
+  }
+
+  // Remove null values for optional fields that Prisma doesn't accept as null on create
+  if (!isUpdate) {
+    for (const [key, value] of Object.entries(cleanData)) {
+      if (value === null || value === undefined || value === '') {
+        delete cleanData[key];
+      }
+    }
+  }
+
   // Generic upsert for other tables
   if (isUpdate && id) {
     switch (table) {
-      case 'ward': return db.wardMaster.update({ where: { id }, data: createData as Parameters<typeof db.wardMaster.update>[0]['data'] });
-      case 'owner': return db.ownerMaster.update({ where: { id }, data: createData as Parameters<typeof db.ownerMaster.update>[0]['data'] });
-      case 'road': return db.roadMaster.update({ where: { id }, data: createData as Parameters<typeof db.roadMaster.update>[0]['data'] });
-      case 'drainage': return db.drainageMaster.update({ where: { id }, data: createData as Parameters<typeof db.drainageMaster.update>[0]['data'] });
-      case 'waterSupply': return db.waterSupplyMaster.update({ where: { id }, data: createData as Parameters<typeof db.waterSupplyMaster.update>[0]['data'] });
-      case 'streetLight': return db.streetLightMaster.update({ where: { id }, data: createData as Parameters<typeof db.streetLightMaster.update>[0]['data'] });
-      case 'readyReckoner': return db.readyReckonerMaster.update({ where: { id }, data: createData as Parameters<typeof db.readyReckonerMaster.update>[0]['data'] });
-      case 'disability': return db.disabilityMaster.update({ where: { id }, data: createData as Parameters<typeof db.disabilityMaster.update>[0]['data'] });
-      case 'employee': return db.employeeMaster.update({ where: { id }, data: createData as Parameters<typeof db.employeeMaster.update>[0]['data'] });
-      case 'tax': return db.taxMaster.update({ where: { id }, data: createData as Parameters<typeof db.taxMaster.update>[0]['data'] });
-      case 'village': return db.villageInfo.update({ where: { id }, data: createData as Parameters<typeof db.villageInfo.update>[0]['data'] });
+      case 'ward': return db.wardMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.wardMaster.update>[0]['data'] });
+      case 'owner': return db.ownerMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.ownerMaster.update>[0]['data'] });
+      case 'road': return db.roadMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.roadMaster.update>[0]['data'] });
+      case 'drainage': return db.drainageMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.drainageMaster.update>[0]['data'] });
+      case 'waterSupply': return db.waterSupplyMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.waterSupplyMaster.update>[0]['data'] });
+      case 'streetLight': return db.streetLightMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.streetLightMaster.update>[0]['data'] });
+      case 'readyReckoner': return db.readyReckonerMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.readyReckonerMaster.update>[0]['data'] });
+      case 'disability': return db.disabilityMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.disabilityMaster.update>[0]['data'] });
+      case 'employee': return db.employeeMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.employeeMaster.update>[0]['data'] });
+      case 'tax': return db.taxMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.taxMaster.update>[0]['data'] });
+      case 'village': return db.villageInfo.update({ where: { id }, data: cleanData as Parameters<typeof db.villageInfo.update>[0]['data'] });
+      // New master tables
+      case 'financialYear': return db.financialYear.update({ where: { id }, data: cleanData as Parameters<typeof db.financialYear.update>[0]['data'] });
+      case 'bankAccount': return db.bankAccount.update({ where: { id }, data: cleanData as Parameters<typeof db.bankAccount.update>[0]['data'] });
+      case 'budgetHead': return db.budgetHead.update({ where: { id }, data: cleanData as Parameters<typeof db.budgetHead.update>[0]['data'] });
+      case 'schemeInfo': return db.schemeInfo.update({ where: { id }, data: cleanData as Parameters<typeof db.schemeInfo.update>[0]['data'] });
+      case 'floorInfo': return db.floorInfo.update({ where: { id }, data: cleanData as Parameters<typeof db.floorInfo.update>[0]['data'] });
+      case 'demandCategory': return db.demandCategory.update({ where: { id }, data: cleanData as Parameters<typeof db.demandCategory.update>[0]['data'] });
+      case 'contractor': return db.contractorMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.contractorMaster.update>[0]['data'] });
+      case 'contractorMaster': return db.contractorMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.contractorMaster.update>[0]['data'] });
     }
   }
 
   // Create
   switch (table) {
-    case 'ward': return db.wardMaster.create({ data: createData as Parameters<typeof db.wardMaster.create>[0]['data'] });
-    case 'owner': return db.ownerMaster.create({ data: createData as Parameters<typeof db.ownerMaster.create>[0]['data'] });
-    case 'road': return db.roadMaster.create({ data: createData as Parameters<typeof db.roadMaster.create>[0]['data'] });
-    case 'drainage': return db.drainageMaster.create({ data: createData as Parameters<typeof db.drainageMaster.create>[0]['data'] });
-    case 'waterSupply': return db.waterSupplyMaster.create({ data: createData as Parameters<typeof db.waterSupplyMaster.create>[0]['data'] });
-    case 'streetLight': return db.streetLightMaster.create({ data: createData as Parameters<typeof db.streetLightMaster.create>[0]['data'] });
-    case 'readyReckoner': return db.readyReckonerMaster.create({ data: createData as Parameters<typeof db.readyReckonerMaster.create>[0]['data'] });
-    case 'disability': return db.disabilityMaster.create({ data: createData as Parameters<typeof db.disabilityMaster.create>[0]['data'] });
-    case 'employee': return db.employeeMaster.create({ data: createData as Parameters<typeof db.employeeMaster.create>[0]['data'] });
-    case 'tax': return db.taxMaster.create({ data: createData as Parameters<typeof db.taxMaster.create>[0]['data'] });
-    case 'village': return db.villageInfo.create({ data: createData as Parameters<typeof db.villageInfo.create>[0]['data'] });
+    case 'ward': return db.wardMaster.create({ data: cleanData as Parameters<typeof db.wardMaster.create>[0]['data'] });
+    case 'owner': return db.ownerMaster.create({ data: cleanData as Parameters<typeof db.ownerMaster.create>[0]['data'] });
+    case 'road': return db.roadMaster.create({ data: cleanData as Parameters<typeof db.roadMaster.create>[0]['data'] });
+    case 'drainage': return db.drainageMaster.create({ data: cleanData as Parameters<typeof db.drainageMaster.create>[0]['data'] });
+    case 'waterSupply': return db.waterSupplyMaster.create({ data: cleanData as Parameters<typeof db.waterSupplyMaster.create>[0]['data'] });
+    case 'streetLight': return db.streetLightMaster.create({ data: cleanData as Parameters<typeof db.streetLightMaster.create>[0]['data'] });
+    case 'readyReckoner': return db.readyReckonerMaster.create({ data: cleanData as Parameters<typeof db.readyReckonerMaster.create>[0]['data'] });
+    case 'disability': return db.disabilityMaster.create({ data: cleanData as Parameters<typeof db.disabilityMaster.create>[0]['data'] });
+    case 'employee': return db.employeeMaster.create({ data: cleanData as Parameters<typeof db.employeeMaster.create>[0]['data'] });
+    case 'tax': return db.taxMaster.create({ data: cleanData as Parameters<typeof db.taxMaster.create>[0]['data'] });
+    case 'village': return db.villageInfo.create({ data: cleanData as Parameters<typeof db.villageInfo.create>[0]['data'] });
+    // New master tables
+    case 'financialYear': return db.financialYear.create({ data: cleanData as Parameters<typeof db.financialYear.create>[0]['data'] });
+    case 'bankAccount': return db.bankAccount.create({ data: cleanData as Parameters<typeof db.bankAccount.create>[0]['data'] });
+    case 'budgetHead': return db.budgetHead.create({ data: cleanData as Parameters<typeof db.budgetHead.create>[0]['data'] });
+    case 'schemeInfo': return db.schemeInfo.create({ data: cleanData as Parameters<typeof db.schemeInfo.create>[0]['data'] });
+    case 'floorInfo': return db.floorInfo.create({ data: cleanData as Parameters<typeof db.floorInfo.create>[0]['data'] });
+    case 'demandCategory': return db.demandCategory.create({ data: cleanData as Parameters<typeof db.demandCategory.create>[0]['data'] });
+    case 'contractor': return db.contractorMaster.create({ data: cleanData as Parameters<typeof db.contractorMaster.create>[0]['data'] });
+    case 'contractorMaster': return db.contractorMaster.create({ data: cleanData as Parameters<typeof db.contractorMaster.create>[0]['data'] });
     default: throw new Error(`Unknown table: ${table}`);
   }
 }
@@ -311,6 +544,14 @@ async function handleDelete(table: string, id: string) {
     case 'tax': return db.taxMaster.delete({ where: { id } });
     case 'property': return db.propertyMaster.delete({ where: { id } });
     case 'village': return db.villageInfo.delete({ where: { id } });
+    // New master tables
+    case 'financialYear': return db.financialYear.delete({ where: { id } });
+    case 'bankAccount': return db.bankAccount.delete({ where: { id } });
+    case 'budgetHead': return db.budgetHead.delete({ where: { id } });
+    case 'schemeInfo': return db.schemeInfo.delete({ where: { id } });
+    case 'floorInfo': return db.floorInfo.delete({ where: { id } });
+    case 'demandCategory': return db.demandCategory.delete({ where: { id } });
+    case 'contractor': return db.contractorMaster.delete({ where: { id } });
     default: throw new Error(`Unknown table: ${table}`);
   }
 }
