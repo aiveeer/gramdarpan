@@ -18,8 +18,29 @@ import { toast } from '@/hooks/use-toast';
 import {
   Plus, Search, Pencil, Trash2, RefreshCw, Home, MapPin, User, Route,
   Droplets, Lightbulb, Calculator, Accessibility, Users, Settings,
-  Building2, Save, X, Loader2
+  Building2, Save, X, Loader2, Landmark, Zap, Droplet, Sun,
+  FileText, AlertTriangle, Percent, MoreHorizontal, Eye, ToggleLeft,
+  Compass
 } from 'lucide-react';
+
+// ===== TAB COLOR DEFINITIONS =====
+
+const tabColors = {
+  village: { bg: 'bg-teal-50', header: 'from-teal-600 to-teal-700', text: 'text-teal-800', icon: 'bg-teal-500', badge: 'bg-teal-100 text-teal-800', border: 'border-teal-200', headerBg: 'bg-teal-600', headerText: 'text-white', ring: 'ring-teal-500' },
+  ward: { bg: 'bg-green-50', header: 'from-green-600 to-green-700', text: 'text-green-800', icon: 'bg-green-500', badge: 'bg-green-100 text-green-800', border: 'border-green-200', headerBg: 'bg-green-600', headerText: 'text-white', ring: 'ring-green-500' },
+  owner: { bg: 'bg-purple-50', header: 'from-purple-600 to-purple-700', text: 'text-purple-800', icon: 'bg-purple-500', badge: 'bg-purple-100 text-purple-800', border: 'border-purple-200', headerBg: 'bg-purple-600', headerText: 'text-white', ring: 'ring-purple-500' },
+  property: { bg: 'bg-cyan-50', header: 'from-cyan-600 to-cyan-700', text: 'text-cyan-800', icon: 'bg-cyan-500', badge: 'bg-cyan-100 text-cyan-800', border: 'border-cyan-200', headerBg: 'bg-cyan-600', headerText: 'text-white', ring: 'ring-cyan-500' },
+  road: { bg: 'bg-amber-50', header: 'from-amber-600 to-amber-700', text: 'text-amber-800', icon: 'bg-amber-500', badge: 'bg-amber-100 text-amber-800', border: 'border-amber-200', headerBg: 'bg-amber-600', headerText: 'text-white', ring: 'ring-amber-500' },
+  drainage: { bg: 'bg-blue-50', header: 'from-blue-600 to-blue-700', text: 'text-blue-800', icon: 'bg-blue-500', badge: 'bg-blue-100 text-blue-800', border: 'border-blue-200', headerBg: 'bg-blue-600', headerText: 'text-white', ring: 'ring-blue-500' },
+  waterSupply: { bg: 'bg-sky-50', header: 'from-sky-600 to-sky-700', text: 'text-sky-800', icon: 'bg-sky-500', badge: 'bg-sky-100 text-sky-800', border: 'border-sky-200', headerBg: 'bg-sky-600', headerText: 'text-white', ring: 'ring-sky-500' },
+  streetLight: { bg: 'bg-yellow-50', header: 'from-yellow-600 to-yellow-700', text: 'text-yellow-800', icon: 'bg-yellow-500', badge: 'bg-yellow-100 text-yellow-800', border: 'border-yellow-200', headerBg: 'bg-yellow-600', headerText: 'text-white', ring: 'ring-yellow-500' },
+  readyReckoner: { bg: 'bg-orange-50', header: 'from-orange-600 to-orange-700', text: 'text-orange-800', icon: 'bg-orange-500', badge: 'bg-orange-100 text-orange-800', border: 'border-orange-200', headerBg: 'bg-orange-600', headerText: 'text-white', ring: 'ring-orange-500' },
+  disability: { bg: 'bg-pink-50', header: 'from-pink-600 to-pink-700', text: 'text-pink-800', icon: 'bg-pink-500', badge: 'bg-pink-100 text-pink-800', border: 'border-pink-200', headerBg: 'bg-pink-600', headerText: 'text-white', ring: 'ring-pink-500' },
+  employee: { bg: 'bg-indigo-50', header: 'from-indigo-600 to-indigo-700', text: 'text-indigo-800', icon: 'bg-indigo-500', badge: 'bg-indigo-100 text-indigo-800', border: 'border-indigo-200', headerBg: 'bg-indigo-600', headerText: 'text-white', ring: 'ring-indigo-500' },
+  tax: { bg: 'bg-rose-50', header: 'from-rose-600 to-rose-700', text: 'text-rose-800', icon: 'bg-rose-500', badge: 'bg-rose-100 text-rose-800', border: 'border-rose-200', headerBg: 'bg-rose-600', headerText: 'text-white', ring: 'ring-rose-500' },
+};
+
+type TabColorKey = keyof typeof tabColors;
 
 // ===== SHARED HELPERS =====
 
@@ -68,6 +89,76 @@ async function apiSeed(table: string) {
   return res.json();
 }
 
+// ===== SECTION HEADER COMPONENT =====
+
+function SectionHeader({ colorKey, title, icon, count, search, onSearchChange, onRefresh, onAdd, loading }: {
+  colorKey: TabColorKey;
+  title: string;
+  icon: React.ReactNode;
+  count: number;
+  search: string;
+  onSearchChange: (v: string) => void;
+  onRefresh: () => void;
+  onAdd: () => void;
+  loading: boolean;
+}) {
+  const c = tabColors[colorKey];
+  return (
+    <div className={`rounded-t-xl bg-gradient-to-r ${c.header} p-4`}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className={`${c.icon} p-2 rounded-lg text-white`}>
+            {icon}
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-white">{title}</h3>
+          </div>
+          <Badge className={`${c.badge} border-0 font-bold text-sm`}>{count}</Badge>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-white/60" />
+            <Input
+              className="pl-9 w-48 bg-white/20 border-white/30 text-white placeholder:text-white/60 focus:bg-white/30"
+              placeholder="शोधा..."
+              value={search}
+              onChange={(e) => onSearchChange(e.target.value)}
+            />
+          </div>
+          <Button variant="outline" size="sm" onClick={onRefresh} disabled={loading} className="bg-white/20 border-white/30 text-white hover:bg-white/30">
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+          <Button size="sm" onClick={onAdd} className={`bg-gradient-to-r ${c.header} text-white shadow-lg hover:opacity-90 border-0`}>
+            <Plus className="h-4 w-4 mr-1" /> नवीन
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ===== COLORED TABLE HEADER =====
+
+function ColoredTableHeader({ colorKey, children }: { colorKey: TabColorKey; children: React.ReactNode }) {
+  const c = tabColors[colorKey];
+  return (
+    <TableHeader>
+      <TableRow className={`${c.headerBg} hover:${c.headerBg}`}>
+        {children}
+      </TableRow>
+    </TableHeader>
+  );
+}
+
+function ColoredTableHead({ colorKey, children, className }: { colorKey: TabColorKey; children: React.ReactNode; className?: string }) {
+  const c = tabColors[colorKey];
+  return (
+    <TableHead className={`${c.headerText} font-bold ${className || ''}`}>
+      {children}
+    </TableHead>
+  );
+}
+
 // ================================================================
 // TAB 1: VILLAGE INFO (गाव माहिती) - Single Record Form
 // ================================================================
@@ -77,6 +168,8 @@ function VillageInfoTab() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
+
+  const c = tabColors.village;
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -135,7 +228,17 @@ function VillageInfoTab() {
     }
   };
 
-  if (loading) return <div className="text-center py-8 text-muted-foreground animate-pulse">लोड होत आहे...</div>;
+  if (loading) return (
+    <Card className="overflow-hidden">
+      <div className={`bg-gradient-to-r ${c.header} p-4`}>
+        <div className="flex items-center gap-3">
+          <div className={`${c.icon} p-2 rounded-lg text-white`}><Landmark className="h-5 w-5" /></div>
+          <h3 className="text-lg font-bold text-white">गाव माहिती</h3>
+        </div>
+      </div>
+      <CardContent className="p-6"><div className="text-center py-8 text-muted-foreground animate-pulse">लोड होत आहे...</div></CardContent>
+    </Card>
+  );
 
   const fields = [
     { key: 'gramPanchayatName', label: 'ग्रामपंचायतचे नाव (English)', required: true },
@@ -154,20 +257,24 @@ function VillageInfoTab() {
   ];
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="overflow-hidden">
+      <div className={`bg-gradient-to-r ${c.header} p-4`}>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">गाव माहिती</CardTitle>
-          <Button variant="outline" size="sm" onClick={fetchData}>
+          <div className="flex items-center gap-3">
+            <div className={`${c.icon} p-2 rounded-lg text-white`}><Landmark className="h-5 w-5" /></div>
+            <h3 className="text-lg font-bold text-white">गाव माहिती</h3>
+            <Badge className={`${c.badge} border-0`}>{data ? 1 : 0}</Badge>
+          </div>
+          <Button variant="outline" size="sm" onClick={fetchData} className="bg-white/20 border-white/30 text-white hover:bg-white/30">
             <RefreshCw className="h-4 w-4 mr-1" /> रिफ्रेश
           </Button>
         </div>
-      </CardHeader>
-      <CardContent>
+      </div>
+      <CardContent className={`${c.bg} p-6`}>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {fields.map((f) => (
             <div key={f.key} className="space-y-1">
-              <Label className="text-sm">
+              <Label className={`text-sm ${c.text} font-medium`}>
                 {f.label} {f.required && <span className="text-red-500">*</span>}
               </Label>
               <Input
@@ -175,12 +282,13 @@ function VillageInfoTab() {
                 onChange={(e) => setForm((prev) => ({ ...prev, [f.key]: e.target.value }))}
                 type={f.type || 'text'}
                 placeholder={f.label}
+                className="bg-white"
               />
             </div>
           ))}
         </div>
         <div className="mt-6 flex justify-end">
-          <Button onClick={handleSave} disabled={saving}>
+          <Button onClick={handleSave} disabled={saving} className={`bg-gradient-to-r ${c.header} text-white shadow-lg border-0 hover:opacity-90`}>
             {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
             {saving ? 'जतन करत आहे...' : 'जतन करा'}
           </Button>
@@ -191,12 +299,13 @@ function VillageInfoTab() {
 }
 
 // ================================================================
-// GENERIC CRUD LIST - Reusable for most master tables
+// GENERIC CRUD LIST - Reusable with color theming
 // ================================================================
 
 interface CrudListProps {
   title: string;
   table: string;
+  colorKey: TabColorKey;
   icon: React.ReactNode;
   columns: { key: string; label: string; render?: (item: Record<string, unknown>) => React.ReactNode }[];
   formFields: FormField[];
@@ -219,6 +328,7 @@ interface FormField {
 function CrudList({
   title,
   table,
+  colorKey,
   icon,
   columns,
   formFields,
@@ -235,6 +345,8 @@ function CrudList({
   const [formData, setFormData] = useState<Record<string, unknown>>(defaultFormData || {});
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+
+  const c = tabColors[colorKey];
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -291,7 +403,6 @@ function CrudList({
     try {
       const saveData: Record<string, unknown> = { ...formData };
       if (editItem?.id) saveData.id = editItem.id;
-      // Convert number fields
       for (const f of formFields) {
         if (f.type === 'number' && saveData[f.key] !== undefined && saveData[f.key] !== '') {
           saveData[f.key] = parseFloat(String(saveData[f.key])) || 0;
@@ -314,53 +425,36 @@ function CrudList({
   const filteredItems = items;
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            {icon}
-            {title}
-            <Badge variant="secondary" className="ml-2">{filteredItems.length}</Badge>
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                className="pl-9 w-48"
-                placeholder="शोधा..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-            <Button variant="outline" size="sm" onClick={fetchData} disabled={loading}>
-              <RefreshCw className="h-4 w-4" />
-            </Button>
-            <Button size="sm" onClick={handleAdd}>
-              <Plus className="h-4 w-4 mr-1" /> नवीन
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
+    <Card className="overflow-hidden">
+      <SectionHeader
+        colorKey={colorKey}
+        title={title}
+        icon={icon}
+        count={filteredItems.length}
+        search={search}
+        onSearchChange={setSearch}
+        onRefresh={fetchData}
+        onAdd={handleAdd}
+        loading={loading}
+      />
+      <CardContent className={`${c.bg} p-4`}>
         {loading ? (
           <div className="text-center py-8 text-muted-foreground animate-pulse">लोड होत आहे...</div>
         ) : filteredItems.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">कोणतेही रेकॉर्ड नाहीत</div>
         ) : (
-          <div className="max-h-96 overflow-y-auto border rounded-lg">
+          <div className="max-h-96 overflow-y-auto border rounded-lg border-white/50 shadow-sm">
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">क्र.</TableHead>
-                  {columns.map((col) => (
-                    <TableHead key={col.key}>{col.label}</TableHead>
-                  ))}
-                  <TableHead className="w-24 text-right">क्रिया</TableHead>
-                </TableRow>
-              </TableHeader>
+              <ColoredTableHeader colorKey={colorKey}>
+                <ColoredTableHead colorKey={colorKey} className="w-12">क्र.</ColoredTableHead>
+                {columns.map((col) => (
+                  <ColoredTableHead key={col.key} colorKey={colorKey}>{col.label}</ColoredTableHead>
+                ))}
+                <ColoredTableHead colorKey={colorKey} className="w-24 text-right">क्रिया</ColoredTableHead>
+              </ColoredTableHeader>
               <TableBody>
                 {filteredItems.map((item, idx) => (
-                  <TableRow key={String(item.id)}>
+                  <TableRow key={String(item.id)} className="hover:bg-white/60">
                     <TableCell className="font-medium">{idx + 1}</TableCell>
                     {columns.map((col) => (
                       <TableCell key={col.key}>
@@ -370,7 +464,7 @@ function CrudList({
                     {renderExtraColumns && <TableCell>{renderExtraColumns(item)}</TableCell>}
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="sm" onClick={() => handleEdit(item)}>
+                        <Button variant="ghost" size="sm" onClick={() => handleEdit(item)} className="hover:bg-white/60">
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button
@@ -378,6 +472,7 @@ function CrudList({
                           size="sm"
                           onClick={() => handleDelete(String(item.id))}
                           disabled={deleting === String(item.id)}
+                          className="hover:bg-white/60"
                         >
                           {deleting === String(item.id) ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -399,7 +494,10 @@ function CrudList({
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editItem ? 'रेकॉर्ड संपादा' : 'नवीन रेकॉर्ड'}</DialogTitle>
+            <DialogTitle className={`flex items-center gap-2 ${c.text}`}>
+              <div className={`${c.icon} p-1.5 rounded text-white`}>{icon}</div>
+              {editItem ? 'रेकॉर्ड संपादा' : 'नवीन रेकॉर्ड'}
+            </DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
             {formFields.map((f) => (
@@ -454,7 +552,7 @@ function CrudList({
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               <X className="h-4 w-4 mr-1" /> रद्द करा
             </Button>
-            <Button onClick={handleSave} disabled={saving}>
+            <Button onClick={handleSave} disabled={saving} className={`bg-gradient-to-r ${c.header} text-white border-0 hover:opacity-90`}>
               {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
               {saving ? 'जतन करत आहे...' : 'जतन करा'}
             </Button>
@@ -474,6 +572,7 @@ function WardTab() {
     <CrudList
       title="वार्ड"
       table="ward"
+      colorKey="ward"
       icon={<MapPin className="h-5 w-5" />}
       columns={[
         { key: 'wardNumber', label: 'वार्ड क्र.' },
@@ -503,6 +602,7 @@ function OwnerTab() {
     <CrudList
       title="मालक"
       table="owner"
+      colorKey="owner"
       icon={<User className="h-5 w-5" />}
       columns={[
         { key: 'ownerNumber', label: 'मालक क्र.' },
@@ -548,6 +648,7 @@ function RoadTab() {
     <CrudList
       title="रस्ते"
       table="road"
+      colorKey="road"
       icon={<Route className="h-5 w-5" />}
       columns={[
         { key: 'roadNumber', label: 'रस्ता क्र.' },
@@ -609,6 +710,7 @@ function DrainageTab() {
     <CrudList
       title="कालवे"
       table="drainage"
+      colorKey="drainage"
       icon={<Droplets className="h-5 w-5" />}
       columns={[
         { key: 'drainageNumber', label: 'कालवा क्र.' },
@@ -673,7 +775,8 @@ function WaterSupplyTab() {
     <CrudList
       title="पाणीपुरवठा"
       table="waterSupply"
-      icon={<Droplets className="h-5 w-5" />}
+      colorKey="waterSupply"
+      icon={<Droplet className="h-5 w-5" />}
       columns={[
         { key: 'connectionNumber', label: 'जोडणी क्र.' },
         { key: 'connectionType', label: 'जोडणी प्रकार' },
@@ -738,7 +841,8 @@ function StreetLightTab() {
     <CrudList
       title="दिवाबत्ती"
       table="streetLight"
-      icon={<Lightbulb className="h-5 w-5" />}
+      colorKey="streetLight"
+      icon={<Sun className="h-5 w-5" />}
       columns={[
         { key: 'lightNumber', label: 'दिवा क्र.' },
         { key: 'lightType', label: 'दिवा प्रकार' },
@@ -817,6 +921,7 @@ function ReadyReckonerTab() {
     <CrudList
       title="रेडीरेकनर"
       table="readyReckoner"
+      colorKey="readyReckoner"
       icon={<Calculator className="h-5 w-5" />}
       columns={[
         { key: 'usageType', label: 'वापर प्रकार' },
@@ -855,6 +960,7 @@ function DisabilityTab() {
     <CrudList
       title="अपंगत्व"
       table="disability"
+      colorKey="disability"
       icon={<Accessibility className="h-5 w-5" />}
       seedOnEmpty
       columns={[
@@ -882,6 +988,7 @@ function EmployeeTab() {
     <CrudList
       title="कर्मचारी"
       table="employee"
+      colorKey="employee"
       icon={<Users className="h-5 w-5" />}
       columns={[
         { key: 'employeeId', label: 'कर्मचारी क्र.' },
@@ -911,8 +1018,34 @@ function EmployeeTab() {
 }
 
 // ================================================================
-// TAB 11: TAX MASTER (कर मास्टर) - auto-seed on empty, enable/disable
+// TAB 11: TAX MASTER (कर मास्टर) - auto-seed, enable/disable, dynamic
 // ================================================================
+
+// Default 14 taxes
+const DEFAULT_TAXES = [
+  { name: 'House Tax', nameMarathi: 'गृहकर', rate: 12, isEnabled: true, order: 1, category: 'general' },
+  { name: 'Water Tax', nameMarathi: 'पाणीकर', rate: 5, isEnabled: true, order: 2, category: 'general' },
+  { name: 'Light Tax', nameMarathi: 'दिवाबत्ती कर', rate: 3, isEnabled: true, order: 3, category: 'general' },
+  { name: 'Health Tax', nameMarathi: 'आरोग्य कर', rate: 2, isEnabled: true, order: 4, category: 'general' },
+  { name: 'Education Tax', nameMarathi: 'शिक्षण कर', rate: 2, isEnabled: true, order: 5, category: 'general' },
+  { name: 'Tree Tax', nameMarathi: 'वृक्ष कर', rate: 1, isEnabled: true, order: 6, category: 'general' },
+  { name: 'Employment Tax', nameMarathi: 'रोजगार कर', rate: 2, isEnabled: true, order: 7, category: 'general' },
+  { name: 'Drainage Tax', nameMarathi: 'नाला कर', rate: 3, isEnabled: true, order: 8, category: 'general' },
+  { name: 'Sanitation Tax', nameMarathi: 'स्वच्छता कर', rate: 2, isEnabled: true, order: 9, category: 'general' },
+  { name: 'Fire Tax', nameMarathi: 'अग्निशामक कर', rate: 1, isEnabled: true, order: 10, category: 'general' },
+  { name: 'Special Tax', nameMarathi: 'विशेष कर', rate: 0, isEnabled: false, order: 11, category: 'other' },
+  { name: 'Penalty', nameMarathi: 'दंड', rate: 0, isEnabled: true, order: 12, category: 'penalty' },
+  { name: 'Interest', nameMarathi: 'व्याज', rate: 0, isEnabled: true, order: 13, category: 'interest' },
+  { name: 'Other Charges', nameMarathi: 'इतर आकारणी', rate: 0, isEnabled: false, order: 14, category: 'other' },
+];
+
+// Map which Namuna forms each tax category appears in
+const TAX_NAMUNA_MAP: Record<string, string[]> = {
+  general: ['नमुना ८', 'नमुना ९', 'नमुना ९-क'],
+  penalty: ['नमुना ८', 'नमुना ९'],
+  interest: ['नमुना ८', 'नमुना ९'],
+  other: ['नमुना ८'],
+};
 
 function TaxTab() {
   const [taxes, setTaxes] = useState<Record<string, unknown>[]>([]);
@@ -924,6 +1057,8 @@ function TaxTab() {
     name: '', nameMarathi: '', rate: 0, isEnabled: true, order: 0, category: 'general',
   });
   const [search, setSearch] = useState('');
+
+  const c = tabColors.tax;
 
   const fetchTaxes = useCallback(async () => {
     setLoading(true);
@@ -951,7 +1086,12 @@ function TaxTab() {
       if (tax) {
         await apiUpdate('tax', { id, isEnabled, name: tax.name, nameMarathi: tax.nameMarathi, rate: tax.rate, order: tax.order, category: tax.category });
         setTaxes((prev) => prev.map((t) => (t.id === id ? { ...t, isEnabled } : t)));
-        toast({ title: 'यशस्वी', description: isEnabled ? 'कर सक्षम केला' : 'कर अक्षम केला' });
+        toast({
+          title: 'यशस्वी',
+          description: isEnabled
+            ? `${String(tax.nameMarathi)} कर सक्षम केला - नमुना ८, ९, ९-क मध्ये दिसेल`
+            : `${String(tax.nameMarathi)} कर अक्षम केला - नमुना ८, ९, ९-क मधून काढला जाईल`,
+        });
       }
     } catch {
       toast({ title: 'त्रुटी', description: 'अपडेट अयशस्वी', variant: 'destructive' });
@@ -1028,60 +1168,88 @@ function TaxTab() {
 
   const getCategoryBadge = (cat: string) => {
     switch (cat) {
-      case 'general': return <Badge variant="outline">सामान्य</Badge>;
-      case 'penalty': return <Badge className="bg-red-100 text-red-800 border-red-200">दंड</Badge>;
-      case 'interest': return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">व्याज</Badge>;
-      case 'other': return <Badge className="bg-purple-100 text-purple-800 border-purple-200">इतर</Badge>;
+      case 'general': return <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 border">सामान्य</Badge>;
+      case 'penalty': return <Badge className="bg-red-100 text-red-800 border-red-200 border">दंड</Badge>;
+      case 'interest': return <Badge className="bg-amber-100 text-amber-800 border-amber-200 border">व्याज</Badge>;
+      case 'other': return <Badge className="bg-purple-100 text-purple-800 border-purple-200 border">इतर</Badge>;
       default: return <Badge variant="outline">{cat}</Badge>;
     }
   };
 
+  const getNamunaIndicator = (cat: string, isEnabled: boolean) => {
+    const namunas = TAX_NAMUNA_MAP[cat] || [];
+    if (!isEnabled) return null;
+    return (
+      <div className="flex items-center gap-1 mt-1">
+        <Eye className="h-3 w-3 text-rose-600" />
+        <span className="text-xs text-rose-600 font-medium">
+          {namunas.join(', ')}
+        </span>
+      </div>
+    );
+  };
+
+  const enabledCount = taxes.filter((t) => t.isEnabled).length;
+  const disabledCount = taxes.length - enabledCount;
+
   return (
-    <Card>
-      <CardHeader>
+    <Card className="overflow-hidden">
+      {/* Header */}
+      <div className={`bg-gradient-to-r ${c.header} p-4`}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            कर मास्टर
-            <Badge variant="secondary">{filteredTaxes.length}</Badge>
-          </CardTitle>
+          <div className="flex items-center gap-3">
+            <div className={`${c.icon} p-2 rounded-lg text-white`}>
+              <Settings className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white">कर मास्टर</h3>
+              <p className="text-xs text-white/70 mt-0.5">कर सक्षम/अक्षम केल्यास नमुना ८, ९, ९-क अपडेट होतील</p>
+            </div>
+            <Badge className={`${c.badge} border-0 font-bold text-sm`}>{filteredTaxes.length}</Badge>
+            <Badge className="bg-green-100 text-green-800 border-0 text-xs">सक्षम: {enabledCount}</Badge>
+            <Badge className="bg-red-100 text-red-800 border-0 text-xs">अक्षम: {disabledCount}</Badge>
+          </div>
           <div className="flex items-center gap-2">
             <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input className="pl-9 w-48" placeholder="शोधा..." value={search} onChange={(e) => setSearch(e.target.value)} />
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-white/60" />
+              <Input className="pl-9 w-48 bg-white/20 border-white/30 text-white placeholder:text-white/60 focus:bg-white/30" placeholder="शोधा..." value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
-            <Button variant="outline" size="sm" onClick={fetchTaxes} disabled={loading}>
+            <Button variant="outline" size="sm" onClick={fetchTaxes} disabled={loading} className="bg-white/20 border-white/30 text-white hover:bg-white/30">
               <RefreshCw className="h-4 w-4" />
             </Button>
-            <Button size="sm" onClick={handleAdd}>
-              <Plus className="h-4 w-4 mr-1" /> नवीन
+            <Button size="sm" onClick={handleAdd} className={`bg-gradient-to-r ${c.header} text-white shadow-lg hover:opacity-90 border-0`}>
+              <Plus className="h-4 w-4 mr-1" /> नवीन कर
             </Button>
           </div>
         </div>
-      </CardHeader>
-      <CardContent>
+      </div>
+
+      <CardContent className={`${c.bg} p-4`}>
         {loading ? (
           <div className="text-center py-8 text-muted-foreground animate-pulse">लोड होत आहे...</div>
         ) : (
-          <div className="max-h-96 overflow-y-auto border rounded-lg">
+          <div className="max-h-[500px] overflow-y-auto border rounded-lg border-white/50 shadow-sm">
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">क्र.</TableHead>
-                  <TableHead>कर नाव</TableHead>
-                  <TableHead>मराठी नाव</TableHead>
-                  <TableHead className="w-32">दर (₹)</TableHead>
-                  <TableHead>वर्ग</TableHead>
-                  <TableHead className="w-20 text-center">सक्षम</TableHead>
-                  <TableHead className="w-24 text-right">क्रिया</TableHead>
-                </TableRow>
-              </TableHeader>
+              <ColoredTableHeader colorKey="tax">
+                <ColoredTableHead colorKey="tax" className="w-12">क्र.</ColoredTableHead>
+                <ColoredTableHead colorKey="tax">कर नाव</ColoredTableHead>
+                <ColoredTableHead colorKey="tax">मराठी नाव</ColoredTableHead>
+                <ColoredTableHead colorKey="tax" className="w-32">दर (₹)</ColoredTableHead>
+                <ColoredTableHead colorKey="tax">वर्ग</ColoredTableHead>
+                <ColoredTableHead colorKey="tax">नमुना</ColoredTableHead>
+                <ColoredTableHead colorKey="tax" className="w-24 text-center">सक्षम</ColoredTableHead>
+                <ColoredTableHead colorKey="tax" className="w-24 text-right">क्रिया</ColoredTableHead>
+              </ColoredTableHeader>
               <TableBody>
                 {filteredTaxes.map((tax, idx) => (
-                  <TableRow key={String(tax.id)} className={!tax.isEnabled ? 'opacity-50' : ''}>
+                  <TableRow key={String(tax.id)} className={`hover:bg-white/60 transition-colors ${!tax.isEnabled ? 'opacity-50 bg-gray-50' : ''}`}>
                     <TableCell className="font-medium">{idx + 1}</TableCell>
-                    <TableCell className="font-medium">{String(tax.name)}</TableCell>
-                    <TableCell>{String(tax.nameMarathi)}</TableCell>
+                    <TableCell>
+                      <div className="font-medium">{String(tax.name)}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-medium">{String(tax.nameMarathi)}</div>
+                    </TableCell>
                     <TableCell>
                       <Input
                         type="number"
@@ -1090,21 +1258,28 @@ function TaxTab() {
                         className="h-8 w-24 text-sm"
                         min={0}
                         step={0.5}
+                        disabled={!tax.isEnabled}
                       />
                     </TableCell>
                     <TableCell>{getCategoryBadge(String(tax.category || 'general'))}</TableCell>
+                    <TableCell>{getNamunaIndicator(String(tax.category || 'general'), !!tax.isEnabled)}</TableCell>
                     <TableCell className="text-center">
-                      <Switch
-                        checked={!!tax.isEnabled}
-                        onCheckedChange={(checked) => handleToggle(String(tax.id), checked)}
-                      />
+                      <div className="flex items-center justify-center gap-2">
+                        <Switch
+                          checked={!!tax.isEnabled}
+                          onCheckedChange={(checked) => handleToggle(String(tax.id), checked)}
+                        />
+                        <span className={`text-xs font-medium ${tax.isEnabled ? 'text-green-600' : 'text-red-500'}`}>
+                          {tax.isEnabled ? 'चालू' : 'बंद'}
+                        </span>
+                      </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="sm" onClick={() => handleEdit(tax)}>
+                        <Button variant="ghost" size="sm" onClick={() => handleEdit(tax)} className="hover:bg-white/60">
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDelete(String(tax.id))}>
+                        <Button variant="ghost" size="sm" onClick={() => handleDelete(String(tax.id))} className="hover:bg-white/60">
                           <Trash2 className="h-4 w-4 text-red-500" />
                         </Button>
                       </div>
@@ -1115,12 +1290,27 @@ function TaxTab() {
             </Table>
           </div>
         )}
+
+        {/* Tax propagation info */}
+        <div className="mt-4 p-3 bg-white/60 rounded-lg border border-rose-200">
+          <div className="flex items-center gap-2 mb-2">
+            <ToggleLeft className="h-4 w-4 text-rose-600" />
+            <span className="text-sm font-semibold text-rose-800">डायनॅमिक कर लॉजिक</span>
+          </div>
+          <p className="text-xs text-rose-700">
+            कर सक्षम/अक्षम केल्यास ते आपोआप नमुना ८ (मालमत्ता कर विवरण), नमुना ९ (कर आकारणी), नमुना ९-क (कर वसुली) या फॉर्ममध्ये दिसेल किंवा लपेल.
+            सामान्य कर तिन्ही नमुनांमध्ये दिसतात, दंड व व्याज नमुना ८ व ९ मध्ये दिसतात, इतर केवळ नमुना ८ मध्ये.
+          </p>
+        </div>
       </CardContent>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editItem ? 'कर संपादा' : 'नवीन कर'}</DialogTitle>
+            <DialogTitle className={`flex items-center gap-2 ${c.text}`}>
+              <div className={`${c.icon} p-1.5 rounded text-white`}><Settings className="h-4 w-4" /></div>
+              {editItem ? 'कर संपादा' : 'नवीन कर'}
+            </DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
             <div className="space-y-1">
@@ -1155,10 +1345,18 @@ function TaxTab() {
               <Checkbox checked={!!formData.isEnabled} onCheckedChange={(c) => setFormData((p) => ({ ...p, isEnabled: !!c }))} />
               <Label className="text-sm">सक्षम</Label>
             </div>
+            {/* Namuna indicator in dialog */}
+            <div className="sm:col-span-2 p-2 bg-rose-50 rounded-lg border border-rose-200">
+              <div className="flex items-center gap-1.5 text-xs text-rose-700">
+                <Eye className="h-3.5 w-3.5" />
+                <span className="font-medium">हा कर खालील नमुन्यांमध्ये दिसेल:</span>
+                <span className="font-bold">{(TAX_NAMUNA_MAP[String(formData.category || 'general')] || []).join(', ')}</span>
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}><X className="h-4 w-4 mr-1" /> रद्द</Button>
-            <Button onClick={handleSave} disabled={saving}>
+            <Button onClick={handleSave} disabled={saving} className={`bg-gradient-to-r ${c.header} text-white border-0 hover:opacity-90`}>
               {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
               जतन करा
             </Button>
@@ -1218,6 +1416,8 @@ function PropertyTab() {
   const [owners, setOwners] = useState<Record<string, unknown>[]>([]);
   const [taxMasters, setTaxMasters] = useState<TaxMasterItem[]>([]);
 
+  const c = tabColors.property;
+
   const [formData, setFormData] = useState<Record<string, unknown>>({
     propertyNumber: '',
     wardId: '',
@@ -1232,6 +1432,10 @@ function PropertyTab() {
     yearBuilt: '',
     propertyStatus: 'Active',
     waterConnectionId: '',
+    boundaryEast: '',
+    boundaryWest: '',
+    boundaryNorth: '',
+    boundarySouth: '',
   });
   const [selectedOwners, setSelectedOwners] = useState<{ ownerId: string; ownershipType: string }[]>([]);
   const [selectedTaxRates, setSelectedTaxRates] = useState<{ taxMasterId: string; rate: number }[]>([]);
@@ -1269,7 +1473,7 @@ function PropertyTab() {
       propertyNumber: '', wardId: '', roadId: '', citySurveyNo: '',
       area: '', builtUpArea: '', boundaries: '', constructionType: '',
       usageType: '', floorInfo: '', yearBuilt: '', propertyStatus: 'Active',
-      waterConnectionId: '',
+      waterConnectionId: '', boundaryEast: '', boundaryWest: '', boundaryNorth: '', boundarySouth: '',
     });
     setSelectedOwners([]);
     setSelectedTaxRates(taxMasters.map((t) => ({ taxMasterId: t.id, rate: t.rate })));
@@ -1278,6 +1482,23 @@ function PropertyTab() {
 
   const handleEdit = (item: PropertyItem) => {
     setEditItem(item);
+    // Parse boundaries if it's JSON
+    let boundaryEast = '';
+    let boundaryWest = '';
+    let boundaryNorth = '';
+    let boundarySouth = '';
+    try {
+      if (item.boundaries) {
+        const b = typeof item.boundaries === 'string' ? JSON.parse(item.boundaries) : item.boundaries;
+        boundaryEast = b.east || b.purv || '';
+        boundaryWest = b.west || b.paschim || '';
+        boundaryNorth = b.north || b.uttar || '';
+        boundarySouth = b.south || b.dakshin || '';
+      }
+    } catch {
+      // boundaries is plain text
+    }
+
     setFormData({
       propertyNumber: item.propertyNumber || '',
       wardId: item.wardId || '',
@@ -1292,6 +1513,10 @@ function PropertyTab() {
       yearBuilt: item.yearBuilt || '',
       propertyStatus: item.propertyStatus || 'Active',
       waterConnectionId: item.waterConnectionId || '',
+      boundaryEast,
+      boundaryWest,
+      boundaryNorth,
+      boundarySouth,
     });
     setSelectedOwners(
       item.owners?.map((o) => ({ ownerId: o.ownerId, ownershipType: o.ownershipType })) || []
@@ -1317,6 +1542,19 @@ function PropertyTab() {
       if (!saveData.wardId) saveData.wardId = null;
       if (!saveData.roadId) saveData.roadId = null;
       if (!saveData.waterConnectionId) saveData.waterConnectionId = null;
+
+      // Combine boundary fields into JSON
+      const boundaryObj = {
+        east: saveData.boundaryEast || '',
+        west: saveData.boundaryWest || '',
+        north: saveData.boundaryNorth || '',
+        south: saveData.boundarySouth || '',
+      };
+      saveData.boundaries = JSON.stringify(boundaryObj);
+      delete saveData.boundaryEast;
+      delete saveData.boundaryWest;
+      delete saveData.boundaryNorth;
+      delete saveData.boundarySouth;
 
       saveData.owners = selectedOwners;
       saveData.taxRates = selectedTaxRates.filter((tr) => tr.rate > 0);
@@ -1367,52 +1605,57 @@ function PropertyTab() {
   };
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="overflow-hidden">
+      {/* Header */}
+      <div className={`bg-gradient-to-r ${c.header} p-4`}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
-            मालमत्ता
-            <Badge variant="secondary">{items.length}</Badge>
-          </CardTitle>
+          <div className="flex items-center gap-3">
+            <div className={`${c.icon} p-2 rounded-lg text-white`}>
+              <Building2 className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white">मालमत्ता</h3>
+              <p className="text-xs text-white/70">मालक जोडणी, कर दर, सीमा माहिती</p>
+            </div>
+            <Badge className={`${c.badge} border-0 font-bold text-sm`}>{items.length}</Badge>
+          </div>
           <div className="flex items-center gap-2">
             <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input className="pl-9 w-48" placeholder="शोधा..." value={search} onChange={(e) => setSearch(e.target.value)} />
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-white/60" />
+              <Input className="pl-9 w-48 bg-white/20 border-white/30 text-white placeholder:text-white/60 focus:bg-white/30" placeholder="शोधा..." value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
-            <Button variant="outline" size="sm" onClick={fetchProperty} disabled={loading}>
+            <Button variant="outline" size="sm" onClick={fetchProperty} disabled={loading} className="bg-white/20 border-white/30 text-white hover:bg-white/30">
               <RefreshCw className="h-4 w-4" />
             </Button>
-            <Button size="sm" onClick={handleAdd}>
+            <Button size="sm" onClick={handleAdd} className={`bg-gradient-to-r ${c.header} text-white shadow-lg hover:opacity-90 border-0`}>
               <Plus className="h-4 w-4 mr-1" /> नवीन
             </Button>
           </div>
         </div>
-      </CardHeader>
-      <CardContent>
+      </div>
+
+      <CardContent className={`${c.bg} p-4`}>
         {loading ? (
           <div className="text-center py-8 text-muted-foreground animate-pulse">लोड होत आहे...</div>
         ) : items.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">कोणतीही मालमत्ता नाही</div>
         ) : (
-          <div className="max-h-96 overflow-y-auto border rounded-lg">
+          <div className="max-h-96 overflow-y-auto border rounded-lg border-white/50 shadow-sm">
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">क्र.</TableHead>
-                  <TableHead>मालमत्ता क्र.</TableHead>
-                  <TableHead>मालक</TableHead>
-                  <TableHead>वार्ड</TableHead>
-                  <TableHead>रस्ता</TableHead>
-                  <TableHead>वापर</TableHead>
-                  <TableHead>क्षेत्रफळ</TableHead>
-                  <TableHead>स्थिती</TableHead>
-                  <TableHead className="w-24 text-right">क्रिया</TableHead>
-                </TableRow>
-              </TableHeader>
+              <ColoredTableHeader colorKey="property">
+                <ColoredTableHead colorKey="property" className="w-12">क्र.</ColoredTableHead>
+                <ColoredTableHead colorKey="property">मालमत्ता क्र.</ColoredTableHead>
+                <ColoredTableHead colorKey="property">मालक</ColoredTableHead>
+                <ColoredTableHead colorKey="property">वार्ड</ColoredTableHead>
+                <ColoredTableHead colorKey="property">रस्ता</ColoredTableHead>
+                <ColoredTableHead colorKey="property">वापर</ColoredTableHead>
+                <ColoredTableHead colorKey="property">क्षेत्रफळ</ColoredTableHead>
+                <ColoredTableHead colorKey="property">स्थिती</ColoredTableHead>
+                <ColoredTableHead colorKey="property" className="w-24 text-right">क्रिया</ColoredTableHead>
+              </ColoredTableHeader>
               <TableBody>
                 {items.map((item, idx) => (
-                  <TableRow key={item.id}>
+                  <TableRow key={item.id} className="hover:bg-white/60">
                     <TableCell className="font-medium">{idx + 1}</TableCell>
                     <TableCell className="font-medium">{item.propertyNumber}</TableCell>
                     <TableCell>
@@ -1429,10 +1672,10 @@ function PropertyTab() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="sm" onClick={() => handleEdit(item)}>
+                        <Button variant="ghost" size="sm" onClick={() => handleEdit(item)} className="hover:bg-white/60">
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDelete(item.id)} disabled={deleting === item.id}>
+                        <Button variant="ghost" size="sm" onClick={() => handleDelete(item.id)} disabled={deleting === item.id} className="hover:bg-white/60">
                           {deleting === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 text-red-500" />}
                         </Button>
                       </div>
@@ -1449,13 +1692,19 @@ function PropertyTab() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editItem ? 'मालमत्ता संपादा' : 'नवीन मालमत्ता'}</DialogTitle>
+            <DialogTitle className={`flex items-center gap-2 ${c.text}`}>
+              <div className={`${c.icon} p-1.5 rounded text-white`}><Building2 className="h-4 w-4" /></div>
+              {editItem ? 'मालमत्ता संपादा' : 'नवीन मालमत्ता'}
+            </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-6 py-4">
             {/* Basic Property Info */}
             <div>
-              <h4 className="font-semibold mb-3 flex items-center gap-2"><Home className="h-4 w-4" /> मालमत्ता माहिती</h4>
+              <h4 className={`font-semibold mb-3 flex items-center gap-2 ${c.text}`}>
+                <div className={`${c.icon} p-1 rounded text-white`}><Home className="h-3.5 w-3.5" /></div>
+                मालमत्ता माहिती
+              </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-1">
                   <Label className="text-sm">मालमत्ता क्रमांक <span className="text-red-500">*</span></Label>
@@ -1500,10 +1749,6 @@ function PropertyTab() {
                 <div className="space-y-1">
                   <Label className="text-sm">बांधलेले क्षेत्रफळ (चौ.मी.)</Label>
                   <Input type="number" value={String(formData.builtUpArea ?? '')} onChange={(e) => setFormData((p) => ({ ...p, builtUpArea: e.target.value }))} />
-                </div>
-                <div className="space-y-1 sm:col-span-2">
-                  <Label className="text-sm">सीमा</Label>
-                  <Textarea value={String(formData.boundaries || '')} onChange={(e) => setFormData((p) => ({ ...p, boundaries: e.target.value }))} rows={2} />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-sm">बांधकाम प्रकार</Label>
@@ -1555,11 +1800,42 @@ function PropertyTab() {
 
             <Separator />
 
+            {/* Boundaries (चतु:सीमा) */}
+            <div>
+              <h4 className={`font-semibold mb-3 flex items-center gap-2 ${c.text}`}>
+                <div className={`${c.icon} p-1 rounded text-white`}><Compass className="h-3.5 w-3.5" /></div>
+                चतु:सीमा (Boundaries)
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label className="text-sm">पूर्व (East)</Label>
+                  <Input value={String(formData.boundaryEast || '')} onChange={(e) => setFormData((p) => ({ ...p, boundaryEast: e.target.value }))} placeholder="पूर्वेकडील सीमा" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-sm">पश्चिम (West)</Label>
+                  <Input value={String(formData.boundaryWest || '')} onChange={(e) => setFormData((p) => ({ ...p, boundaryWest: e.target.value }))} placeholder="पश्चिमेकडील सीमा" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-sm">उत्तर (North)</Label>
+                  <Input value={String(formData.boundaryNorth || '')} onChange={(e) => setFormData((p) => ({ ...p, boundaryNorth: e.target.value }))} placeholder="उत्तरेकडील सीमा" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-sm">दक्षिण (South)</Label>
+                  <Input value={String(formData.boundarySouth || '')} onChange={(e) => setFormData((p) => ({ ...p, boundarySouth: e.target.value }))} placeholder="दक्षिणेकडील सीमा" />
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
             {/* Owner Selection */}
             <div>
               <div className="flex items-center justify-between mb-3">
-                <h4 className="font-semibold flex items-center gap-2"><User className="h-4 w-4" /> मालक माहिती</h4>
-                <Button variant="outline" size="sm" onClick={addOwnerRow}>
+                <h4 className={`font-semibold flex items-center gap-2 ${c.text}`}>
+                  <div className={`${c.icon} p-1 rounded text-white`}><User className="h-3.5 w-3.5" /></div>
+                  मालक माहिती
+                </h4>
+                <Button variant="outline" size="sm" onClick={addOwnerRow} className={`${c.text} border-current`}>
                   <Plus className="h-4 w-4 mr-1" /> मालक जोडा
                 </Button>
               </div>
@@ -1570,7 +1846,7 @@ function PropertyTab() {
               ) : (
                 <div className="space-y-3">
                   {selectedOwners.map((o, idx) => (
-                    <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-end gap-3 p-3 border rounded-lg bg-muted/30">
+                    <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-end gap-3 p-3 border rounded-lg bg-white/50">
                       <div className="space-y-1 flex-1 w-full sm:w-auto">
                         <Label className="text-sm">मालक</Label>
                         <Select value={o.ownerId} onValueChange={(v) => updateOwnerRow(idx, 'ownerId', v)}>
@@ -1608,24 +1884,25 @@ function PropertyTab() {
 
             {/* Tax Rate Assignment */}
             <div>
-              <h4 className="font-semibold mb-3 flex items-center gap-2"><Settings className="h-4 w-4" /> कर दर सेटिंग</h4>
+              <h4 className={`font-semibold mb-3 flex items-center gap-2 ${c.text}`}>
+                <div className={`${c.icon} p-1 rounded text-white`}><Settings className="h-3.5 w-3.5" /></div>
+                कर दर सेटिंग
+              </h4>
               {taxMasters.length === 0 ? (
                 <div className="text-center text-muted-foreground py-4">कोणताही सक्षम कर नाही. कर मास्टर तयार करा.</div>
               ) : (
                 <div className="border rounded-lg overflow-hidden">
                   <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>कर नाव</TableHead>
-                        <TableHead>मराठी नाव</TableHead>
-                        <TableHead className="w-32">दर (₹)</TableHead>
-                      </TableRow>
-                    </TableHeader>
+                    <ColoredTableHeader colorKey="property">
+                      <ColoredTableHead colorKey="property">कर नाव</ColoredTableHead>
+                      <ColoredTableHead colorKey="property">मराठी नाव</ColoredTableHead>
+                      <ColoredTableHead colorKey="property" className="w-32">दर (₹)</ColoredTableHead>
+                    </ColoredTableHeader>
                     <TableBody>
                       {taxMasters.map((tax) => {
                         const tr = selectedTaxRates.find((t) => t.taxMasterId === tax.id);
                         return (
-                          <TableRow key={tax.id}>
+                          <TableRow key={tax.id} className="hover:bg-white/60">
                             <TableCell className="font-medium">{tax.name}</TableCell>
                             <TableCell>{tax.nameMarathi}</TableCell>
                             <TableCell>
@@ -1651,7 +1928,7 @@ function PropertyTab() {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               <X className="h-4 w-4 mr-1" /> रद्द करा
             </Button>
-            <Button onClick={handleSave} disabled={saving}>
+            <Button onClick={handleSave} disabled={saving} className={`bg-gradient-to-r ${c.header} text-white border-0 hover:opacity-90`}>
               {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
               {saving ? 'जतन करत आहे...' : 'जतन करा'}
             </Button>
@@ -1663,49 +1940,60 @@ function PropertyTab() {
 }
 
 // ================================================================
-// MAIN COMPONENT - Master Data with Tabs
+// MAIN COMPONENT - Master Data with Colored Tabs
 // ================================================================
 
 export default function MasterData() {
   const [activeTab, setActiveTab] = useState('village');
 
-  const tabs = [
-    { value: 'village', label: 'गाव माहिती', icon: <Home className="h-4 w-4" /> },
+  const tabs: { value: TabColorKey; label: string; icon: React.ReactNode }[] = [
+    { value: 'village', label: 'गाव माहिती', icon: <Landmark className="h-4 w-4" /> },
     { value: 'ward', label: 'वार्ड', icon: <MapPin className="h-4 w-4" /> },
     { value: 'owner', label: 'मालक', icon: <User className="h-4 w-4" /> },
+    { value: 'property', label: 'मालमत्ता', icon: <Building2 className="h-4 w-4" /> },
     { value: 'road', label: 'रस्ते', icon: <Route className="h-4 w-4" /> },
     { value: 'drainage', label: 'कालवे', icon: <Droplets className="h-4 w-4" /> },
-    { value: 'waterSupply', label: 'पाणीपुरवठा', icon: <Droplets className="h-4 w-4" /> },
-    { value: 'streetLight', label: 'दिवाबत्ती', icon: <Lightbulb className="h-4 w-4" /> },
+    { value: 'waterSupply', label: 'पाणीपुरवठा', icon: <Droplet className="h-4 w-4" /> },
+    { value: 'streetLight', label: 'दिवाबत्ती', icon: <Sun className="h-4 w-4" /> },
     { value: 'readyReckoner', label: 'रेडीरेकनर', icon: <Calculator className="h-4 w-4" /> },
     { value: 'disability', label: 'अपंगत्व', icon: <Accessibility className="h-4 w-4" /> },
     { value: 'employee', label: 'कर्मचारी', icon: <Users className="h-4 w-4" /> },
     { value: 'tax', label: 'कर मास्टर', icon: <Settings className="h-4 w-4" /> },
-    { value: 'property', label: 'मालमत्ता', icon: <Building2 className="h-4 w-4" /> },
   ];
 
   return (
     <div className="space-y-4">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <div className="overflow-x-auto pb-2">
-          <TabsList className="flex flex-wrap h-auto gap-1">
-            {tabs.map((tab) => (
-              <TabsTrigger
-                key={tab.value}
-                value={tab.value}
-                className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5"
-              >
-                {tab.icon}
-                <span className="hidden sm:inline">{tab.label}</span>
-                <span className="sm:hidden">{tab.label.slice(0, 4)}</span>
-              </TabsTrigger>
-            ))}
+          <TabsList className="flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
+            {tabs.map((tab) => {
+              const c = tabColors[tab.value];
+              const isActive = activeTab === tab.value;
+              return (
+                <TabsTrigger
+                  key={tab.value}
+                  value={tab.value}
+                  className={`
+                    flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 rounded-md transition-all
+                    ${isActive
+                      ? `bg-gradient-to-r ${c.header} text-white shadow-md`
+                      : `${c.text} hover:${c.bg}`
+                    }
+                  `}
+                >
+                  {tab.icon}
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span className="sm:hidden">{tab.label.slice(0, 4)}</span>
+                </TabsTrigger>
+              );
+            })}
           </TabsList>
         </div>
 
         <TabsContent value="village"><VillageInfoTab /></TabsContent>
         <TabsContent value="ward"><WardTab /></TabsContent>
         <TabsContent value="owner"><OwnerTab /></TabsContent>
+        <TabsContent value="property"><PropertyTab /></TabsContent>
         <TabsContent value="road"><RoadTab /></TabsContent>
         <TabsContent value="drainage"><DrainageTab /></TabsContent>
         <TabsContent value="waterSupply"><WaterSupplyTab /></TabsContent>
@@ -1714,7 +2002,6 @@ export default function MasterData() {
         <TabsContent value="disability"><DisabilityTab /></TabsContent>
         <TabsContent value="employee"><EmployeeTab /></TabsContent>
         <TabsContent value="tax"><TaxTab /></TabsContent>
-        <TabsContent value="property"><PropertyTab /></TabsContent>
       </Tabs>
     </div>
   );
