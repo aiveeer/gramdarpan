@@ -20,7 +20,8 @@ import {
   Droplets, Lightbulb, Calculator, Accessibility, Users, Settings,
   Building2, Save, X, Loader2, Landmark, Zap, Droplet, Sun,
   FileText, AlertTriangle, Percent, MoreHorizontal, Eye, ToggleLeft,
-  Compass, CalendarDays, PiggyBank, BanknoteIcon, FolderOpen, HardHat
+  Compass, CalendarDays, PiggyBank, BanknoteIcon, FolderOpen, HardHat,
+  Layers, Tag
 } from 'lucide-react';
 
 // ===== TAB COLOR DEFINITIONS =====
@@ -2283,11 +2284,78 @@ function ContractorTab() {
 }
 
 // ================================================================
+// TAB: FLOOR INFO (मजला माहिती)
+// ================================================================
+
+function FloorInfoTab() {
+  return (
+    <CrudList
+      title="मजला माहिती"
+      table="floorInfo"
+      colorKey="property"
+      icon={<Layers className="h-5 w-5" />}
+      columns={[
+        { key: 'floorNumber', label: 'मजला क्र.' },
+        { key: 'floorName', label: 'मजला नाव' },
+        { key: 'floorNameMr', label: 'मजला नाव (मराठी)' },
+        { key: 'floorIndex', label: 'क्रमांक', render: (i) => String(i.floorIndex ?? '-') },
+      ]}
+      formFields={[
+        { key: 'floorNumber', label: 'मजला क्रमांक', required: true },
+        { key: 'floorName', label: 'मजला नाव (English)', required: true },
+        { key: 'floorNameMr', label: 'मजला नाव (मराठी)', required: true },
+        { key: 'floorIndex', label: 'क्रमांक (Index)', type: 'number' },
+      ]}
+      seedOnEmpty
+    />
+  );
+}
+
+// ================================================================
+// TAB: DEMAND CATEGORY (मागणी प्रकार)
+// ================================================================
+
+function DemandCategoryTab() {
+  return (
+    <CrudList
+      title="मागणी प्रकार"
+      table="demandCategory"
+      colorKey="tax"
+      icon={<Tag className="h-5 w-5" />}
+      columns={[
+        { key: 'code', label: 'कोड' },
+        { key: 'name', label: 'नाव' },
+        { key: 'nameMr', label: 'नाव (मराठी)' },
+        { key: 'description', label: 'वर्णन', render: (i) => String(i.description || '-').slice(0, 40) },
+      ]}
+      formFields={[
+        { key: 'code', label: 'कोड', required: true },
+        { key: 'name', label: 'नाव (English)', required: true },
+        { key: 'nameMr', label: 'नाव (मराठी)', required: true },
+        { key: 'description', label: 'वर्णन', type: 'textarea', colSpan: 2 },
+      ]}
+      seedOnEmpty
+    />
+  );
+}
+
+// ================================================================
 // MAIN COMPONENT - Master Data with Colored Tabs
 // ================================================================
 
-export default function MasterData() {
-  const [activeTab, setActiveTab] = useState('village');
+interface MasterDataProps {
+  initialTab?: string;
+}
+
+export default function MasterData({ initialTab }: MasterDataProps) {
+  const [activeTab, setActiveTab] = useState(initialTab || 'village');
+  const [prevInitialTab, setPrevInitialTab] = useState(initialTab);
+
+  // When initialTab changes from parent, update the active tab
+  if (initialTab && initialTab !== prevInitialTab) {
+    setActiveTab(initialTab);
+    setPrevInitialTab(initialTab);
+  }
 
   const tabs: { value: string; colorKey: TabColorKey; label: string; icon: React.ReactNode }[] = [
     { value: 'village', colorKey: 'village', label: 'गाव माहिती', icon: <Landmark className="h-4 w-4" /> },
@@ -2307,6 +2375,8 @@ export default function MasterData() {
     { value: 'budget-head', colorKey: 'tax', label: 'बजेट शिर्ष', icon: <BanknoteIcon className="h-4 w-4" /> },
     { value: 'scheme', colorKey: 'owner', label: 'योजना', icon: <FolderOpen className="h-4 w-4" /> },
     { value: 'contractor', colorKey: 'employee', label: 'कंत्राटदार', icon: <HardHat className="h-4 w-4" /> },
+    { value: 'floorInfo', colorKey: 'property', label: 'मजला', icon: <Layers className="h-4 w-4" /> },
+    { value: 'demandCategory', colorKey: 'tax', label: 'मागणी प्रकार', icon: <Tag className="h-4 w-4" /> },
   ];
 
   return (
@@ -2355,6 +2425,8 @@ export default function MasterData() {
         <TabsContent value="budget-head"><BudgetHeadTab /></TabsContent>
         <TabsContent value="scheme"><SchemeTab /></TabsContent>
         <TabsContent value="contractor"><ContractorTab /></TabsContent>
+        <TabsContent value="floorInfo"><FloorInfoTab /></TabsContent>
+        <TabsContent value="demandCategory"><DemandCategoryTab /></TabsContent>
       </Tabs>
     </div>
   );

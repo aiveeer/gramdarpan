@@ -409,24 +409,41 @@ export default function Home() {
 
       // Master Data entries - route to the master data component with appropriate tab
       case 'master-village':
+        return <MasterData initialTab="village" />;
       case 'master-fy':
+        return <MasterData initialTab="fy" />;
       case 'master-ward':
+        return <MasterData initialTab="ward" />;
       case 'master-road':
+        return <MasterData initialTab="road" />;
       case 'master-property':
+        return <MasterData initialTab="property" />;
       case 'master-owner':
+        return <MasterData initialTab="owner" />;
       case 'master-floor':
+        return <MasterData initialTab="floorInfo" />;
       case 'master-tax':
+        return <MasterData initialTab="tax" />;
       case 'master-water-tax':
+        return <MasterData initialTab="waterSupply" />;
       case 'master-ready-reckoner':
+        return <MasterData initialTab="readyReckoner" />;
       case 'master-streetlight':
+        return <MasterData initialTab="streetLight" />;
       case 'master-health':
+        return <MasterData initialTab="drainage" />;
       case 'master-employee':
+        return <MasterData initialTab="employee" />;
       case 'master-scheme':
+        return <MasterData initialTab="scheme" />;
       case 'master-bank':
+        return <MasterData initialTab="bank" />;
       case 'master-budget':
+        return <MasterData initialTab="budget-head" />;
       case 'master-demand-type':
+        return <MasterData initialTab="demandCategory" />;
       case 'master-disability':
-        return <MasterData />;
+        return <MasterData initialTab="disability" />;
 
       // Daily Transactions - use DailyTransactions component with initial tab
       case 'txn-receipt':

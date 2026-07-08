@@ -256,18 +256,18 @@ export default function ERPDashboard({
   // ─── 2. Key Metrics Grid ─────────────────────────────────────────────
 
   const keyMetrics = [
-    { icon: Building2, label: 'मालमत्ता', labelEn: 'Properties', value: stats?.totalProperties || 0, bg: 'bg-cyan-50', iconBg: 'bg-cyan-500', valueColor: 'text-cyan-800' },
-    { icon: Users, label: 'मालक', labelEn: 'Owners', value: stats?.totalOwners || 0, bg: 'bg-purple-50', iconBg: 'bg-purple-500', valueColor: 'text-purple-800' },
-    { icon: MapPin, label: 'वार्ड', labelEn: 'Wards', value: stats?.totalWards || 0, bg: 'bg-teal-50', iconBg: 'bg-teal-500', valueColor: 'text-teal-800' },
-    { icon: HardHat, label: 'कर्मचारी', labelEn: 'Employees', value: stats?.totalEmployees || 0, bg: 'bg-amber-50', iconBg: 'bg-amber-500', valueColor: 'text-amber-800' },
-    { icon: Shield, label: 'सक्षम कर', labelEn: 'Tax Masters', value: stats?.enabledTaxMasters || 0, bg: 'bg-green-50', iconBg: 'bg-green-500', valueColor: 'text-green-800' },
-    { icon: FileText, label: 'नमुना ८', labelEn: 'Namuna 8', value: stats?.totalNamuna8 || 0, bg: 'bg-emerald-50', iconBg: 'bg-emerald-500', valueColor: 'text-emerald-800' },
-    { icon: BookOpen, label: 'नमुना ९ मागणी', labelEn: 'Namuna 9', value: stats?.totalNamuna9 || 0, bg: 'bg-orange-50', iconBg: 'bg-orange-500', valueColor: 'text-orange-800' },
-    { icon: Receipt, label: 'पावत्या/पेमेंट', labelEn: 'Receipts/Payments', value: enhanced?.totalReceiptsPayments || stats?.totalPayments || 0, bg: 'bg-rose-50', iconBg: 'bg-rose-500', valueColor: 'text-rose-800' },
-    { icon: ClipboardList, label: 'बजेट', labelEn: 'Budget', value: enhanced?.totalBudgetEntries || 0, bg: 'bg-cyan-50', iconBg: 'bg-cyan-600', valueColor: 'text-cyan-800' },
-    { icon: HardHat, label: 'विकासकामे', labelEn: 'Works', value: enhanced?.totalWorkEntries || 0, bg: 'bg-lime-50', iconBg: 'bg-lime-600', valueColor: 'text-lime-800' },
-    { icon: IndianRupee, label: 'वेतन', labelEn: 'Salary', value: enhanced?.totalSalaryEntries || 0, bg: 'bg-emerald-50', iconBg: 'bg-emerald-600', valueColor: 'text-emerald-800' },
-    { icon: Wrench, label: 'ठेकेदार', labelEn: 'Contractors', value: enhanced?.totalContractors || 0, bg: 'bg-amber-50', iconBg: 'bg-amber-600', valueColor: 'text-amber-800' },
+    { icon: Building2, label: 'मालमत्ता', labelEn: 'Properties', value: stats?.totalProperties || 0, bg: 'bg-cyan-50', iconBg: 'bg-cyan-500', valueColor: 'text-cyan-800', view: 'master-property' },
+    { icon: Users, label: 'मालक', labelEn: 'Owners', value: stats?.totalOwners || 0, bg: 'bg-purple-50', iconBg: 'bg-purple-500', valueColor: 'text-purple-800', view: 'master-owner' },
+    { icon: MapPin, label: 'वार्ड', labelEn: 'Wards', value: stats?.totalWards || 0, bg: 'bg-teal-50', iconBg: 'bg-teal-500', valueColor: 'text-teal-800', view: 'master-ward' },
+    { icon: HardHat, label: 'कर्मचारी', labelEn: 'Employees', value: stats?.totalEmployees || 0, bg: 'bg-amber-50', iconBg: 'bg-amber-500', valueColor: 'text-amber-800', view: 'master-employee' },
+    { icon: Shield, label: 'सक्षम कर', labelEn: 'Tax Masters', value: stats?.enabledTaxMasters || 0, bg: 'bg-green-50', iconBg: 'bg-green-500', valueColor: 'text-green-800', view: 'master-tax' },
+    { icon: FileText, label: 'नमुना ८', labelEn: 'Namuna 8', value: stats?.totalNamuna8 || 0, bg: 'bg-emerald-50', iconBg: 'bg-emerald-500', valueColor: 'text-emerald-800', view: 'namuna-8' },
+    { icon: BookOpen, label: 'नमुना ९ मागणी', labelEn: 'Namuna 9', value: stats?.totalNamuna9 || 0, bg: 'bg-orange-50', iconBg: 'bg-orange-500', valueColor: 'text-orange-800', view: 'namuna-9' },
+    { icon: Receipt, label: 'पावत्या/पेमेंट', labelEn: 'Receipts/Payments', value: enhanced?.totalReceiptsPayments || stats?.totalPayments || 0, bg: 'bg-rose-50', iconBg: 'bg-rose-500', valueColor: 'text-rose-800', view: 'txn-receipt' },
+    { icon: ClipboardList, label: 'बजेट', labelEn: 'Budget', value: enhanced?.totalBudgetEntries || 0, bg: 'bg-cyan-50', iconBg: 'bg-cyan-600', valueColor: 'text-cyan-800', view: 'txn-budget' },
+    { icon: HardHat, label: 'विकासकामे', labelEn: 'Works', value: enhanced?.totalWorkEntries || 0, bg: 'bg-lime-50', iconBg: 'bg-lime-600', valueColor: 'text-lime-800', view: 'txn-work' },
+    { icon: IndianRupee, label: 'वेतन', labelEn: 'Salary', value: enhanced?.totalSalaryEntries || 0, bg: 'bg-emerald-50', iconBg: 'bg-emerald-600', valueColor: 'text-emerald-800', view: 'txn-salary' },
+    { icon: Wrench, label: 'ठेकेदार', labelEn: 'Contractors', value: enhanced?.totalContractors || 0, bg: 'bg-amber-50', iconBg: 'bg-amber-600', valueColor: 'text-amber-800', view: 'master-disability' },
   ];
 
   // ─── 6. Process Flow Steps ───────────────────────────────────────────
@@ -413,14 +413,14 @@ export default function ERPDashboard({
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-12 gap-3">
             {keyMetrics.map((item, i) => (
-              <div key={i} className={`${item.bg} rounded-xl p-3 text-center border border-opacity-50`}>
+              <button key={i} onClick={() => setActiveView(item.view)} className={`${item.bg} rounded-xl p-3 text-center border border-opacity-50 cursor-pointer hover:shadow-md hover:scale-105 transition-all duration-200`}>
                 <div className={`h-9 w-9 rounded-lg ${item.iconBg} flex items-center justify-center mx-auto mb-2 shadow-sm`}>
                   <item.icon className="h-5 w-5 text-white" />
                 </div>
                 <div className={`text-2xl font-bold ${item.valueColor}`}>{item.value}</div>
                 <div className="text-xs text-muted-foreground mt-0.5 font-medium">{item.label}</div>
                 <div className="text-[10px] text-muted-foreground/60">{item.labelEn}</div>
-              </div>
+              </button>
             ))}
           </div>
         </CardContent>
