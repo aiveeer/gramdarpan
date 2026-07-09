@@ -1,6 +1,5 @@
 import { db } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 
 // Simple hash function for passwords (in production, use bcrypt)
 function simpleHash(str: string): string {
@@ -12,6 +11,14 @@ function simpleHash(str: string): string {
   }
   return Math.abs(hash).toString(36);
 }
+
+const COOKIE_OPTS = {
+  httpOnly: true,
+  secure: false,
+  sameSite: 'lax' as const,
+  maxAge: 60 * 60 * 24, // 24 hours
+  path: '/',
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -68,27 +75,6 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Set cookie
-    const cookieStore = await cookies();
-    cookieStore.set('session_user_id', user.id, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24, // 24 hours
-    });
-    cookieStore.set('session_user_role', user.role, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24,
-    });
-    cookieStore.set('session_id', session.id, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24,
-    });
-
     // Log audit
     await db.auditLog.create({
       data: {
@@ -99,7 +85,8 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({
+    // Set cookies via NextResponse (compatible with Next.js 16)
+    const response = NextResponse.json({
       id: user.id,
       username: user.username,
       name: user.name,
@@ -107,6 +94,12 @@ export async function POST(request: NextRequest) {
       role: user.role,
       sessionId: session.id,
     });
+
+    response.cookies.set('session_user_id', user.id, COOKIE_OPTS);
+    response.cookies.set('session_user_role', user.role, COOKIE_OPTS);
+    response.cookies.set('session_id', session.id, COOKIE_OPTS);
+
+    return response;
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json({ error: 'Login failed' }, { status: 500 });

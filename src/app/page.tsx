@@ -120,6 +120,8 @@ import {
   FileLock2,
   ScrollText,
   Gauge,
+  TreePine,
+  Compass,
 } from 'lucide-react';
 
 import MasterData from '@/components/master-data';
@@ -205,6 +207,11 @@ const masterEntryItems: NavItem[] = [
   { id: 'master-budget', label: 'बजेट शिर्ष', labelEn: 'Budget Heads', icon: BanknoteIcon },
   { id: 'master-demand-type', label: 'मागणी प्रकार', labelEn: 'Demand Categories', icon: Tag },
   { id: 'master-disability', label: 'अपंगत्व नोंदणी', labelEn: 'Disability Register', icon: Accessibility },
+  { id: 'master-namuna13', label: 'नमुना १३ - कर्मचारी वर्ग', labelEn: 'Namuna 13 Employee Category', icon: UserCog },
+  { id: 'master-namuna22', label: 'नमुना २२ - स्थावर मालमत्ता', labelEn: 'Namuna 22 Immovable Property', icon: Building2 },
+  { id: 'master-namuna23', label: 'नमुना २३ - रस्ता नोंदवही', labelEn: 'Namuna 23 Road Register', icon: Route },
+  { id: 'master-namuna24', label: 'नमुना २४ - जमीन नोंदवही', labelEn: 'Namuna 24 Land Register', icon: Compass },
+  { id: 'master-namuna33', label: 'नमुना ३३ - वृक्ष नोंदवही', labelEn: 'Namuna 33 Tree Register', icon: TreePine },
 ];
 
 const dailyTransactionItems: NavItem[] = [
@@ -484,6 +491,16 @@ export default function Home() {
         return <MasterData initialTab="disability" />;
       case 'master-contractor':
         return <MasterData initialTab="contractor" />;
+      case 'master-namuna13':
+        return <MasterData initialTab="namuna13" />;
+      case 'master-namuna22':
+        return <MasterData initialTab="namuna22" />;
+      case 'master-namuna23':
+        return <MasterData initialTab="namuna23" />;
+      case 'master-namuna24':
+        return <MasterData initialTab="namuna24" />;
+      case 'master-namuna33':
+        return <MasterData initialTab="namuna33" />;
 
       // Daily Transactions - use DailyTransactions component with initial tab
       case 'txn-receipt':

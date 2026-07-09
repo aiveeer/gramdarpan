@@ -21,7 +21,7 @@ import {
   Building2, Save, X, Loader2, Landmark, Zap, Droplet, Sun,
   FileText, AlertTriangle, Percent, MoreHorizontal, Eye, ToggleLeft,
   Compass, CalendarDays, PiggyBank, BanknoteIcon, FolderOpen, HardHat,
-  Layers, Tag
+  Layers, Tag, TreePine
 } from 'lucide-react';
 
 // ===== TAB COLOR DEFINITIONS =====
@@ -2346,6 +2346,454 @@ function DemandCategoryTab() {
 }
 
 // ================================================================
+// TAB: NAMUNA 13 - कर्मचारी वर्ग सूची (Employee Category List)
+// ================================================================
+
+function Namuna13Tab() {
+  const [wards, setWards] = useState<Record<string, unknown>[]>([]);
+
+  useEffect(() => {
+    apiGet('ward').then((d) => setWards(Array.isArray(d) ? d : [])).catch(() => {});
+  }, []);
+
+  return (
+    <CrudList
+      title="नमुना १३ - कर्मचारी वर्ग सूची"
+      table="namuna13"
+      colorKey="namuna13"
+      icon={<Users className="h-5 w-5" />}
+      columns={[
+        { key: 'serialNo', label: 'अ.क्र.', render: (i) => String(i.serialNo ?? '-') },
+        { key: 'designation', label: 'पदनाम' },
+        { key: 'designationMr', label: 'पदनाम (मराठी)' },
+        { key: 'sanctionedPosts', label: 'मंजुर पदे', render: (i) => String(i.sanctionedPosts ?? '-') },
+        { key: 'employmentType', label: 'पूर्णवेळ/अर्धवेळ', render: (i) => {
+          const typeMap: Record<string, string> = { 'Full-Time': 'पूर्णवेळ', 'Part-Time': 'अर्धवेळ', 'Contract': 'कंत्राट', 'Daily-Wage': 'दैनंदिन' };
+          return typeMap[String(i.employmentType)] || String(i.employmentType ?? '-');
+        }},
+        { key: 'employeeName', label: 'नियुक्त कर्मचारी', render: (i) => String(i.employeeName || '-') },
+        { key: 'status', label: 'स्थिती', render: (i) => {
+          const statusMap: Record<string, { label: string; cls: string }> = {
+            Active: { label: 'सक्रिय', cls: 'bg-green-100 text-green-800' },
+            Inactive: { label: 'निष्क्रिय', cls: 'bg-red-100 text-red-800' },
+            Vacant: { label: 'रिक्त', cls: 'bg-amber-100 text-amber-800' },
+          };
+          const s = statusMap[String(i.status)] || { label: String(i.status ?? '-'), cls: 'bg-gray-100 text-gray-800' };
+          return <Badge className={`${s.cls} border-0`}>{s.label}</Badge>;
+        }},
+      ]}
+      formFields={[
+        { key: 'serialNo', label: 'अनुक्रमांक', type: 'number', required: true },
+        { key: 'designation', label: 'पदनाम (English)', required: true },
+        { key: 'designationMr', label: 'पदनाम (मराठी)' },
+        { key: 'sanctionedPosts', label: 'मंजुर पदे', type: 'number', required: true },
+        { key: 'orderNumber', label: 'आदेश क्रमांक' },
+        { key: 'orderDate', label: 'आदेश दिनांक', placeholder: 'उदा. 2024-01-15' },
+        { key: 'employmentType', label: 'नोकरी प्रकार', type: 'select', options: [
+          { value: 'Full-Time', label: 'पूर्णवेळ (Full-Time)' },
+          { value: 'Part-Time', label: 'अर्धवेळ (Part-Time)' },
+          { value: 'Contract', label: 'कंत्राट (Contract)' },
+          { value: 'Daily-Wage', label: 'दैनंदिन वेतन (Daily-Wage)' },
+        ]},
+        { key: 'payScale', label: 'वेतनश्रेणी' },
+        { key: 'employeeName', label: 'नियुक्त कर्मचारी नाव (English)' },
+        { key: 'employeeNameMr', label: 'नियुक्त कर्मचारी नाव (मराठी)' },
+        { key: 'appointmentDate', label: 'नियुक्ती दिनांक', placeholder: 'उदा. 2024-01-15' },
+        { key: 'sarpanchSignature', label: 'सरपंच सही', type: 'checkbox', placeholder: 'सरपंच सही आहे' },
+        { key: 'secretarySignature', label: 'सचिव सही', type: 'checkbox', placeholder: 'सचिव सही आहे' },
+        { key: 'status', label: 'स्थिती', type: 'select', options: [
+          { value: 'Active', label: 'सक्रिय' },
+          { value: 'Inactive', label: 'निष्क्रिय' },
+          { value: 'Vacant', label: 'रिक्त' },
+        ]},
+        { key: 'financialYear', label: 'वित्तीय वर्ष' },
+        { key: 'remarks', label: 'शेरा', type: 'textarea', colSpan: 2 },
+      ]}
+      defaultFormData={{ serialNo: 0, sanctionedPosts: 0, employmentType: 'Full-Time', status: 'Active', sarpanchSignature: false, secretarySignature: false }}
+      renderExtraForm={(formData, setFormData) => (
+        <div className="space-y-1">
+          <Label className="text-sm">वार्ड</Label>
+          <Select
+            value={String(formData.wardId || '')}
+            onValueChange={(v) => setFormData({ ...formData, wardId: v === '__none__' ? null : v })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="वार्ड निवडा" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">कोणताही नाही</SelectItem>
+              {wards.map((w: Record<string, unknown>) => (
+                <SelectItem key={String(w.id)} value={String(w.id)}>
+                  {String(w.wardNumber)} - {String(w.wardNameMr || w.wardName)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+    />
+  );
+}
+
+// ================================================================
+// TAB: NAMUNA 22 - स्थावर मालमत्ता नोंदवही (Fixed Asset Register)
+// ================================================================
+
+function Namuna22Tab() {
+  const [wards, setWards] = useState<Record<string, unknown>[]>([]);
+
+  useEffect(() => {
+    apiGet('ward').then((d) => setWards(Array.isArray(d) ? d : [])).catch(() => {});
+  }, []);
+
+  return (
+    <CrudList
+      title="नमुना २२ - स्थावर मालमत्ता नोंदवही"
+      table="namuna22"
+      colorKey="namuna22"
+      icon={<Building2 className="h-5 w-5" />}
+      columns={[
+        { key: 'serialNo', label: 'अ.क्र.', render: (i) => String(i.serialNo ?? '-') },
+        { key: 'assetType', label: 'मालमत्ता प्रकार', render: (i) => {
+          const typeMap: Record<string, string> = { Building: 'इमारत', Dam: 'बंधारा', Well: 'विहीर', Other: 'इतर' };
+          return typeMap[String(i.assetType)] || String(i.assetType ?? '-');
+        }},
+        { key: 'description', label: 'वर्णन' },
+        { key: 'constructionCost', label: 'बांधणी खर्च', render: (i) => i.constructionCost ? `₹${Number(i.constructionCost).toLocaleString('mr-IN')}` : '-' },
+        { key: 'currentValue', label: 'सध्याची किंमत', render: (i) => i.currentValue ? `₹${Number(i.currentValue).toLocaleString('mr-IN')}` : '-' },
+        { key: 'location', label: 'ठिकाण' },
+        { key: 'status', label: 'स्थिती', render: (i) => {
+          const statusMap: Record<string, { label: string; cls: string }> = {
+            Active: { label: 'सक्रिय', cls: 'bg-green-100 text-green-800' },
+            Inactive: { label: 'निष्क्रिय', cls: 'bg-red-100 text-red-800' },
+            'Under Repair': { label: 'दुरुस्तीत', cls: 'bg-amber-100 text-amber-800' },
+          };
+          const s = statusMap[String(i.status)] || { label: String(i.status ?? '-'), cls: 'bg-gray-100 text-gray-800' };
+          return <Badge className={`${s.cls} border-0`}>{s.label}</Badge>;
+        }},
+      ]}
+      formFields={[
+        { key: 'serialNo', label: 'अनुक्रमांक', type: 'number', required: true },
+        { key: 'assetType', label: 'मालमत्ता प्रकार', type: 'select', required: true, options: [
+          { value: 'Building', label: 'इमारत (Building)' },
+          { value: 'Dam', label: 'बंधारा (Dam)' },
+          { value: 'Well', label: 'विहीर (Well)' },
+          { value: 'Other', label: 'इतर (Other)' },
+        ]},
+        { key: 'groupName', label: 'गट नाव' },
+        { key: 'description', label: 'वर्णन (English)' },
+        { key: 'descriptionMr', label: 'वर्णन (मराठी)' },
+        { key: 'acquisitionDate', label: 'अधिग्रहण दिनांक', placeholder: 'उदा. 2024-01-15' },
+        { key: 'acquisitionOrder', label: 'अधिग्रहण आदेश क्र.' },
+        { key: 'constructionCost', label: 'बांधणी खर्च (₹)', type: 'number' },
+        { key: 'repairCost', label: 'दुरुस्ती खर्च (₹)', type: 'number' },
+        { key: 'currentValue', label: 'सध्याची किंमत (₹)', type: 'number' },
+        { key: 'location', label: 'ठिकाण (English)' },
+        { key: 'locationMr', label: 'ठिकाण (मराठी)' },
+        { key: 'status', label: 'स्थिती', type: 'select', options: [
+          { value: 'Active', label: 'सक्रिय' },
+          { value: 'Inactive', label: 'निष्क्रिय' },
+          { value: 'Under Repair', label: 'दुरुस्तीत' },
+        ]},
+        { key: 'financialYear', label: 'वित्तीय वर्ष' },
+        { key: 'remarks', label: 'शेरा', type: 'textarea', colSpan: 2 },
+      ]}
+      defaultFormData={{ serialNo: 0, assetType: 'Building', constructionCost: 0, repairCost: 0, currentValue: 0, status: 'Active' }}
+      renderExtraForm={(formData, setFormData) => (
+        <div className="space-y-1">
+          <Label className="text-sm">वार्ड</Label>
+          <Select
+            value={String(formData.wardId || '')}
+            onValueChange={(v) => setFormData({ ...formData, wardId: v === '__none__' ? null : v })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="वार्ड निवडा" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">कोणताही नाही</SelectItem>
+              {wards.map((w: Record<string, unknown>) => (
+                <SelectItem key={String(w.id)} value={String(w.id)}>
+                  {String(w.wardNumber)} - {String(w.wardNameMr || w.wardName)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+    />
+  );
+}
+
+// ================================================================
+// TAB: NAMUNA 23 - ताब्यातील रस्त्यांची नोंदवही (Road Register)
+// ================================================================
+
+function Namuna23Tab() {
+  const [wards, setWards] = useState<Record<string, unknown>[]>([]);
+
+  useEffect(() => {
+    apiGet('ward').then((d) => setWards(Array.isArray(d) ? d : [])).catch(() => {});
+  }, []);
+
+  return (
+    <CrudList
+      title="नमुना २३ - ताब्यातील रस्त्यांची नोंदवही"
+      table="namuna23"
+      colorKey="namuna23"
+      icon={<Route className="h-5 w-5" />}
+      columns={[
+        { key: 'serialNo', label: 'अ.क्र.', render: (i) => String(i.serialNo ?? '-') },
+        { key: 'roadName', label: 'रस्ता नाव' },
+        { key: 'roadNameMr', label: 'रस्ता नाव (मराठी)' },
+        { key: 'roadLength', label: 'लांबी (मी.)', render: (i) => i.roadLength ? `${Number(i.roadLength).toLocaleString('mr-IN')} मी.` : '-' },
+        { key: 'roadWidth', label: 'रुंदी (मी.)', render: (i) => i.roadWidth ? `${Number(i.roadWidth).toLocaleString('mr-IN')} मी.` : '-' },
+        { key: 'roadType', label: 'रस्ता प्रकार', render: (i) => {
+          const typeMap: Record<string, string> = { Kaccha: 'कच्चा', Pucca: 'पक्का', Cement: 'सिमेंट' };
+          return typeMap[String(i.roadType)] || String(i.roadType ?? '-');
+        }},
+        { key: 'fromLocation', label: 'सुरुवात' },
+        { key: 'toLocation', label: 'शेवट' },
+        { key: 'status', label: 'स्थिती', render: (i) => {
+          const statusMap: Record<string, { label: string; cls: string }> = {
+            Active: { label: 'सक्रिय', cls: 'bg-green-100 text-green-800' },
+            Inactive: { label: 'निष्क्रिय', cls: 'bg-red-100 text-red-800' },
+            'Under Repair': { label: 'दुरुस्तीत', cls: 'bg-amber-100 text-amber-800' },
+          };
+          const s = statusMap[String(i.status)] || { label: String(i.status ?? '-'), cls: 'bg-gray-100 text-gray-800' };
+          return <Badge className={`${s.cls} border-0`}>{s.label}</Badge>;
+        }},
+      ]}
+      formFields={[
+        { key: 'serialNo', label: 'अनुक्रमांक', type: 'number', required: true },
+        { key: 'roadName', label: 'रस्ता नाव (English)', required: true },
+        { key: 'roadNameMr', label: 'रस्ता नाव (मराठी)', required: true },
+        { key: 'roadLength', label: 'लांबी (मीटर)', type: 'number' },
+        { key: 'roadWidth', label: 'रुंदी (मीटर)', type: 'number' },
+        { key: 'roadType', label: 'रस्ता प्रकार', type: 'select', options: [
+          { value: 'Kaccha', label: 'कच्चा (Kaccha)' },
+          { value: 'Pucca', label: 'पक्का (Pucca)' },
+          { value: 'Cement', label: 'सिमेंट (Cement)' },
+        ]},
+        { key: 'constructionYear', label: 'बांधणी वर्ष' },
+        { key: 'fromLocation', label: 'सुरुवात ठिकाण' },
+        { key: 'toLocation', label: 'शेवटचे ठिकाण' },
+        { key: 'status', label: 'स्थिती', type: 'select', options: [
+          { value: 'Active', label: 'सक्रिय' },
+          { value: 'Inactive', label: 'निष्क्रिय' },
+          { value: 'Under Repair', label: 'दुरुस्तीत' },
+        ]},
+        { key: 'financialYear', label: 'वित्तीय वर्ष' },
+        { key: 'remarks', label: 'शेरा', type: 'textarea', colSpan: 2 },
+      ]}
+      defaultFormData={{ serialNo: 0, roadLength: 0, roadWidth: 0, roadType: 'Kaccha', status: 'Active' }}
+      renderExtraForm={(formData, setFormData) => (
+        <div className="space-y-1">
+          <Label className="text-sm">वार्ड</Label>
+          <Select
+            value={String(formData.wardId || '')}
+            onValueChange={(v) => setFormData({ ...formData, wardId: v === '__none__' ? null : v })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="वार्ड निवडा" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">कोणताही नाही</SelectItem>
+              {wards.map((w: Record<string, unknown>) => (
+                <SelectItem key={String(w.id)} value={String(w.id)}>
+                  {String(w.wardNumber)} - {String(w.wardNameMr || w.wardName)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+    />
+  );
+}
+
+// ================================================================
+// TAB: NAMUNA 24 - जमिनीची नोंदवही (Land Register)
+// ================================================================
+
+function Namuna24Tab() {
+  const [wards, setWards] = useState<Record<string, unknown>[]>([]);
+
+  useEffect(() => {
+    apiGet('ward').then((d) => setWards(Array.isArray(d) ? d : [])).catch(() => {});
+  }, []);
+
+  return (
+    <CrudList
+      title="नमुना २४ - जमिनीची नोंदवही"
+      table="namuna24"
+      colorKey="namuna24"
+      icon={<Compass className="h-5 w-5" />}
+      columns={[
+        { key: 'serialNo', label: 'अ.क्र.', render: (i) => String(i.serialNo ?? '-') },
+        { key: 'groupName', label: 'गट नाव' },
+        { key: 'landType', label: 'जमीन प्रकार', render: (i) => {
+          const typeMap: Record<string, string> = { Open: 'मोकळी', Gairan: 'गायरान', Farm: 'शेतजमीन', Other: 'इतर' };
+          return typeMap[String(i.landType)] || String(i.landType ?? '-');
+        }},
+        { key: 'areaHectares', label: 'क्षेत्रफळ (हेक्टर)', render: (i) => i.areaHectares ? `${Number(i.areaHectares).toLocaleString('mr-IN')} हे.` : '-' },
+        { key: 'areaSqMeters', label: 'क्षेत्रफळ (चौ.मी.)', render: (i) => i.areaSqMeters ? `${Number(i.areaSqMeters).toLocaleString('mr-IN')} चौ.मी.` : '-' },
+        { key: 'currentUse', label: 'सध्याचा वापर' },
+        { key: 'status', label: 'स्थिती', render: (i) => {
+          const statusMap: Record<string, { label: string; cls: string }> = {
+            Active: { label: 'सक्रिय', cls: 'bg-green-100 text-green-800' },
+            Inactive: { label: 'निष्क्रिय', cls: 'bg-red-100 text-red-800' },
+            Leased: { label: 'लीज', cls: 'bg-blue-100 text-blue-800' },
+          };
+          const s = statusMap[String(i.status)] || { label: String(i.status ?? '-'), cls: 'bg-gray-100 text-gray-800' };
+          return <Badge className={`${s.cls} border-0`}>{s.label}</Badge>;
+        }},
+      ]}
+      formFields={[
+        { key: 'serialNo', label: 'अनुक्रमांक', type: 'number', required: true },
+        { key: 'groupName', label: 'गट नाव' },
+        { key: 'landType', label: 'जमीन प्रकार', type: 'select', options: [
+          { value: 'Open', label: 'मोकळी (Open)' },
+          { value: 'Gairan', label: 'गायरान (Gairan)' },
+          { value: 'Farm', label: 'शेतजमीन (Farm)' },
+          { value: 'Other', label: 'इतर (Other)' },
+        ]},
+        { key: 'areaHectares', label: 'क्षेत्रफळ (हेक्टर)', type: 'number' },
+        { key: 'areaSqMeters', label: 'क्षेत्रफळ (चौ.मी.)', type: 'number' },
+        { key: 'acquisitionDate', label: 'अधिग्रहण दिनांक', placeholder: 'उदा. 2024-01-15' },
+        { key: 'acquisitionOrder', label: 'अधिग्रहण आदेश क्र.' },
+        { key: 'boundaryEast', label: 'पूर्व सीमा' },
+        { key: 'boundaryWest', label: 'पश्चिम सीमा' },
+        { key: 'boundaryNorth', label: 'उत्तर सीमा' },
+        { key: 'boundarySouth', label: 'दक्षिण सीमा' },
+        { key: 'currentUse', label: 'सध्याचा वापर' },
+        { key: 'leaseInfo', label: 'लीज माहिती' },
+        { key: 'status', label: 'स्थिती', type: 'select', options: [
+          { value: 'Active', label: 'सक्रिय' },
+          { value: 'Inactive', label: 'निष्क्रिय' },
+          { value: 'Leased', label: 'लीज' },
+        ]},
+        { key: 'financialYear', label: 'वित्तीय वर्ष' },
+        { key: 'remarks', label: 'शेरा', type: 'textarea', colSpan: 2 },
+      ]}
+      defaultFormData={{ serialNo: 0, areaHectares: 0, areaSqMeters: 0, landType: 'Open', status: 'Active' }}
+      renderExtraForm={(formData, setFormData) => (
+        <div className="space-y-1">
+          <Label className="text-sm">वार्ड</Label>
+          <Select
+            value={String(formData.wardId || '')}
+            onValueChange={(v) => setFormData({ ...formData, wardId: v === '__none__' ? null : v })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="वार्ड निवडा" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">कोणताही नाही</SelectItem>
+              {wards.map((w: Record<string, unknown>) => (
+                <SelectItem key={String(w.id)} value={String(w.id)}>
+                  {String(w.wardNumber)} - {String(w.wardNameMr || w.wardName)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+    />
+  );
+}
+
+// ================================================================
+// TAB: NAMUNA 33 - वृक्ष नोंदवही (Tree Register)
+// ================================================================
+
+function Namuna33Tab() {
+  const [wards, setWards] = useState<Record<string, unknown>[]>([]);
+
+  useEffect(() => {
+    apiGet('ward').then((d) => setWards(Array.isArray(d) ? d : [])).catch(() => {});
+  }, []);
+
+  return (
+    <CrudList
+      title="नमुना ३३ - वृक्ष नोंदवही"
+      table="namuna33"
+      colorKey="namuna33"
+      icon={<TreePine className="h-5 w-5" />}
+      columns={[
+        { key: 'serialNo', label: 'अ.क्र.', render: (i) => String(i.serialNo ?? '-') },
+        { key: 'treeType', label: 'वृक्ष प्रकार' },
+        { key: 'treeTypeMr', label: 'वृक्ष प्रकार (मराठी)' },
+        { key: 'location', label: 'ठिकाण' },
+        { key: 'roadName', label: 'रस्ता नाव' },
+        { key: 'plantYear', label: 'लावणी वर्ष' },
+        { key: 'height', label: 'उंची (मी.)', render: (i) => i.height ? `${Number(i.height).toLocaleString('mr-IN')} मी.` : '-' },
+        { key: 'girth', label: 'घेर (सेमी.)', render: (i) => i.girth ? `${Number(i.girth).toLocaleString('mr-IN')} सेमी.` : '-' },
+        { key: 'condition', label: 'स्थिती', render: (i) => {
+          const condMap: Record<string, { label: string; cls: string }> = {
+            Healthy: { label: 'निरोगी', cls: 'bg-green-100 text-green-800' },
+            Damaged: { label: 'खराब', cls: 'bg-amber-100 text-amber-800' },
+            Dead: { label: 'मृत', cls: 'bg-red-100 text-red-800' },
+          };
+          const c = condMap[String(i.condition)] || { label: String(i.condition ?? '-'), cls: 'bg-gray-100 text-gray-800' };
+          return <Badge className={`${c.cls} border-0`}>{c.label}</Badge>;
+        }},
+        { key: 'ownership', label: 'मालकी', render: (i) => {
+          const ownMap: Record<string, string> = { GP: 'ग्रामपंचायत', Private: 'खाजगी', Government: 'सरकार' };
+          return ownMap[String(i.ownership)] || String(i.ownership ?? '-');
+        }},
+        { key: 'estimatedValue', label: 'अंदाजे किंमत', render: (i) => i.estimatedValue ? `₹${Number(i.estimatedValue).toLocaleString('mr-IN')}` : '-' },
+      ]}
+      formFields={[
+        { key: 'serialNo', label: 'अनुक्रमांक', type: 'number', required: true },
+        { key: 'treeType', label: 'वृक्ष प्रकार (English)', required: true },
+        { key: 'treeTypeMr', label: 'वृक्ष प्रकार (मराठी)' },
+        { key: 'location', label: 'ठिकाण (English)' },
+        { key: 'locationMr', label: 'ठिकाण (मराठी)' },
+        { key: 'roadName', label: 'रस्ता नाव (English)' },
+        { key: 'roadNameMr', label: 'रस्ता नाव (मराठी)' },
+        { key: 'plantYear', label: 'लावणी वर्ष' },
+        { key: 'height', label: 'उंची (मीटर)', type: 'number' },
+        { key: 'girth', label: 'घेर (सेंटीमीटर)', type: 'number' },
+        { key: 'condition', label: 'वृक्ष स्थिती', type: 'select', options: [
+          { value: 'Healthy', label: 'निरोगी (Healthy)' },
+          { value: 'Damaged', label: 'खराब (Damaged)' },
+          { value: 'Dead', label: 'मृत (Dead)' },
+        ]},
+        { key: 'ownership', label: 'मालकी', type: 'select', options: [
+          { value: 'GP', label: 'ग्रामपंचायत (GP)' },
+          { value: 'Private', label: 'खाजगी (Private)' },
+          { value: 'Government', label: 'सरकार (Government)' },
+        ]},
+        { key: 'estimatedValue', label: 'अंदाजे किंमत (₹)', type: 'number' },
+        { key: 'remarks', label: 'शेरा', type: 'textarea', colSpan: 2 },
+        { key: 'financialYear', label: 'वित्तीय वर्ष' },
+      ]}
+      defaultFormData={{ serialNo: 0, height: 0, girth: 0, condition: 'Healthy', ownership: 'GP', estimatedValue: 0 }}
+      renderExtraForm={(formData, setFormData) => (
+        <div className="space-y-1">
+          <Label className="text-sm">वार्ड</Label>
+          <Select
+            value={String(formData.wardId || '')}
+            onValueChange={(v) => setFormData({ ...formData, wardId: v === '__none__' ? null : v })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="वार्ड निवडा" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">कोणताही नाही</SelectItem>
+              {wards.map((w: Record<string, unknown>) => (
+                <SelectItem key={String(w.id)} value={String(w.id)}>
+                  {String(w.wardNumber)} - {String(w.wardNameMr || w.wardName)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+    />
+  );
+}
+
+// ================================================================
 // MAIN COMPONENT - Master Data with Colored Tabs
 // ================================================================
 
@@ -2383,6 +2831,11 @@ export default function MasterData({ initialTab }: MasterDataProps) {
     { value: 'contractor', colorKey: 'employee', label: 'कंत्राटदार', icon: <HardHat className="h-4 w-4" /> },
     { value: 'floorInfo', colorKey: 'property', label: 'मजला', icon: <Layers className="h-4 w-4" /> },
     { value: 'demandCategory', colorKey: 'tax', label: 'मागणी प्रकार', icon: <Tag className="h-4 w-4" /> },
+    { value: 'namuna13', colorKey: 'namuna13', label: 'नमुना १३', icon: <Users className="h-4 w-4" /> },
+    { value: 'namuna22', colorKey: 'namuna22', label: 'नमुना २२', icon: <Building2 className="h-4 w-4" /> },
+    { value: 'namuna23', colorKey: 'namuna23', label: 'नमुना २३', icon: <Route className="h-4 w-4" /> },
+    { value: 'namuna24', colorKey: 'namuna24', label: 'नमुना २४', icon: <Compass className="h-4 w-4" /> },
+    { value: 'namuna33', colorKey: 'namuna33', label: 'नमुना ३३', icon: <TreePine className="h-4 w-4" /> },
   ];
 
   return (
@@ -2433,6 +2886,11 @@ export default function MasterData({ initialTab }: MasterDataProps) {
         <TabsContent value="contractor"><ContractorTab /></TabsContent>
         <TabsContent value="floorInfo"><FloorInfoTab /></TabsContent>
         <TabsContent value="demandCategory"><DemandCategoryTab /></TabsContent>
+        <TabsContent value="namuna13"><Namuna13Tab /></TabsContent>
+        <TabsContent value="namuna22"><Namuna22Tab /></TabsContent>
+        <TabsContent value="namuna23"><Namuna23Tab /></TabsContent>
+        <TabsContent value="namuna24"><Namuna24Tab /></TabsContent>
+        <TabsContent value="namuna33"><Namuna33Tab /></TabsContent>
       </Tabs>
     </div>
   );
