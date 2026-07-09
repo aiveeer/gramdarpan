@@ -1,0 +1,949 @@
+     1→'use client';
+     2→
+     3→import React, { useState, useEffect, useCallback } from 'react';
+     4→import {
+     5→  Sidebar,
+     6→  SidebarContent,
+     7→  SidebarFooter,
+     8→  SidebarGroup,
+     9→  SidebarGroupContent,
+    10→  SidebarGroupLabel,
+    11→  SidebarHeader,
+    12→  SidebarInset,
+    13→  SidebarMenu,
+    14→  SidebarMenuButton,
+    15→  SidebarMenuItem,
+    16→  SidebarMenuSub,
+    17→  SidebarMenuSubButton,
+    18→  SidebarMenuSubItem,
+    19→  SidebarProvider,
+    20→  SidebarRail,
+    21→  SidebarTrigger,
+    22→  SidebarSeparator,
+    23→} from '@/components/ui/sidebar';
+    24→import {
+    25→  Collapsible,
+    26→  CollapsibleContent,
+    27→  CollapsibleTrigger,
+    28→} from '@/components/ui/collapsible';
+    29→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+    30→import { Badge } from '@/components/ui/badge';
+    31→import { Separator } from '@/components/ui/separator';
+    32→import { Button } from '@/components/ui/button';
+    33→import {
+    34→  Select,
+    35→  SelectContent,
+    36→  SelectItem,
+    37→  SelectTrigger,
+    38→  SelectValue,
+    39→} from '@/components/ui/select';
+    40→import {
+    41→  Table,
+    42→  TableBody,
+    43→  TableCell,
+    44→  TableHead,
+    45→  TableHeader,
+    46→  TableRow,
+    47→} from '@/components/ui/table';
+    48→import {
+    49→  Tooltip,
+    50→  TooltipContent,
+    51→  TooltipProvider,
+    52→  TooltipTrigger,
+    53→} from '@/components/ui/tooltip';
+    54→
+    55→import {
+    56→  LayoutDashboard,
+    57→  Database,
+    58→  BookOpen,
+    59→  FileText,
+    60→  Receipt,
+    61→  ClipboardList,
+    62→  Search,
+    63→  LogIn,
+    64→  Activity,
+    65→  ChevronRight,
+    66→  Building2,
+    67→  MapPin,
+    68→  Users,
+    69→  Route,
+    70→  Droplets,
+    71→  Lightbulb,
+    72→  HeartPulse,
+    73→  UserCog,
+    74→  Landmark,
+    75→  IndianRupee,
+    76→  TrendingUp,
+    77→  TrendingDown,
+    78→  Shield,
+    79→  Clock,
+    80→  LogOut,
+    81→  CheckCircle2,
+    82→  ArrowRight,
+    83→  Wrench,
+    84→  BarChart3,
+    85→  HandCoins,
+    86→  Wallet,
+    87→  NotebookPen,
+    88→  Calculator,
+    89→  DropletsIcon,
+    90→  Warehouse,
+    91→  Package,
+    92→  Banknote,
+    93→  BookOpenCheck,
+    94→  BanknoteIcon,
+    95→  FileSpreadsheet,
+    96→  FolderOpen,
+    97→  Flag,
+    98→  CalendarDays,
+    99→  HomeIcon,
+   100→  Layers,
+   101→  UserCircle,
+   102→  Ruler,
+   103→  Percent,
+   104→  Pill,
+   105→  HardHat,
+   106→  PiggyBank,
+   107→  Tag,
+   108→  Accessibility,
+   109→  CircleDollarSign,
+   110→  CreditCard,
+   111→  BookCopy,
+   112→  ReceiptText,
+   113→  ListChecks,
+   114→  PackageCheck,
+   115→  FolderArchive,
+   116→  HandCoinsIcon,
+   117→  FileCheck2,
+   118→  FileBadge,
+   119→  FileBarChart,
+   120→  FileLock2,
+   121→  ScrollText,
+   122→  Gauge,
+   123→} from 'lucide-react';
+   124→
+   125→import MasterData from '@/components/master-data';
+   126→import Namuna8Component from '@/components/namuna8';
+   127→import Namuna9Component from '@/components/namuna9';
+   128→import Namuna9KaComponent from '@/components/namuna9ka';
+   129→import Namuna1Component from '@/components/namuna1';
+   130→import LoginForm from '@/components/login-form';
+   131→import AuthLogs from '@/components/auth-logs';
+   132→import GlobalSearch from '@/components/global-search';
+   133→import ExcelImportExport from '@/components/excel-import-export';
+   134→import DailyTransactions from '@/components/daily-transactions';
+   135→import AutoRegisters from '@/components/auto-registers';
+   136→import NamunaReports from '@/components/namuna-reports';
+   137→import ERPDashboard from '@/components/erp-dashboard';
+   138→
+   139→// ─── Types ───────────────────────────────────────────────────────────────────
+   140→
+   141→interface DashboardStats {
+   142→  totalProperties: number;
+   143→  totalTaxMasters: number;
+   144→  enabledTaxMasters: number;
+   145→  totalNamuna8: number;
+   146→  totalNamuna9: number;
+   147→  totalPayments: number;
+   148→  totalWards: number;
+   149→  totalOwners: number;
+   150→  totalRoads: number;
+   151→  totalEmployees: number;
+   152→  totalDemand: number;
+   153→  totalPaid: number;
+   154→  outstandingBalance: number;
+   155→}
+   156→
+   157→interface SessionLog {
+   158→  id: string;
+   159→  loginAt: string;
+   160→  logoutAt: string | null;
+   161→  action: string;
+   162→  user: {
+   163→    username: string;
+   164→    name: string;
+   165→    nameMarathi: string;
+   166→    role: string;
+   167→  };
+   168→}
+   169→
+   170→// ─── Navigation Data ─────────────────────────────────────────────────────────
+   171→
+   172→type NavItem = {
+   173→  id: string;
+   174→  label: string;
+   175→  labelEn: string;
+   176→  icon: React.ElementType;
+   177→  color?: string;
+   178→};
+   179→
+   180→type NavGroup = {
+   181→  id: string;
+   182→  label: string;
+   183→  labelEn: string;
+   184→  icon: React.ElementType;
+   185→  color: string;
+   186→  items: NavItem[];
+   187→};
+   188→
+   189→const masterEntryItems: NavItem[] = [
+   190→  { id: 'master-village', label: 'ग्रामपंचायत माहिती', labelEn: 'Village Info', icon: Building2 },
+   191→  { id: 'master-fy', label: 'वित्तीय वर्ष', labelEn: 'Financial Year', icon: CalendarDays },
+   192→  { id: 'master-ward', label: 'वार्ड माहिती', labelEn: 'Ward Info', icon: MapPin },
+   193→  { id: 'master-road', label: 'रस्ता माहिती', labelEn: 'Road Info', icon: Route },
+   194→  { id: 'master-property', label: 'मालमत्ता माहिती', labelEn: 'Property Info', icon: HomeIcon },
+   195→  { id: 'master-owner', label: 'मालक माहिती', labelEn: 'Owner Info', icon: Users },
+   196→  { id: 'master-floor', label: 'मजला माहिती', labelEn: 'Floor Info', icon: Layers },
+   197→  { id: 'master-tax', label: 'कर दर', labelEn: 'Tax Rates', icon: Percent },
+   198→  { id: 'master-water-tax', label: 'पाणीकर दर', labelEn: 'Water Tax Rates', icon: Droplets },
+   199→  { id: 'master-ready-reckoner', label: 'रेडीरेकनर दर', labelEn: 'Ready Reckoner Rates', icon: Calculator },
+   200→  { id: 'master-streetlight', label: 'दिवाबत्ती माहिती', labelEn: 'Street Light Info', icon: Lightbulb },
+   201→  { id: 'master-health', label: 'आरोग्य व स्वच्छता', labelEn: 'Health & Sanitation', icon: HeartPulse },
+   202→  { id: 'master-employee', label: 'कर्मचारी माहिती', labelEn: 'Employee Info', icon: HardHat },
+   203→  { id: 'master-scheme', label: 'योजना माहिती', labelEn: 'Scheme Info', icon: FolderOpen },
+   204→  { id: 'master-bank', label: 'बँक खाती', labelEn: 'Bank Accounts', icon: PiggyBank },
+   205→  { id: 'master-budget', label: 'बजेट शिर्ष', labelEn: 'Budget Heads', icon: BanknoteIcon },
+   206→  { id: 'master-demand-type', label: 'मागणी प्रकार', labelEn: 'Demand Categories', icon: Tag },
+   207→  { id: 'master-disability', label: 'अपंगत्व नोंदणी', labelEn: 'Disability Register', icon: Accessibility },
+   208→];
+   209→
+   210→const dailyTransactionItems: NavItem[] = [
+   211→  { id: 'txn-receipt', label: 'पावती एंट्री', labelEn: 'Receipt Entry', icon: Receipt, color: 'text-green-600' },
+   212→  { id: 'txn-payment', label: 'पेमेंट एंट्री', labelEn: 'Payment Entry', icon: CreditCard, color: 'text-red-600' },
+   213→  { id: 'txn-journal', label: 'जर्नल एंट्री', labelEn: 'Journal Entry', icon: NotebookPen, color: 'text-purple-600' },
+   214→  { id: 'txn-demand', label: 'मागणी निर्मिती', labelEn: 'Demand Generation', icon: CircleDollarSign, color: 'text-amber-600' },
+   215→  { id: 'txn-collection', label: 'वसूल एंट्री', labelEn: 'Collection Entry', icon: HandCoins, color: 'text-teal-600' },
+   216→  { id: 'txn-tax-assessment', label: 'कर आकारणी (नमुना ८)', labelEn: 'Tax Assessment', icon: Calculator, color: 'text-emerald-600' },
+   217→  { id: 'txn-water-bill', label: 'पाणी बिल', labelEn: 'Water Bill', icon: DropletsIcon, color: 'text-sky-600' },
+   218→  { id: 'txn-asset', label: 'मालमत्ता एंट्री', labelEn: 'Asset Entry', icon: Warehouse, color: 'text-orange-600' },
+   219→  { id: 'txn-stock', label: 'साठा एंट्री', labelEn: 'Stock Entry', icon: Package, color: 'text-indigo-600' },
+   220→  { id: 'txn-scheme-fund', label: 'योजना निधी', labelEn: 'Scheme Fund', icon: Banknote, color: 'text-rose-600' },
+   221→  { id: 'txn-budget', label: 'अंदाजपत्रक एंट्री', labelEn: 'Budget Entry', icon: ClipboardList, color: 'text-cyan-600' },
+   222→  { id: 'txn-work', label: 'विकासकाम एंट्री', labelEn: 'Work Entry', icon: HardHat, color: 'text-lime-600' },
+   223→  { id: 'txn-salary', label: 'वेतन एंट्री', labelEn: 'Salary Entry', icon: IndianRupee, color: 'text-emerald-600' },
+   224→];
+   225→
+   226→const autoRegisterItems: NavItem[] = [
+   227→  { id: 'reg-cash-book', label: 'रोकड वही (नमुना ३)', labelEn: 'Cash Book', icon: BookOpen, color: 'text-green-600' },
+   228→  { id: 'reg-bank-book', label: 'बँक वही (नमुना ४)', labelEn: 'Bank Book', icon: Landmark, color: 'text-teal-600' },
+   229→  { id: 'reg-receipt', label: 'पावती रजिस्टर', labelEn: 'Receipt Register', icon: ReceiptText, color: 'text-emerald-600' },
+   230→  { id: 'reg-payment', label: 'पेमेंट रजिस्टर', labelEn: 'Payment Register', icon: FileText, color: 'text-red-600' },
+   231→  { id: 'reg-demand', label: 'मागणी रजिस्टर (नमुना ९)', labelEn: 'Demand Register', icon: BookOpenCheck, color: 'text-amber-600' },
+   232→  { id: 'reg-collection', label: 'वसूल रजिस्टर', labelEn: 'Collection Register', icon: ListChecks, color: 'text-cyan-600' },
+   233→  { id: 'reg-asset', label: 'मालमत्ता रजिस्टर (नमुना ५)', labelEn: 'Asset Register', icon: FolderArchive, color: 'text-orange-600' },
+   234→  { id: 'reg-stock', label: 'साठा रजिस्टर (नमुना ६)', labelEn: 'Stock Register', icon: PackageCheck, color: 'text-indigo-600' },
+   235→  { id: 'reg-grant', label: 'अनुदान रजिस्टर (नमुना १०)', labelEn: 'Grant Register', icon: HandCoinsIcon, color: 'text-purple-600' },
+   236→];
+   237→
+   238→interface NamunaSubGroup {
+   239→  label: string;
+   240→  items: NavItem[];
+   241→}
+   242→
+   243→const namunaReportSubGroups: NamunaSubGroup[] = [
+   244→  {
+   245→    label: 'मालमत्ता व नोंदणी',
+   246→    items: [
+   247→      { id: 'namuna-1', label: 'नमुना १ - मालमत्ता नोंदणी', labelEn: 'Property Registration', icon: FileBadge, color: 'text-cyan-600' },
+   248→      { id: 'namuna-2', label: 'नमुना २ - मालमत्ता मूल्यांकन', labelEn: 'Property Valuation', icon: FileCheck2, color: 'text-teal-600' },
+   249→    ],
+   250→  },
+   251→  {
+   252→    label: 'कर आकारणी व वसूल',
+   253→    items: [
+   254→      { id: 'namuna-8', label: 'नमुना ८ - कर आकारणी', labelEn: 'Tax Assessment', icon: FileText, color: 'text-green-600' },
+   255→      { id: 'namuna-9', label: 'नमुना ९ - मागणी नोंदवही', labelEn: 'Demand Register', icon: BookOpen, color: 'text-amber-600' },
+   256→      { id: 'namuna-9ka', label: 'नमुना ९-क - पावती', labelEn: 'Receipt', icon: Receipt, color: 'text-rose-600' },
+   257→      { id: 'namuna-19', label: 'नमुना १९ - कर वसूल वही', labelEn: 'Tax Collection Book', icon: ScrollText, color: 'text-orange-600' },
+   258→      { id: 'namuna-21-24', label: 'नमुना २१-२४ - वसूल अहवाल', labelEn: 'Collection Reports', icon: FileBarChart, color: 'text-red-600' },
+   259→    ],
+   260→  },
+   261→  {
+   262→    label: 'वित्तीय वही',
+   263→    items: [
+   264→      { id: 'namuna-3', label: 'नमुना ३ - रोकड वही', labelEn: 'Cash Book', icon: BookCopy, color: 'text-green-600' },
+   265→      { id: 'namuna-4', label: 'नमुना ४ - बँक वही', labelEn: 'Bank Book', icon: Landmark, color: 'text-teal-600' },
+   266→      { id: 'namuna-11-15', label: 'नमुना ११-१५ - वित्तीय अहवाल', labelEn: 'Financial Reports', icon: Gauge, color: 'text-purple-600' },
+   267→    ],
+   268→  },
+   269→  {
+   270→    label: 'मालमत्ता व साठा',
+   271→    items: [
+   272→      { id: 'namuna-5', label: 'नमुना ५ - मालमत्ता रजिस्टर', labelEn: 'Asset Register', icon: FolderArchive, color: 'text-orange-600' },
+   273→      { id: 'namuna-6', label: 'नमुना ६ - साठा रजिस्टर', labelEn: 'Stock Register', icon: PackageCheck, color: 'text-indigo-600' },
+   274→      { id: 'namuna-16-18', label: 'नमुना १६-१८ - मालमत्ता अहवाल', labelEn: 'Asset Reports', icon: FileBarChart, color: 'text-amber-600' },
+   275→    ],
+   276→  },
+   277→  {
+   278→    label: 'अनुदान व योजना',
+   279→    items: [
+   280→      { id: 'namuna-7', label: 'नमुना ७ - अनुदान नोंदवही', labelEn: 'Grant Register', icon: HandCoinsIcon, color: 'text-purple-600' },
+   281→      { id: 'namuna-10', label: 'नमुना १० - अनुदान रजिस्टर', labelEn: 'Grant Register 10', icon: Banknote, color: 'text-blue-600' },
+   282→      { id: 'namuna-28-30', label: 'नमुना २८-३० - योजना अहवाल', labelEn: 'Scheme Reports', icon: FileSpreadsheet, color: 'text-rose-600' },
+   283→    ],
+   284→  },
+   285→  {
+   286→    label: 'अंतिम हिशेब',
+   287→    items: [
+   288→      { id: 'namuna-25-27', label: 'नमुना २५-२७ - हिशेब तपासणी', labelEn: 'Audit Reports', icon: FileLock2, color: 'text-red-600' },
+   289→      { id: 'namuna-31-33', label: 'नमुना ३१-३३ - अंतिम हिशेब', labelEn: 'Final Accounts', icon: FileBadge, color: 'text-emerald-600' },
+   290→    ],
+   291→  },
+   292→];
+   293→
+   294→// ─── Helper: Placeholder Component ───────────────────────────────────────────
+   295→
+   296→function PlaceholderView({ title, titleEn, icon: Icon, color }: { title: string; titleEn: string; icon: React.ElementType; color: string }) {
+   297→  return (
+   298→    <div className="flex items-center justify-center min-h-[60vh]">
+   299→      <Card className="w-full max-w-lg border-0 shadow-lg">
+   300→        <div className="h-2 rounded-t-lg" style={{ background: `linear-gradient(90deg, ${color}, ${color}88)` }} />
+   301→        <CardContent className="p-8 text-center">
+   302→          <div className="h-20 w-20 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-lg" style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)` }}>
+   303→            <Icon className="h-10 w-10 text-white" />
+   304→          </div>
+   305→          <h2 className="text-2xl font-bold mb-2">{title}</h2>
+   306→          <p className="text-muted-foreground mb-4">{titleEn}</p>
+   307→          <Badge variant="outline" className="px-4 py-1.5 text-sm" style={{ borderColor: color, color }}>
+   308→            या विभागाचे काम सुरू आहे
+   309→          </Badge>
+   310→          <p className="text-xs text-muted-foreground mt-3">This module is under development</p>
+   311→        </CardContent>
+   312→      </Card>
+   313→    </div>
+   314→  );
+   315→}
+   316→
+   317→// ─── Main Page Component ─────────────────────────────────────────────────────
+   318→
+   319→export default function Home() {
+   320→  const [activeView, setActiveView] = useState('dashboard');
+   321→  const [stats, setStats] = useState<DashboardStats | null>(null);
+   322→  const [user, setUser] = useState<{
+   323→    authenticated: boolean;
+   324→    user?: { name: string; nameMarathi: string; role: string };
+   325→    loginAt?: string | null;
+   326→  } | null>(null);
+   327→  const [recentLogs, setRecentLogs] = useState<SessionLog[]>([]);
+   328→  const [financialYear, setFinancialYear] = useState('2024-25');
+   329→  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
+   330→    masters: false,
+   331→    transactions: false,
+   332→    registers: false,
+   333→    namuna: false,
+   334→  });
+   335→
+   336→  // Fetch data
+   337→  useEffect(() => {
+   338→    let isMounted = true;
+   339→    const loadData = async () => {
+   340→      try {
+   341→        const res = await fetch('/api/dashboard');
+   342→        if (res.ok && isMounted) setStats(await res.json());
+   343→      } catch { /* ignore */ }
+   344→    };
+   345→    const loadSession = async () => {
+   346→      try {
+   347→        const res = await fetch('/api/auth/session');
+   348→        if (res.ok) setUser(await res.json());
+   349→      } catch { /* ignore */ }
+   350→    };
+   351→    const loadLogs = async () => {
+   352→      try {
+   353→        const res = await fetch('/api/auth/logs?limit=5');
+   354→        if (res.ok) {
+   355→          const data = await res.json();
+   356→          setRecentLogs(data.sessions || []);
+   357→        }
+   358→      } catch { /* ignore */ }
+   359→    };
+   360→    loadData();
+   361→    loadSession();
+   362→    loadLogs();
+   363→    const interval = setInterval(() => {
+   364→      loadData();
+   365→      loadLogs();
+   366→    }, 30000);
+   367→    return () => {
+   368→      isMounted = false;
+   369→      clearInterval(interval);
+   370→    };
+   371→  }, []);
+   372→
+   373→  const refreshStats = useCallback(async () => {
+   374→    try {
+   375→      const res = await fetch('/api/dashboard');
+   376→      if (res.ok) setStats(await res.json());
+   377→    } catch { /* ignore */ }
+   378→  }, []);
+   379→
+   380→  const formatTime = (isoString: string | null) => {
+   381→    if (!isoString) return '-';
+   382→    try {
+   383→      return new Date(isoString).toLocaleString('mr-IN', {
+   384→        day: 'numeric',
+   385→        month: 'short',
+   386→        hour: '2-digit',
+   387→        minute: '2-digit',
+   388→      });
+   389→    } catch {
+   390→      return isoString;
+   391→    }
+   392→  };
+   393→
+   394→  const toggleGroup = (groupId: string) => {
+   395→    setExpandedGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }));
+   396→  };
+   397→
+   398→  const handleNavClick = (viewId: string) => {
+   399→    setActiveView(viewId);
+   400→    if (viewId === 'dashboard') refreshStats();
+   401→  };
+   402→
+   403→  // ─── Render Main Content ─────────────────────────────────────────────────
+   404→
+   405→  const renderMainContent = () => {
+   406→    switch (activeView) {
+   407→      case 'dashboard':
+   408→        return <ERPDashboard stats={stats} user={user} recentLogs={recentLogs} setActiveView={setActiveView} formatTime={formatTime} refreshStats={refreshStats} />;
+   409→
+   410→      // Master Data entries - route to the master data component with appropriate tab
+   411→      case 'master-village':
+   412→        return <MasterData initialTab="village" />;
+   413→      case 'master-fy':
+   414→        return <MasterData initialTab="fy" />;
+   415→      case 'master-ward':
+   416→        return <MasterData initialTab="ward" />;
+   417→      case 'master-road':
+   418→        return <MasterData initialTab="road" />;
+   419→      case 'master-property':
+   420→        return <MasterData initialTab="property" />;
+   421→      case 'master-owner':
+   422→        return <MasterData initialTab="owner" />;
+   423→      case 'master-floor':
+   424→        return <MasterData initialTab="floorInfo" />;
+   425→      case 'master-tax':
+   426→        return <MasterData initialTab="tax" />;
+   427→      case 'master-water-tax':
+   428→        return <MasterData initialTab="waterSupply" />;
+   429→      case 'master-ready-reckoner':
+   430→        return <MasterData initialTab="readyReckoner" />;
+   431→      case 'master-streetlight':
+   432→        return <MasterData initialTab="streetLight" />;
+   433→      case 'master-health':
+   434→        return <MasterData initialTab="drainage" />;
+   435→      case 'master-employee':
+   436→        return <MasterData initialTab="employee" />;
+   437→      case 'master-scheme':
+   438→        return <MasterData initialTab="scheme" />;
+   439→      case 'master-bank':
+   440→        return <MasterData initialTab="bank" />;
+   441→      case 'master-budget':
+   442→        return <MasterData initialTab="budget-head" />;
+   443→      case 'master-demand-type':
+   444→        return <MasterData initialTab="demandCategory" />;
+   445→      case 'master-disability':
+   446→        return <MasterData initialTab="disability" />;
+   447→
+   448→      // Daily Transactions - use DailyTransactions component with initial tab
+   449→      case 'txn-receipt':
+   450→        return <DailyTransactions initialTab="receipt" />;
+   451→      case 'txn-payment':
+   452→        return <DailyTransactions initialTab="payment" />;
+   453→      case 'txn-journal':
+   454→        return <DailyTransactions initialTab="journal" />;
+   455→      case 'txn-demand':
+   456→        return <Namuna9Component />;
+   457→      case 'txn-collection':
+   458→        return <DailyTransactions initialTab="collection" />;
+   459→      case 'txn-tax-assessment':
+   460→        return <Namuna8Component />;
+   461→      case 'txn-water-bill':
+   462→        return <DailyTransactions initialTab="water-bill" />;
+   463→      case 'txn-asset':
+   464→        return <DailyTransactions initialTab="asset" />;
+   465→      case 'txn-stock':
+   466→        return <DailyTransactions initialTab="stock" />;
+   467→      case 'txn-scheme-fund':
+   468→        return <DailyTransactions initialTab="scheme-fund" />;
+   469→      case 'txn-budget':
+   470→        return <DailyTransactions initialTab="budget" />;
+   471→      case 'txn-work':
+   472→        return <DailyTransactions initialTab="work" />;
+   473→      case 'txn-salary':
+   474→        return <DailyTransactions initialTab="salary" />;
+   475→
+   476→      // Auto Registers - use AutoRegisters component with initial tab
+   477→      case 'reg-cash-book':
+   478→      case 'namuna-3':
+   479→        return <AutoRegisters initialTab="cash-book" />;
+   480→      case 'reg-bank-book':
+   481→      case 'namuna-4':
+   482→        return <AutoRegisters initialTab="bank-book" />;
+   483→      case 'reg-receipt':
+   484→        return <AutoRegisters initialTab="receipt" />;
+   485→      case 'reg-payment':
+   486→        return <AutoRegisters initialTab="payment" />;
+   487→      case 'reg-demand':
+   488→        return <AutoRegisters initialTab="demand" />;
+   489→      case 'reg-collection':
+   490→        return <AutoRegisters initialTab="collection" />;
+   491→      case 'reg-asset':
+   492→      case 'namuna-5':
+   493→        return <AutoRegisters initialTab="asset" />;
+   494→      case 'reg-stock':
+   495→      case 'namuna-6':
+   496→        return <AutoRegisters initialTab="stock" />;
+   497→      case 'reg-grant':
+   498→      case 'namuna-10':
+   499→        return <AutoRegisters initialTab="grant" />;
+   500→
+   501→      // Namuna Reports - use NamunaReports component with initial namuna
+   502→      case 'namuna-1':
+   503→        return <Namuna1Component />;
+   504→      case 'namuna-2':
+   505→        return <NamunaReports initialNamuna="2" onNavigate={handleNavClick} />;
+   506→      case 'namuna-8':
+   507→        return <Namuna8Component />;
+   508→      case 'namuna-9':
+   509→        return <Namuna9Component />;
+   510→      case 'namuna-9ka':
+   511→        return <Namuna9KaComponent />;
+   512→      case 'namuna-19':
+   513→        return <NamunaReports initialNamuna="19" onNavigate={handleNavClick} />;
+   514→      case 'namuna-21-24':
+   515→        return <NamunaReports initialNamuna="21" onNavigate={handleNavClick} />;
+   516→      case 'namuna-11-15':
+   517→        return <NamunaReports initialNamuna="11" onNavigate={handleNavClick} />;
+   518→      case 'namuna-16-18':
+   519→        return <NamunaReports initialNamuna="16" onNavigate={handleNavClick} />;
+   520→      case 'namuna-7':
+   521→        return <NamunaReports initialNamuna="7" onNavigate={handleNavClick} />;
+   522→      case 'namuna-28-30':
+   523→        return <NamunaReports initialNamuna="28" onNavigate={handleNavClick} />;
+   524→      case 'namuna-25-27':
+   525→        return <NamunaReports initialNamuna="25" onNavigate={handleNavClick} />;
+   526→      case 'namuna-31-33':
+   527→        return <NamunaReports initialNamuna="31" onNavigate={handleNavClick} />;
+   528→
+   529→      // Search
+   530→      case 'search':
+   531→        return <GlobalSearch />;
+   532→
+   533→      // Auth
+   534→      case 'login':
+   535→        return <LoginForm />;
+   536→      case 'logs':
+   537→        return <AuthLogs />;
+   538→
+   539→      // Excel
+   540→      case 'excel':
+   541→        return <ExcelImportExport />;
+   542→
+   543→      default:
+   544→        return <ERPDashboard stats={stats} user={user} recentLogs={recentLogs} setActiveView={setActiveView} formatTime={formatTime} refreshStats={refreshStats} />;
+   545→    }
+   546→  };
+   547→
+   548→  // ─── Get active label for breadcrumb ─────────────────────────────────────
+   549→
+   550→  const getActiveLabel = () => {
+   551→    if (activeView === 'dashboard') return 'डॅशबोर्ड';
+   552→    if (activeView === 'search') return 'शोधा';
+   553→    if (activeView === 'login') return 'लॉगिन';
+   554→    if (activeView === 'logs') return 'लॉग';
+   555→    if (activeView === 'excel') return 'आयात/निर्यात';
+   556→
+   557→    // Search in all navigation items
+   558→    const allItems = [
+   559→      ...masterEntryItems,
+   560→      ...dailyTransactionItems,
+   561→      ...autoRegisterItems,
+   562→      ...namunaReportSubGroups.flatMap((g) => g.items),
+   563→    ];
+   564→    const found = allItems.find((item) => item.id === activeView);
+   565→    return found ? found.label : 'डॅशबोर्ड';
+   566→  };
+   567→
+   568→  return (
+   569→    <SidebarProvider>
+   570→      <div className="flex min-h-screen w-full flex-col" style={{ background: 'linear-gradient(180deg, #f0faf5 0%, #f8faf9 30%, #ffffff 100%)' }}>
+   571→        {/* ─── Indian Flag Tricolor Bar ──────────────────────────────── */}
+   572→        <div className="flex h-1.5 w-full shrink-0">
+   573→          <div className="flex-1" style={{ background: '#FF9933' }} />
+   574→          <div className="flex-1 bg-white" />
+   575→          <div className="flex-1" style={{ background: '#138808' }} />
+   576→        </div>
+   577→
+   578→        {/* ─── Header ────────────────────────────────────────────────── */}
+   579→        <header className="sticky top-0 z-50 shadow-lg" style={{ background: 'linear-gradient(135deg, #0d7377 0%, #0a5c5f 50%, #1a5632 100%)' }}>
+   580→          <div className="flex items-center justify-between px-4 py-3">
+   581→            <div className="flex items-center gap-3">
+   582→              <SidebarTrigger className="hover:bg-white/20 text-white" />
+   583→              <div className="hidden sm:block h-8 w-px bg-white/20" />
+   584→              <div className="h-11 w-11 rounded-xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #e67e22, #f39c12)' }}>
+   585→                <Landmark className="h-6 w-6 text-white" />
+   586→              </div>
+   587→              <div>
+   588→                <h1 className="text-lg sm:text-xl font-bold leading-tight text-white">
+   589→                  ग्रामपंचायत लेखा संहिता ERP पोर्टल
+   590→                </h1>
+   591→                <p className="text-xs text-teal-100/80 hidden sm:block">
+   592→                  Maharashtra Gram Panchayat Accounting ERP Portal
+   593→                </p>
+   594→              </div>
+   595→            </div>
+   596→            <div className="flex items-center gap-2 sm:gap-3">
+   597→              {/* Financial Year Selector */}
+   598→              <div className="hidden sm:flex items-center gap-2">
+   599→                <CalendarDays className="h-4 w-4 text-teal-100/70" />
+   600→                <Select value={financialYear} onValueChange={setFinancialYear}>
+   601→                  <SelectTrigger className="w-[140px] h-8 text-xs bg-white/10 border-white/20 text-white">
+   602→                    <SelectValue />
+   603→                  </SelectTrigger>
+   604→                  <SelectContent>
+   605→                    <SelectItem value="2023-24">2023-24</SelectItem>
+   606→                    <SelectItem value="2024-25">2024-25</SelectItem>
+   607→                    <SelectItem value="2025-26">2025-26</SelectItem>
+   608→                  </SelectContent>
+   609→                </Select>
+   610→              </div>
+   611→
+   612→              {/* User Info */}
+   613→              {user?.authenticated && user.user && (
+   614→                <div className="flex items-center gap-2">
+   615→                  <div className="hidden md:flex items-center gap-2 bg-white/15 backdrop-blur-sm rounded-full px-3 py-1.5">
+   616→                    <div className="h-7 w-7 rounded-full flex items-center justify-center" style={{ background: user.user.role === 'gpo' ? '#27ae60' : '#e67e22' }}>
+   617→                      <Shield className="h-4 w-4 text-white" />
+   618→                    </div>
+   619→                    <span className="text-sm font-medium text-white">{user.user.nameMarathi}</span>
+   620→                    <Badge className={`${user.user.role === 'gpo' ? 'bg-green-500' : 'bg-amber-500'} text-white text-xs border-0`}>
+   621→                      {user.user.role === 'gpo' ? 'GPO' : 'Operator'}
+   622→                    </Badge>
+   623→                  </div>
+   624→                  {user.loginAt && (
+   625→                    <div className="hidden lg:flex items-center gap-1 text-xs text-teal-100/70 bg-white/10 rounded-full px-2.5 py-1">
+   626→                      <Clock className="h-3 w-3" />
+   627→                      <span>{formatTime(user.loginAt)}</span>
+   628→                    </div>
+   629→                  )}
+   630→                </div>
+   631→              )}
+   632→
+   633→              {/* Mobile FY selector */}
+   634→              <div className="sm:hidden flex items-center gap-1 bg-white/10 rounded-full px-2 py-1 text-xs text-white">
+   635→                <CalendarDays className="h-3 w-3" />
+   636→                <span>{financialYear}</span>
+   637→              </div>
+   638→            </div>
+   639→          </div>
+   640→        </header>
+   641→
+   642→        {/* ─── Body: Sidebar + Main ──────────────────────────────────── */}
+   643→        <div className="flex flex-1">
+   644→          {/* Sidebar */}
+   645→          <Sidebar collapsible="icon" className="border-r border-gray-200">
+   646→            <SidebarHeader className="p-3">
+   647→              <div className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
+   648→                <div className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #0d7377, #1a5632)' }}>
+   649→                  <Flag className="h-5 w-5 text-white" />
+   650→                </div>
+   651→                <div className="group-data-[collapsible=icon]:hidden">
+   652→                  <p className="text-sm font-bold text-teal-800 leading-tight">GP ERP</p>
+   653→                  <p className="text-[10px] text-muted-foreground">लेखा संहिता</p>
+   654→                </div>
+   655→              </div>
+   656→            </SidebarHeader>
+   657→
+   658→            <SidebarSeparator />
+   659→
+   660→            <SidebarContent className="px-2">
+   661→              {/* Dashboard */}
+   662→              <SidebarGroup>
+   663→                <SidebarGroupContent>
+   664→                  <SidebarMenu>
+   665→                    <SidebarMenuItem>
+   666→                      <SidebarMenuButton
+   667→                        isActive={activeView === 'dashboard'}
+   668→                        onClick={() => handleNavClick('dashboard')}
+   669→                        tooltip="डॅशबोर्ड"
+   670→                        className={activeView === 'dashboard' ? 'bg-teal-50 text-teal-800 font-semibold hover:bg-teal-100' : ''}
+   671→                      >
+   672→                        <LayoutDashboard className="h-4 w-4 text-teal-600" />
+   673→                        <span>डॅशबोर्ड</span>
+   674→                      </SidebarMenuButton>
+   675→                    </SidebarMenuItem>
+   676→                  </SidebarMenu>
+   677→                </SidebarGroupContent>
+   678→              </SidebarGroup>
+   679→
+   680→              <SidebarSeparator />
+   681→
+   682→              {/* मास्टर एंट्री (Master Entry) */}
+   683→              <SidebarGroup>
+   684→                <Collapsible open={expandedGroups.masters} onOpenChange={() => toggleGroup('masters')} className="group/collapsible">
+   685→                  <SidebarGroupLabel asChild>
+   686→                    <CollapsibleTrigger className="hover:bg-sidebar-accent rounded-md w-full">
+   687→                      <div className="flex items-center gap-2 w-full">
+   688→                        <Database className="h-4 w-4 text-purple-600" />
+   689→                        <span className="flex-1 text-left">मास्टर एंट्री</span>
+   690→                        <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+   691→                      </div>
+   692→                    </CollapsibleTrigger>
+   693→                  </SidebarGroupLabel>
+   694→                  <CollapsibleContent>
+   695→                    <SidebarGroupContent>
+   696→                      <SidebarMenu>
+   697→                        {masterEntryItems.map((item) => (
+   698→                          <SidebarMenuItem key={item.id}>
+   699→                            <SidebarMenuButton
+   700→                              isActive={activeView === item.id}
+   701→                              onClick={() => handleNavClick(item.id)}
+   702→                              tooltip={item.label}
+   703→                              className={`text-xs h-7 ${activeView === item.id ? 'bg-purple-50 text-purple-800 font-medium' : ''}`}
+   704→                            >
+   705→                              <item.icon className={`h-3.5 w-3.5 ${activeView === item.id ? 'text-purple-600' : 'text-muted-foreground'}`} />
+   706→                              <span>{item.label}</span>
+   707→                            </SidebarMenuButton>
+   708→                          </SidebarMenuItem>
+   709→                        ))}
+   710→                      </SidebarMenu>
+   711→                    </SidebarGroupContent>
+   712→                  </CollapsibleContent>
+   713→                </Collapsible>
+   714→              </SidebarGroup>
+   715→
+   716→              <SidebarSeparator />
+   717→
+   718→              {/* दैनंदिन व्यवहार (Daily Transactions) */}
+   719→              <SidebarGroup>
+   720→                <Collapsible open={expandedGroups.transactions} onOpenChange={() => toggleGroup('transactions')} className="group/collapsible">
+   721→                  <SidebarGroupLabel asChild>
+   722→                    <CollapsibleTrigger className="hover:bg-sidebar-accent rounded-md w-full">
+   723→                      <div className="flex items-center gap-2 w-full">
+   724→                        <Wallet className="h-4 w-4 text-green-600" />
+   725→                        <span className="flex-1 text-left">दैनंदिन व्यवहार</span>
+   726→                        <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+   727→                      </div>
+   728→                    </CollapsibleTrigger>
+   729→                  </SidebarGroupLabel>
+   730→                  <CollapsibleContent>
+   731→                    <SidebarGroupContent>
+   732→                      <SidebarMenu>
+   733→                        {dailyTransactionItems.map((item) => (
+   734→                          <SidebarMenuItem key={item.id}>
+   735→                            <SidebarMenuButton
+   736→                              isActive={activeView === item.id}
+   737→                              onClick={() => handleNavClick(item.id)}
+   738→                              tooltip={item.label}
+   739→                              className={`text-xs h-7 ${activeView === item.id ? 'bg-green-50 text-green-800 font-medium' : ''}`}
+   740→                            >
+   741→                              <item.icon className={`h-3.5 w-3.5 ${activeView === item.id ? (item.color || 'text-green-600') : 'text-muted-foreground'}`} />
+   742→                              <span>{item.label}</span>
+   743→                            </SidebarMenuButton>
+   744→                          </SidebarMenuItem>
+   745→                        ))}
+   746→                      </SidebarMenu>
+   747→                    </SidebarGroupContent>
+   748→                  </CollapsibleContent>
+   749→                </Collapsible>
+   750→              </SidebarGroup>
+   751→
+   752→              <SidebarSeparator />
+   753→
+   754→              {/* ऑटो रजिस्टर (Auto Registers) */}
+   755→              <SidebarGroup>
+   756→                <Collapsible open={expandedGroups.registers} onOpenChange={() => toggleGroup('registers')} className="group/collapsible">
+   757→                  <SidebarGroupLabel asChild>
+   758→                    <CollapsibleTrigger className="hover:bg-sidebar-accent rounded-md w-full">
+   759→                      <div className="flex items-center gap-2 w-full">
+   760→                        <BookOpenCheck className="h-4 w-4 text-amber-600" />
+   761→                        <span className="flex-1 text-left">ऑटो रजिस्टर</span>
+   762→                        <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+   763→                      </div>
+   764→                    </CollapsibleTrigger>
+   765→                  </SidebarGroupLabel>
+   766→                  <CollapsibleContent>
+   767→                    <SidebarGroupContent>
+   768→                      <SidebarMenu>
+   769→                        {autoRegisterItems.map((item) => (
+   770→                          <SidebarMenuItem key={item.id}>
+   771→                            <SidebarMenuButton
+   772→                              isActive={activeView === item.id}
+   773→                              onClick={() => handleNavClick(item.id)}
+   774→                              tooltip={item.label}
+   775→                              className={`text-xs h-7 ${activeView === item.id ? 'bg-amber-50 text-amber-800 font-medium' : ''}`}
+   776→                            >
+   777→                              <item.icon className={`h-3.5 w-3.5 ${activeView === item.id ? (item.color || 'text-amber-600') : 'text-muted-foreground'}`} />
+   778→                              <span>{item.label}</span>
+   779→                            </SidebarMenuButton>
+   780→                          </SidebarMenuItem>
+   781→                        ))}
+   782→                      </SidebarMenu>
+   783→                    </SidebarGroupContent>
+   784→                  </CollapsibleContent>
+   785→                </Collapsible>
+   786→              </SidebarGroup>
+   787→
+   788→              <SidebarSeparator />
+   789→
+   790→              {/* नमुना अहवाल (Namuna Reports 1-33) */}
+   791→              <SidebarGroup>
+   792→                <Collapsible open={expandedGroups.namuna} onOpenChange={() => toggleGroup('namuna')} className="group/collapsible">
+   793→                  <SidebarGroupLabel asChild>
+   794→                    <CollapsibleTrigger className="hover:bg-sidebar-accent rounded-md w-full">
+   795→                      <div className="flex items-center gap-2 w-full">
+   796→                        <ClipboardList className="h-4 w-4 text-emerald-600" />
+   797→                        <span className="flex-1 text-left">नमुना अहवाल (१-३३)</span>
+   798→                        <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+   799→                      </div>
+   800→                    </CollapsibleTrigger>
+   801→                  </SidebarGroupLabel>
+   802→                  <CollapsibleContent>
+   803→                    <SidebarMenu>
+   804→                      {namunaReportSubGroups.map((subGroup, sgIdx) => (
+   805→                        <SidebarMenuItem key={sgIdx}>
+   806→                          <div className="px-2 py-1.5">
+   807→                            <p className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wider">{subGroup.label}</p>
+   808→                          </div>
+   809→                          <SidebarMenuSub>
+   810→                            {subGroup.items.map((item) => (
+   811→                              <SidebarMenuSubItem key={item.id}>
+   812→                                <SidebarMenuSubButton
+   813→                                  isActive={activeView === item.id}
+   814→                                  onClick={() => handleNavClick(item.id)}
+   815→                                  className={activeView === item.id ? 'bg-emerald-50 text-emerald-800 font-medium' : ''}
+   816→                                >
+   817→                                  <item.icon className={`h-3.5 w-3.5 ${activeView === item.id ? (item.color || 'text-emerald-600') : 'text-muted-foreground'}`} />
+   818→                                  <span className="text-xs">{item.label}</span>
+   819→                                </SidebarMenuSubButton>
+   820→                              </SidebarMenuSubItem>
+   821→                            ))}
+   822→                          </SidebarMenuSub>
+   823→                        </SidebarMenuItem>
+   824→                      ))}
+   825→                    </SidebarMenu>
+   826→                  </CollapsibleContent>
+   827→                </Collapsible>
+   828→              </SidebarGroup>
+   829→
+   830→              <SidebarSeparator />
+   831→
+   832→              {/* Bottom nav: Search, Excel, Login, Logs */}
+   833→              <SidebarGroup>
+   834→                <SidebarGroupContent>
+   835→                  <SidebarMenu>
+   836→                    <SidebarMenuItem>
+   837→                      <SidebarMenuButton
+   838→                        isActive={activeView === 'search'}
+   839→                        onClick={() => handleNavClick('search')}
+   840→                        tooltip="शोधा"
+   841→                        className={activeView === 'search' ? 'bg-sky-50 text-sky-800 font-semibold' : ''}
+   842→                      >
+   843→                        <Search className="h-4 w-4 text-sky-600" />
+   844→                        <span>शोधा</span>
+   845→                      </SidebarMenuButton>
+   846→                    </SidebarMenuItem>
+   847→                    <SidebarMenuItem>
+   848→                      <SidebarMenuButton
+   849→                        isActive={activeView === 'excel'}
+   850→                        onClick={() => handleNavClick('excel')}
+   851→                        tooltip="आयात/निर्यात"
+   852→                        className={activeView === 'excel' ? 'bg-emerald-50 text-emerald-800 font-semibold' : ''}
+   853→                      >
+   854→                        <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
+   855→                        <span>आयात/निर्यात</span>
+   856→                      </SidebarMenuButton>
+   857→                    </SidebarMenuItem>
+   858→                    <SidebarMenuItem>
+   859→                      <SidebarMenuButton
+   860→                        isActive={activeView === 'login'}
+   861→                        onClick={() => handleNavClick('login')}
+   862→                        tooltip="लॉगिन"
+   863→                        className={activeView === 'login' ? 'bg-orange-50 text-orange-800 font-semibold' : ''}
+   864→                      >
+   865→                        <LogIn className="h-4 w-4 text-orange-600" />
+   866→                        <span>लॉगिन</span>
+   867→                      </SidebarMenuButton>
+   868→                    </SidebarMenuItem>
+   869→                    <SidebarMenuItem>
+   870→                      <SidebarMenuButton
+   871→                        isActive={activeView === 'logs'}
+   872→                        onClick={() => handleNavClick('logs')}
+   873→                        tooltip="लॉग"
+   874→                        className={activeView === 'logs' ? 'bg-slate-50 text-slate-800 font-semibold' : ''}
+   875→                      >
+   876→                        <Activity className="h-4 w-4 text-slate-600" />
+   877→                        <span>लॉग</span>
+   878→                      </SidebarMenuButton>
+   879→                    </SidebarMenuItem>
+   880→                  </SidebarMenu>
+   881→                </SidebarGroupContent>
+   882→              </SidebarGroup>
+   883→            </SidebarContent>
+   884→
+   885→            <SidebarFooter className="p-3">
+   886→              <div className="group-data-[collapsible=icon]:hidden">
+   887→                <div className="rounded-lg p-2 text-center" style={{ background: 'linear-gradient(135deg, #f0faf5, #e8f8f0)' }}>
+   888→                  <p className="text-[10px] font-medium text-teal-700">महाराष्ट्र ग्रामपंचायत</p>
+   889→                  <p className="text-[9px] text-muted-foreground">लेखा संहिता २०११</p>
+   890→                </div>
+   891→              </div>
+   892→            </SidebarFooter>
+   893→
+   894→            <SidebarRail />
+   895→          </Sidebar>
+   896→
+   897→          {/* Main Content Area */}
+   898→          <SidebarInset>
+   899→            {/* Breadcrumb / Active View Indicator */}
+   900→            <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-sm border-b px-4 py-2">
+   901→              <div className="flex items-center gap-2 text-sm">
+   902→                <LayoutDashboard className="h-4 w-4 text-teal-600" />
+   903→                <button onClick={() => handleNavClick('dashboard')} className="text-muted-foreground hover:text-teal-700 transition-colors">
+   904→                  डॅशबोर्ड
+   905→                </button>
+   906→                {activeView !== 'dashboard' && (
+   907→                  <>
+   908→                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+   909→                    <span className="font-medium text-teal-800">{getActiveLabel()}</span>
+   910→                  </>
+   911→                )}
+   912→                <div className="ml-auto">
+   913→                  <Badge variant="outline" className="text-[10px] border-teal-200 text-teal-600">
+   914→                    {financialYear}
+   915→                  </Badge>
+   916→                </div>
+   917→              </div>
+   918→            </div>
+   919→
+   920→            {/* Content */}
+   921→            <div className="flex-1 p-4 sm:p-6">
+   922→              {renderMainContent()}
+   923→            </div>
+   924→
+   925→            {/* Footer */}
+   926→            <footer className="mt-auto" style={{ background: 'linear-gradient(135deg, #0d7377, #1a5632)' }}>
+   927→              <div className="px-4 py-3">
+   928→                <div className="flex flex-col sm:flex-row items-center justify-between text-sm text-teal-100/70 gap-2">
+   929→                  <div className="flex items-center gap-2">
+   930→                    <Landmark className="h-4 w-4" />
+   931→                    <span>ग्रामपंचायत लेखा संहिता ERP पोर्टल &copy; 2024</span>
+   932→                  </div>
+   933→                  <span className="text-xs">महाराष्ट्र ग्रामपंचायत लेखा संहिता २०११</span>
+   934→                </div>
+   935→              </div>
+   936→              {/* Indian flag tricolor at bottom */}
+   937→              <div className="flex h-1 w-full">
+   938→                <div className="flex-1" style={{ background: '#FF9933' }} />
+   939→                <div className="flex-1 bg-white" />
+   940→                <div className="flex-1" style={{ background: '#138808' }} />
+   941→              </div>
+   942→            </footer>
+   943→          </SidebarInset>
+   944→        </div>
+   945→      </div>
+   946→    </SidebarProvider>
+   947→  );
+   948→}
+   949→

@@ -24,7 +24,7 @@ interface SessionData {
   loginAt?: string | null;
 }
 
-export default function LoginForm() {
+export default function LoginForm({ onLoginSuccess, onLogout }: { onLoginSuccess?: () => void; onLogout?: () => void }) {
   const [session, setSession] = useState<SessionData>({ authenticated: false });
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -80,6 +80,7 @@ export default function LoginForm() {
         setUsername('');
         setPassword('');
         checkSession();
+        onLoginSuccess?.();
       } else {
         toast({ title: 'लॉगिन अयशस्वी', description: data.error || 'अवैध credentials', variant: 'destructive' });
       }
@@ -95,6 +96,7 @@ export default function LoginForm() {
       await fetch('/api/auth/logout', { method: 'POST' });
       toast({ title: 'लॉगआउट', description: 'तुम्ही यशस्वीरित्या लॉगआउट झालात' });
       setSession({ authenticated: false });
+      onLogout?.();
     } catch {
       toast({ title: 'त्रुटी', description: 'लॉगआउट अयशस्वी', variant: 'destructive' });
     }

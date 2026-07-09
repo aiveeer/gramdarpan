@@ -333,6 +333,20 @@ export default function Home() {
     namuna: false,
   });
 
+  // Check auth session
+  const loadSession = useCallback(async () => {
+    try {
+      const res = await fetch('/api/auth/session');
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data);
+        return data;
+      }
+    } catch { /* ignore */ }
+    setUser({ authenticated: false });
+    return { authenticated: false };
+  }, []);
+
   // Fetch data
   useEffect(() => {
     let isMounted = true;
@@ -342,24 +356,29 @@ export default function Home() {
         if (res.ok && isMounted) setStats(await res.json());
       } catch { /* ignore */ }
     };
-    const loadSession = async () => {
-      try {
-        const res = await fetch('/api/auth/session');
-        if (res.ok) setUser(await res.json());
-      } catch { /* ignore */ }
-    };
     const loadLogs = async () => {
       try {
         const res = await fetch('/api/auth/logs?limit=5');
         if (res.ok) {
           const data = await res.json();
-          setRecentLogs(data.sessions || []);
+          if (isMounted) setRecentLogs(data.sessions || []);
         }
       } catch { /* ignore */ }
     };
+    const loadSessionData = async () => {
+      try {
+        const res = await fetch('/api/auth/session');
+        if (res.ok && isMounted) {
+          const data = await res.json();
+          setUser(data);
+        }
+      } catch {
+        if (isMounted) setUser({ authenticated: false });
+      }
+    };
     loadData();
-    loadSession();
     loadLogs();
+    loadSessionData();
     const interval = setInterval(() => {
       loadData();
       loadLogs();
@@ -391,6 +410,24 @@ export default function Home() {
     }
   };
 
+  // Handle logout from child components (LoginForm)
+  const handleLogout = useCallback(async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch { /* ignore */ }
+    setUser({ authenticated: false });
+    setActiveView('login');
+  }, []);
+
+  // Handle successful login from child components
+  const handleLoginSuccess = useCallback(async () => {
+    const sessionData = await loadSession();
+    if (sessionData?.authenticated) {
+      setActiveView('dashboard');
+      refreshStats();
+    }
+  }, [loadSession, refreshStats]);
+
   const toggleGroup = (groupId: string) => {
     setExpandedGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }));
   };
@@ -403,6 +440,23 @@ export default function Home() {
   // ─── Render Main Content ─────────────────────────────────────────────────
 
   const renderMainContent = () => {
+    // Auth guard: only dashboard and login accessible without authentication
+    if (!user?.authenticated && activeView !== 'dashboard' && activeView !== 'login') {
+      return (
+        <Card className="max-w-md mx-auto mt-10">
+          <CardHeader>
+            <CardTitle className="text-center">कृपया लॉगिन करा</CardTitle>
+          </CardHeader>
+          <CardContent className="text-center">
+            <p className="text-muted-foreground mb-4">हा विभाग पाहण्यासाठी लॉगिन आवश्यक आहे</p>
+            <Button onClick={() => setActiveView('login')}>
+              <LogIn className="h-4 w-4 mr-2" />लॉगिन करा
+            </Button>
+          </CardContent>
+        </Card>
+      );
+    }
+
     switch (activeView) {
       case 'dashboard':
         return <ERPDashboard stats={stats} user={user} recentLogs={recentLogs} setActiveView={setActiveView} formatTime={formatTime} refreshStats={refreshStats} />;
@@ -532,7 +586,7 @@ export default function Home() {
 
       // Auth
       case 'login':
-        return <LoginForm />;
+        return <LoginForm onLoginSuccess={handleLoginSuccess} onLogout={handleLogout} />;
       case 'logs':
         return <AuthLogs />;
 
@@ -610,7 +664,7 @@ export default function Home() {
               </div>
 
               {/* User Info */}
-              {user?.authenticated && user.user && (
+              {user?.authenticated && user.user ? (
                 <div className="flex items-center gap-2">
                   <div className="hidden md:flex items-center gap-2 bg-white/15 backdrop-blur-sm rounded-full px-3 py-1.5">
                     <div className="h-7 w-7 rounded-full flex items-center justify-center" style={{ background: user.user.role === 'gpo' ? '#27ae60' : '#e67e22' }}>
@@ -627,7 +681,28 @@ export default function Home() {
                       <span>{formatTime(user.loginAt)}</span>
                     </div>
                   )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleLogout}
+                    className="text-white hover:bg-white/20 h-8 px-2"
+                    title="लॉगआउट"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span className="hidden sm:inline ml-1 text-xs">लॉगआउट</span>
+                  </Button>
                 </div>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setActiveView('login')}
+                  className="text-white hover:bg-white/20 h-8 px-2"
+                  title="लॉगिन करा"
+                >
+                  <LogIn className="h-4 w-4" />
+                  <span className="hidden sm:inline ml-1 text-xs">लॉगिन</span>
+                </Button>
               )}
 
               {/* Mobile FY selector */}
@@ -679,6 +754,7 @@ export default function Home() {
 
               <SidebarSeparator />
 
+              {user?.authenticated && user.user && (<>
               {/* मास्टर एंट्री (Master Entry) */}
               <SidebarGroup>
                 <Collapsible open={expandedGroups.masters} onOpenChange={() => toggleGroup('masters')} className="group/collapsible">
@@ -829,7 +905,7 @@ export default function Home() {
 
               <SidebarSeparator />
 
-              {/* Bottom nav: Search, Excel, Login, Logs */}
+              {/* Bottom nav: Search, Excel */}
               <SidebarGroup>
                 <SidebarGroupContent>
                   <SidebarMenu>
@@ -855,28 +931,50 @@ export default function Home() {
                         <span>आयात/निर्यात</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        isActive={activeView === 'login'}
-                        onClick={() => handleNavClick('login')}
-                        tooltip="लॉगिन"
-                        className={activeView === 'login' ? 'bg-orange-50 text-orange-800 font-semibold' : ''}
-                      >
-                        <LogIn className="h-4 w-4 text-orange-600" />
-                        <span>लॉगिन</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        isActive={activeView === 'logs'}
-                        onClick={() => handleNavClick('logs')}
-                        tooltip="लॉग"
-                        className={activeView === 'logs' ? 'bg-slate-50 text-slate-800 font-semibold' : ''}
-                      >
-                        <Activity className="h-4 w-4 text-slate-600" />
-                        <span>लॉग</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+              </>)}
+
+              {/* Auth-related nav: Login/Logout/Logs - always visible */}
+              <SidebarGroup>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {!user?.authenticated ? (
+                      <SidebarMenuItem>
+                        <SidebarMenuButton
+                          isActive={activeView === 'login'}
+                          onClick={() => handleNavClick('login')}
+                          tooltip="लॉगिन करा"
+                          className={activeView === 'login' ? 'bg-orange-50 text-orange-800 font-semibold' : ''}
+                        >
+                          <LogIn className="h-4 w-4 text-orange-600" />
+                          <span>लॉगिन करा</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ) : (<>
+                      <SidebarMenuItem>
+                        <SidebarMenuButton
+                          isActive={activeView === 'logs'}
+                          onClick={() => handleNavClick('logs')}
+                          tooltip="लॉग"
+                          className={activeView === 'logs' ? 'bg-slate-50 text-slate-800 font-semibold' : ''}
+                        >
+                          <Activity className="h-4 w-4 text-slate-600" />
+                          <span>लॉग</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                      <SidebarMenuItem>
+                        <SidebarMenuButton
+                          onClick={handleLogout}
+                          tooltip="लॉगआउट"
+                          className="text-red-700 hover:bg-red-50"
+                        >
+                          <LogOut className="h-4 w-4 text-red-600" />
+                          <span>लॉगआउट</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    </>)}
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>

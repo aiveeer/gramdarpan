@@ -822,3 +822,30 @@ Stage Summary:
 - Color-coded category/type badges in Budget Head and Scheme tabs
 - Currency formatting with Marathi locale for Bank Account balance and Scheme allocation
 - All existing functionality preserved
+
+---
+Task ID: 1
+Agent: Main Dev Agent
+Task: Fix critical bug - After logout, all features/menus remain visible and accessible
+
+Work Log:
+- Read and analyzed login-form.tsx and page.tsx to understand the auth flow issue
+- Updated login-form.tsx: Added `onLoginSuccess` and `onLogout` optional callback props so parent can react to auth state changes
+- Called `onLoginSuccess?.()` after successful login (line 83)
+- Called `onLogout?.()` in handleLogout function after session clear (line 99)
+- Updated page.tsx: Added auth guard in renderMainContent() that shows login prompt card when unauthenticated users try to access protected views (only dashboard and login accessible without auth)
+- Wrapped all sidebar navigation groups (Master Entry, Daily Transactions, Auto Registers, Namuna Reports, Search, Excel) in `{user?.authenticated && user.user && (<>...</>)}` conditional
+- Replaced bottom sidebar nav with auth-aware section: shows "लॉगिन करा" when not authenticated, shows "लॉग" + "लॉगआउट" buttons when authenticated
+- Header already had proper auth conditional (user info + logout when authenticated, login button when not) - verified this was already in place
+- Fixed ESLint error: Inlined `loadSessionData` inside useEffect instead of calling `loadSession` callback (which called setState directly in effect body), changed dependency array from `[loadSession]` to `[]`
+- Kept `loadSession` as a separate useCallback for use by `handleLoginSuccess` and other callers outside of effects
+- Ran `bun run lint` - passed with no errors
+
+Stage Summary:
+- Logout now properly propagates to parent: user state resets, activeView switches to 'login'
+- All sidebar menus (Master Entry, Daily Transactions, Auto Registers, Namuna Reports, Search, Excel) are hidden when not authenticated
+- Auth-related nav items (Login/Logout/Logs) always visible in sidebar
+- Content guard blocks unauthenticated access to any protected view, showing login prompt
+- Header shows login/logout buttons based on auth state
+- ESLint passes cleanly
+
