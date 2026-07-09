@@ -1,0 +1,558 @@
+     1→     1→import { db } from '@/lib/db';
+     2→     2→import { NextRequest, NextResponse } from 'next/server';
+     3→     3→
+     4→     4→// GET - fetch any master table data
+     5→     5→export async function GET(request: NextRequest) {
+     6→     6→  try {
+     7→     7→    const { searchParams } = new URL(request.url);
+     8→     8→    const table = searchParams.get('table');
+     9→     9→    const id = searchParams.get('id');
+    10→    10→    const search = searchParams.get('search');
+    11→    11→
+    12→    12→    if (!table) {
+    13→    13→      return NextResponse.json({ error: 'Table name required' }, { status: 400 });
+    14→    14→    }
+    15→    15→
+    16→    16→    const where: Record<string, unknown> = {};
+    17→    17→    if (id) where.id = id;
+    18→    18→    // Map short table names to full names
+    19→    19→    const tableAlias: Record<string, string> = {
+    20→    20→      'fy': 'financialYear',
+    21→    21→      'bank': 'bankAccount',
+    22→    22→      'budget-head': 'budgetHead',
+    23→    23→      'scheme': 'schemeInfo',
+    24→    24→      'contractor': 'contractorMaster',
+    25→    25→    };
+    26→    26→    const resolvedTable = tableAlias[table] || table;
+    27→    27→
+    28→    28→    if (search) {
+    29→    29→      switch (resolvedTable) {
+    30→    30→        case 'ward':
+    31→    31→          where.OR = [{ wardNumber: { contains: search } }, { wardName: { contains: search } }, { wardNameMr: { contains: search } }];
+    32→    32→          break;
+    33→    33→        case 'owner':
+    34→    34→          where.OR = [{ ownerNumber: { contains: search } }, { firstName: { contains: search } }, { lastName: { contains: search } }, { mobileNumber: { contains: search } }, { firstNameMr: { contains: search } }, { lastNameMr: { contains: search } }];
+    35→    35→          break;
+    36→    36→        case 'road':
+    37→    37→          where.OR = [{ roadNumber: { contains: search } }, { roadName: { contains: search } }];
+    38→    38→          break;
+    39→    39→        case 'property':
+    40→    40→          where.OR = [{ propertyNumber: { contains: search } }];
+    41→    41→          break;
+    42→    42→        case 'financialYear':
+    43→    43→          where.OR = [{ year: { contains: search } }];
+    44→    44→          break;
+    45→    45→        case 'bankAccount':
+    46→    46→          where.OR = [{ accountNumber: { contains: search } }, { bankName: { contains: search } }, { branchName: { contains: search } }];
+    47→    47→          break;
+    48→    48→        case 'budgetHead':
+    49→    49→          where.OR = [{ code: { contains: search } }, { name: { contains: search } }, { nameMr: { contains: search } }];
+    50→    50→          break;
+    51→    51→        case 'schemeInfo':
+    52→    52→          where.OR = [{ schemeNumber: { contains: search } }, { schemeName: { contains: search } }, { schemeNameMr: { contains: search } }];
+    53→    53→          break;
+    54→    54→        case 'contractorMaster':
+    55→    55→          where.OR = [{ contractorId: { contains: search } }, { firstName: { contains: search } }, { lastName: { contains: search } }, { firmName: { contains: search } }, { mobileNumber: { contains: search } }];
+    56→    56→          break;
+    57→    57→        case 'floorInfo':
+    58→    58→          where.OR = [{ floorNumber: { contains: search } }, { floorName: { contains: search } }, { floorNameMr: { contains: search } }];
+    59→    59→          break;
+    60→    60→        case 'demandCategory':
+    61→    61→          where.OR = [{ code: { contains: search } }, { name: { contains: search } }, { nameMr: { contains: search } }];
+    62→    62→          break;
+    63→    63→        case 'contractor':
+    64→    64→          where.OR = [{ contractorId: { contains: search } }, { firstName: { contains: search } }, { lastName: { contains: search } }, { firmName: { contains: search } }, { mobileNumber: { contains: search } }];
+    65→    65→          break;
+    66→    66→      }
+    67→    67→    }
+    68→    68→
+    69→    69→    let include: Record<string, unknown> | undefined;
+    70→    70→    if (table === 'property') {
+    71→    71→      include = {
+    72→    72→        ward: true,
+    73→    73→        road: true,
+    74→    74→        owners: { include: { owner: true } },
+    75→    75→        taxRates: { include: { taxMaster: true }, orderBy: { taxMaster: { order: 'asc' } } },
+    76→    76→      };
+    77→    77→    }
+    78→    78→
+    79→    79→    let data;
+    80→    80→    switch (resolvedTable) {
+    81→    81→      case 'village':
+    82→    82→        data = id ? await db.villageInfo.findUnique({ where: { id } }) : await db.villageInfo.findFirst();
+    83→    83→        break;
+    84→    84→      case 'ward':
+    85→    85→        data = id ? await db.wardMaster.findUnique({ where: { id } }) : await db.wardMaster.findMany({ where, orderBy: { wardNumber: 'asc' } });
+    86→    86→        break;
+    87→    87→      case 'owner':
+    88→    88→        data = id ? await db.ownerMaster.findUnique({ where: { id }, include: { properties: { include: { property: true } } } }) : await db.ownerMaster.findMany({ where, orderBy: { createdAt: 'desc' } });
+    89→    89→        break;
+    90→    90→      case 'road':
+    91→    91→        data = id ? await db.roadMaster.findUnique({ where: { id } }) : await db.roadMaster.findMany({ where, orderBy: { roadNumber: 'asc' } });
+    92→    92→        break;
+    93→    93→      case 'drainage':
+    94→    94→        data = id ? await db.drainageMaster.findUnique({ where: { id } }) : await db.drainageMaster.findMany({ where, orderBy: { drainageNumber: 'asc' } });
+    95→    95→        break;
+    96→    96→      case 'waterSupply':
+    97→    97→        data = id ? await db.waterSupplyMaster.findUnique({ where: { id } }) : await db.waterSupplyMaster.findMany({ where, orderBy: { createdAt: 'desc' } });
+    98→    98→        break;
+    99→    99→      case 'streetLight':
+   100→   100→        data = id ? await db.streetLightMaster.findUnique({ where: { id } }) : await db.streetLightMaster.findMany({ where, orderBy: { lightNumber: 'asc' } });
+   101→   101→        break;
+   102→   102→      case 'readyReckoner':
+   103→   103→        data = id ? await db.readyReckonerMaster.findUnique({ where: { id } }) : await db.readyReckonerMaster.findMany({ orderBy: { year: 'desc' } });
+   104→   104→        break;
+   105→   105→      case 'disability':
+   106→   106→        data = id ? await db.disabilityMaster.findUnique({ where: { id } }) : await db.disabilityMaster.findMany();
+   107→   107→        break;
+   108→   108→      case 'employee':
+   109→   109→        data = id ? await db.employeeMaster.findUnique({ where: { id } }) : await db.employeeMaster.findMany({ where, orderBy: { employeeId: 'asc' } });
+   110→   110→        break;
+   111→   111→      case 'tax':
+   112→   112→        data = id ? await db.taxMaster.findUnique({ where: { id } }) : await db.taxMaster.findMany({ orderBy: { order: 'asc' } });
+   113→   113→        break;
+   114→   114→      case 'property':
+   115→   115→        data = id ? await db.propertyMaster.findUnique({ where: { id }, include }) : await db.propertyMaster.findMany({ where, include, orderBy: { createdAt: 'desc' } });
+   116→   116→        break;
+   117→   117→      // New master tables
+   118→   118→      case 'financialYear':
+   119→   119→        data = id ? await db.financialYear.findUnique({ where: { id } }) : await db.financialYear.findMany({ where, orderBy: { year: 'desc' } });
+   120→   120→        break;
+   121→   121→      case 'bankAccount':
+   122→   122→        data = id ? await db.bankAccount.findUnique({ where: { id } }) : await db.bankAccount.findMany({ where, orderBy: { bankName: 'asc' } });
+   123→   123→        break;
+   124→   124→      case 'budgetHead':
+   125→   125→        data = id ? await db.budgetHead.findUnique({ where: { id } }) : await db.budgetHead.findMany({ where, orderBy: { code: 'asc' } });
+   126→   126→        break;
+   127→   127→      case 'schemeInfo':
+   128→   128→        data = id ? await db.schemeInfo.findUnique({ where: { id } }) : await db.schemeInfo.findMany({ where, orderBy: { schemeNumber: 'asc' } });
+   129→   129→        break;
+   130→   130→      case 'contractorMaster':
+   131→   131→        data = id ? await db.contractorMaster.findUnique({ where: { id } }) : await db.contractorMaster.findMany({ where, orderBy: { contractorId: 'asc' } });
+   132→   132→        break;
+   133→   133→      case 'floorInfo':
+   134→   134→        data = id ? await db.floorInfo.findUnique({ where: { id } }) : await db.floorInfo.findMany({ where, orderBy: { floorIndex: 'asc' } });
+   135→   135→        break;
+   136→   136→      case 'demandCategory':
+   137→   137→        data = id ? await db.demandCategory.findUnique({ where: { id } }) : await db.demandCategory.findMany({ where, orderBy: { code: 'asc' } });
+   138→   138→        break;
+   139→   139→      case 'contractor':
+   140→   140→        data = id ? await db.contractorMaster.findUnique({ where: { id } }) : await db.contractorMaster.findMany({ where, orderBy: { contractorId: 'asc' } });
+   141→   141→        break;
+   142→   142→      default:
+   143→   143→        return NextResponse.json({ error: 'Invalid table' }, { status: 400 });
+   144→   144→    }
+   145→   145→
+   146→   146→    return NextResponse.json(data);
+   147→   147→  } catch (error) {
+   148→   148→    console.error('Master GET error:', error);
+   149→   149→    return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 });
+   150→   150→  }
+   151→   151→}
+   152→   152→
+   153→   153→// POST - create or update master data
+   154→   154→export async function POST(request: NextRequest) {
+   155→   155→  try {
+   156→   156→    const body = await request.json();
+   157→   157→    const { table, action, data } = body;
+   158→   158→
+   159→   159→    if (action === 'seed') {
+   160→   160→      return await handleSeed(table);
+   161→   161→    }
+   162→   162→
+   163→   163→    if (!table || !data) {
+   164→   164→      return NextResponse.json({ error: 'Table and data required' }, { status: 400 });
+   165→   165→    }
+   166→   166→
+   167→   167→    // Map short table names to full names
+   168→   168→    const tableAlias: Record<string, string> = {
+   169→   169→      'fy': 'financialYear',
+   170→   170→      'bank': 'bankAccount',
+   171→   171→      'budget-head': 'budgetHead',
+   172→   172→      'scheme': 'schemeInfo',
+   173→   173→      'contractor': 'contractorMaster',
+   174→   174→    };
+   175→   175→    const resolvedTable = tableAlias[table] || table;
+   176→   176→
+   177→   177→    const result = await handleUpsert(resolvedTable, data);
+   178→   178→    return NextResponse.json(result, { status: data.id ? 200 : 201 });
+   179→   179→  } catch (error: unknown) {
+   180→   180→    console.error('Master POST error:', error);
+   181→   181→    if (error && typeof error === 'object' && 'code' in error && (error as { code: string }).code === 'P2002') {
+   182→   182→      return NextResponse.json({ error: 'डुप्लिकेट रेकॉर्ड - हा क्रमांक आधीच अस्तित्वात आहे' }, { status: 400 });
+   183→   183→    }
+   184→   184→    return NextResponse.json({ error: 'Failed to save data' }, { status: 500 });
+   185→   185→  }
+   186→   186→}
+   187→   187→
+   188→   188→// DELETE
+   189→   189→export async function DELETE(request: NextRequest) {
+   190→   190→  try {
+   191→   191→    const { searchParams } = new URL(request.url);
+   192→   192→    const table = searchParams.get('table');
+   193→   193→    const id = searchParams.get('id');
+   194→   194→
+   195→   195→    if (!table || !id) {
+   196→   196→      return NextResponse.json({ error: 'Table and ID required' }, { status: 400 });
+   197→   197→    }
+   198→   198→
+   199→   199→    // Map short table names to full names
+   200→   200→    const tableAlias: Record<string, string> = {
+   201→   201→      'fy': 'financialYear',
+   202→   202→      'bank': 'bankAccount',
+   203→   203→      'budget-head': 'budgetHead',
+   204→   204→      'scheme': 'schemeInfo',
+   205→   205→      'contractor': 'contractorMaster',
+   206→   206→    };
+   207→   207→    const resolvedTable = tableAlias[table] || table;
+   208→   208→
+   209→   209→    await handleDelete(resolvedTable, id);
+   210→   210→    return NextResponse.json({ message: 'Record deleted' });
+   211→   211→  } catch (error) {
+   212→   212→    console.error('Master DELETE error:', error);
+   213→   213→    return NextResponse.json({ error: 'Failed to delete' }, { status: 500 });
+   214→   214→  }
+   215→   215→}
+   216→   216→
+   217→   217→async function handleSeed(table: string) {
+   218→   218→  // Map short table names to full names
+   219→   219→  const tableAlias: Record<string, string> = {
+   220→   220→    'fy': 'financialYear',
+   221→   221→    'bank': 'bankAccount',
+   222→   222→    'budget-head': 'budgetHead',
+   223→   223→    'scheme': 'schemeInfo',
+   224→   224→    'contractor': 'contractorMaster',
+   225→   225→  };
+   226→   226→  const resolvedTable = tableAlias[table] || table;
+   227→   227→
+   228→   228→  switch (resolvedTable) {
+   229→   229→    case 'tax': {
+   230→   230→      const existing = await db.taxMaster.count();
+   231→   231→      if (existing > 0) return NextResponse.json({ message: 'Already seeded', count: existing });
+   232→   232→      const taxes = [
+   233→   233→        { name: 'House Tax', nameMarathi: 'गृहकर', rate: 10, isEnabled: true, order: 1, category: 'general' },
+   234→   234→        { name: 'Water Tax', nameMarathi: 'पाणीकर', rate: 5, isEnabled: true, order: 2, category: 'general' },
+   235→   235→        { name: 'Light Tax', nameMarathi: 'दिवाबती कर', rate: 5, isEnabled: true, order: 3, category: 'general' },
+   236→   236→        { name: 'Health Tax', nameMarathi: 'आरोग्य कर', rate: 3, isEnabled: true, order: 4, category: 'general' },
+   237→   237→        { name: 'Education Tax', nameMarathi: 'शिक्षण कर', rate: 2, isEnabled: true, order: 5, category: 'general' },
+   238→   238→        { name: 'Tree Tax', nameMarathi: 'वृक्ष कर', rate: 1, isEnabled: true, order: 6, category: 'general' },
+   239→   239→        { name: 'Employment Tax', nameMarathi: 'रोजगार कर', rate: 2, isEnabled: true, order: 7, category: 'general' },
+   240→   240→        { name: 'Drainage Tax', nameMarathi: 'नाला कर', rate: 3, isEnabled: true, order: 8, category: 'general' },
+   241→   241→        { name: 'Sanitation Tax', nameMarathi: 'स्वच्छता कर', rate: 3, isEnabled: true, order: 9, category: 'general' },
+   242→   242→        { name: 'Fire Tax', nameMarathi: 'अग्निशामक कर', rate: 1, isEnabled: true, order: 10, category: 'general' },
+   243→   243→        { name: 'Special Tax', nameMarathi: 'विशेष कर', rate: 2, isEnabled: false, order: 11, category: 'general' },
+   244→   244→        { name: 'Penalty', nameMarathi: 'दंड', rate: 0, isEnabled: true, order: 12, category: 'penalty' },
+   245→   245→        { name: 'Interest', nameMarathi: 'व्याज', rate: 0, isEnabled: true, order: 13, category: 'interest' },
+   246→   246→        { name: 'Other Charges', nameMarathi: 'इतर आकारणी', rate: 0, isEnabled: false, order: 14, category: 'other' },
+   247→   247→      ];
+   248→   248→      const created = await db.taxMaster.createMany({ data: taxes });
+   249→   249→      return NextResponse.json({ message: 'Tax masters seeded', count: created.count });
+   250→   250→    }
+   251→   251→    case 'disability': {
+   252→   252→      const existing = await db.disabilityMaster.count();
+   253→   253→      if (existing > 0) return NextResponse.json({ message: 'Already seeded' });
+   254→   254→      const types = [
+   255→   255→        { disabilityType: 'Visual', disabilityTypeMr: 'दृष्टी', percentageRange: '40-100', description: 'दृष्टी दोष' },
+   256→   256→        { disabilityType: 'Hearing', disabilityTypeMr: 'श्रवण', percentageRange: '40-100', description: 'श्रवण दोष' },
+   257→   257→        { disabilityType: 'Locomotor', disabilityTypeMr: 'चलनवलन', percentageRange: '40-100', description: 'चलनवलन दोष' },
+   258→   258→        { disabilityType: 'Mental', disabilityTypeMr: 'मानसिक', percentageRange: '40-100', description: 'मानसिक दोष' },
+   259→   259→        { disabilityType: 'Multiple', disabilityTypeMr: 'बहुदोष', percentageRange: '40-100', description: 'अनेक दोष' },
+   260→   260→      ];
+   261→   261→      await db.disabilityMaster.createMany({ data: types });
+   262→   262→      return NextResponse.json({ message: 'Disability types seeded' });
+   263→   263→    }
+   264→   264→    case 'financialYear': {
+   265→   265→      const existing = await db.financialYear.count();
+   266→   266→      if (existing > 0) return NextResponse.json({ message: 'Already seeded', count: existing });
+   267→   267→      const years = [
+   268→   268→        { year: '2023-24', startDate: '2023-04-01', endDate: '2024-03-31', isActive: false, isLocked: true },
+   269→   269→        { year: '2024-25', startDate: '2024-04-01', endDate: '2025-03-31', isActive: true, isLocked: false },
+   270→   270→        { year: '2025-26', startDate: '2025-04-01', endDate: '2026-03-31', isActive: false, isLocked: false },
+   271→   271→      ];
+   272→   272→      const created = await db.financialYear.createMany({ data: years });
+   273→   273→      return NextResponse.json({ message: 'Financial years seeded', count: created.count });
+   274→   274→    }
+   275→   275→    case 'floorInfo': {
+   276→   276→      const existing = await db.floorInfo.count();
+   277→   277→      if (existing > 0) return NextResponse.json({ message: 'Already seeded', count: existing });
+   278→   278→      const floors = [
+   279→   279→        { floorNumber: '0', floorName: 'Ground Floor', floorNameMr: 'तळमजला', floorIndex: 0 },
+   280→   280→        { floorNumber: '1', floorName: 'First Floor', floorNameMr: 'पहिला मजला', floorIndex: 1 },
+   281→   281→        { floorNumber: '2', floorName: 'Second Floor', floorNameMr: 'दुसरा मजला', floorIndex: 2 },
+   282→   282→        { floorNumber: '3', floorName: 'Third Floor', floorNameMr: 'तिसरा मजला', floorIndex: 3 },
+   283→   283→        { floorNumber: '4', floorName: 'Fourth Floor', floorNameMr: 'चौथा मजला', floorIndex: 4 },
+   284→   284→      ];
+   285→   285→      const created = await db.floorInfo.createMany({ data: floors });
+   286→   286→      return NextResponse.json({ message: 'Floor info seeded', count: created.count });
+   287→   287→    }
+   288→   288→    case 'demandCategory': {
+   289→   289→      const existing = await db.demandCategory.count();
+   290→   290→      if (existing > 0) return NextResponse.json({ message: 'Already seeded', count: existing });
+   291→   291→      const categories = [
+   292→   292→        { code: 'HOUSE_TAX', name: 'House Tax', nameMr: 'गृहकर', description: 'Annual house tax demand' },
+   293→   293→        { code: 'WATER_TAX', name: 'Water Tax', nameMr: 'पाणीकर', description: 'Water supply tax demand' },
+   294→   294→        { code: 'LIGHT_TAX', name: 'Light Tax', nameMr: 'दिवाबती कर', description: 'Street light tax demand' },
+   295→   295→        { code: 'HEALTH_TAX', name: 'Health Tax', nameMr: 'आरोग्य कर', description: 'Health & sanitation tax demand' },
+   296→   296→        { code: 'EDUCATION_TAX', name: 'Education Tax', nameMr: 'शिक्षण कर', description: 'Education cess demand' },
+   297→   297→        { code: 'PENALTY', name: 'Penalty', nameMr: 'दंड', description: 'Late payment penalty' },
+   298→   298→        { code: 'INTEREST', name: 'Interest', nameMr: 'व्याज', description: 'Interest on arrears' },
+   299→   299→        { code: 'WATER_BILL', name: 'Water Bill', nameMr: 'पाणी बिल', description: 'Water consumption bill' },
+   300→   300→        { code: 'OTHER', name: 'Other', nameMr: 'इतर', description: 'Other charges' },
+   301→   301→      ];
+   302→   302→      const created = await db.demandCategory.createMany({ data: categories });
+   303→   303→      return NextResponse.json({ message: 'Demand categories seeded', count: created.count });
+   304→   304→    }
+   305→   305→    case 'budgetHead': {
+   306→   306→      const existing = await db.budgetHead.count();
+   307→   307→      if (existing > 0) return NextResponse.json({ message: 'Already seeded', count: existing });
+   308→   308→      const heads = [
+   309→   309→        { code: '1001', name: 'Property Tax', nameMr: 'मालमत्ता कर', category: 'income', type: 'revenue' },
+   310→   310→        { code: '1002', name: 'Water Tax', nameMr: 'पाणीकर', category: 'income', type: 'revenue' },
+   311→   311→        { code: '1003', name: 'Light Tax', nameMr: 'दिवाबती कर', category: 'income', type: 'revenue' },
+   312→   312→        { code: '1004', name: 'Health Tax', nameMr: 'आरोग्य कर', category: 'income', type: 'revenue' },
+   313→   313→        { code: '1005', name: 'Education Tax', nameMr: 'शिक्षण कर', category: 'income', type: 'revenue' },
+   314→   314→        { code: '1006', name: 'Other Income', nameMr: 'इतर उत्पन्न', category: 'income', type: 'revenue' },
+   315→   315→        { code: '1007', name: 'Grant Income', nameMr: 'अनुदान उत्पन्न', category: 'income', type: 'capital' },
+   316→   316→        { code: '2001', name: 'Salary', nameMr: 'पगार', category: 'expenditure', type: 'revenue' },
+   317→   317→        { code: '2002', name: 'Electricity', nameMr: 'वीज', category: 'expenditure', type: 'revenue' },
+   318→   318→        { code: '2003', name: 'Water Supply', nameMr: 'पाणीपुरवठा', category: 'expenditure', type: 'revenue' },
+   319→   319→        { code: '2004', name: 'Road Maintenance', nameMr: 'रस्ता देखभाल', category: 'expenditure', type: 'revenue' },
+   320→   320→        { code: '2005', name: 'Sanitation', nameMr: 'स्वच्छता', category: 'expenditure', type: 'revenue' },
+   321→   321→        { code: '2006', name: 'Development Works', nameMr: 'विकास कामे', category: 'expenditure', type: 'capital' },
+   322→   322→        { code: '3001', name: 'Buildings', nameMr: 'इमारती', category: 'asset', type: 'capital' },
+   323→   323→        { code: '3002', name: 'Land', nameMr: 'जमीन', category: 'asset', type: 'capital' },
+   324→   324→        { code: '3003', name: 'Vehicles', nameMr: 'वाहने', category: 'asset', type: 'capital' },
+   325→   325→        { code: '4001', name: 'Bank Balance', nameMr: 'बँक शिल्लक', category: 'liability', type: 'revenue' },
+   326→   326→      ];
+   327→   327→      const created = await db.budgetHead.createMany({ data: heads });
+   328→   328→      return NextResponse.json({ message: 'Budget heads seeded', count: created.count });
+   329→   329→    }
+   330→   330→    default:
+   331→   331→      return NextResponse.json({ error: 'No seed for this table' }, { status: 400 });
+   332→   332→  }
+   333→   333→}
+   334→   334→
+   335→   335→async function handleUpsert(table: string, data: Record<string, unknown>) {
+   336→   336→  const isUpdate = !!data.id;
+   337→   337→  const id = data.id as string | undefined;
+   338→   338→
+   339→   339→  // Remove id for create
+   340→   340→  const { id: _id, ...createData } = data;
+   341→   341→
+   342→   342→  // Handle property special case with owners and taxRates
+   343→   343→  if (table === 'property') {
+   344→   344→    const { owners, taxRates, ...propData } = data as Record<string, unknown> & {
+   345→   345→      owners?: { ownerId: string; ownershipType: string }[];
+   346→   346→      taxRates?: { taxMasterId: string; rate: number }[];
+   347→   347→    };
+   348→   348→
+   349→   349→    // Convert numeric strings to numbers
+   350→   350→    const numericFields = ['area', 'builtUpArea', 'lengthEast', 'widthEast', 'lengthWest', 'widthWest', 'lengthSouth', 'widthSouth', 'lengthNorth', 'widthNorth', 'totalLength', 'totalWidth', 'depreciationRate', 'usageFactor', 'taxRate', 'houseTax', 'lightTax', 'healthTax', 'waterTax'];
+   351→   351→    const cleanPropData: Record<string, unknown> = {};
+   352→   352→    for (const [key, value] of Object.entries(propData)) {
+   353→   353→      if (key === 'id') continue;
+   354→   354→      if (numericFields.includes(key)) {
+   355→   355→        cleanPropData[key] = value ? parseFloat(String(value)) : null;
+   356→   356→      } else {
+   357→   357→        cleanPropData[key] = value || null;
+   358→   358→      }
+   359→   359→    }
+   360→   360→
+   361→   361→    if (isUpdate && id) {
+   362→   362→      await db.propertyMaster.update({ where: { id }, data: cleanPropData });
+   363→   363→
+   364→   364→      if (owners && Array.isArray(owners)) {
+   365→   365→        await db.propertyOwner.deleteMany({ where: { propertyId: id } });
+   366→   366→        for (const o of owners) {
+   367→   367→          await db.propertyOwner.create({
+   368→   368→            data: { propertyId: id, ownerId: o.ownerId, ownershipType: o.ownershipType },
+   369→   369→          });
+   370→   370→        }
+   371→   371→      }
+   372→   372→
+   373→   373→      if (taxRates && Array.isArray(taxRates)) {
+   374→   374→        await db.propertyTaxRate.deleteMany({ where: { propertyId: id } });
+   375→   375→        for (const tr of taxRates) {
+   376→   376→          if (tr.rate > 0) {
+   377→   377→            await db.propertyTaxRate.create({
+   378→   378→              data: { propertyId: id, taxMasterId: tr.taxMasterId, rate: tr.rate },
+   379→   379→            });
+   380→   380→          }
+   381→   381→        }
+   382→   382→      }
+   383→   383→
+   384→   384→      return db.propertyMaster.findUnique({
+   385→   385→        where: { id },
+   386→   386→        include: { ward: true, road: true, owners: { include: { owner: true } }, taxRates: { include: { taxMaster: true }, orderBy: { taxMaster: { order: 'asc' } } } },
+   387→   387→      });
+   388→   388→    }
+   389→   389→
+   390→   390→    const property = await db.propertyMaster.create({ data: cleanPropData as Parameters<typeof db.propertyMaster.create>[0]['data'] });
+   391→   391→
+   392→   392→    if (owners && Array.isArray(owners)) {
+   393→   393→      for (const o of owners) {
+   394→   394→        await db.propertyOwner.create({
+   395→   395→          data: { propertyId: property.id, ownerId: o.ownerId, ownershipType: o.ownershipType },
+   396→   396→        });
+   397→   397→      }
+   398→   398→    }
+   399→   399→
+   400→   400→    if (taxRates && Array.isArray(taxRates)) {
+   401→   401→      for (const tr of taxRates) {
+   402→   402→        if (tr.rate > 0) {
+   403→   403→          await db.propertyTaxRate.create({
+   404→   404→            data: { propertyId: property.id, taxMasterId: tr.taxMasterId, rate: tr.rate },
+   405→   405→          });
+   406→   406→        }
+   407→   407→      }
+   408→   408→    }
+   409→   409→
+   410→   410→    return db.propertyMaster.findUnique({
+   411→   411→      where: { id: property.id },
+   412→   412→      include: { ward: true, road: true, owners: { include: { owner: true } }, taxRates: { include: { taxMaster: true }, orderBy: { taxMaster: { order: 'asc' } } } },
+   413→   413→    });
+   414→   414→  }
+   415→   415→
+   416→   416→  // Numeric field conversion for ALL tables
+   417→   417→  const numericFieldsForTable: Record<string, string[]> = {
+   418→   418→    ward: ['population', 'area'],
+   419→   419→    owner: ['disabilityPercentage'],
+   420→   420→    road: ['length', 'width'],
+   421→   421→    drainage: ['length'],
+   422→   422→    waterSupply: ['monthlyRate'],
+   423→   423→    streetLight: ['wattage'],
+   424→   424→    readyReckoner: ['ratePerSqFt'],
+   425→   425→    employee: ['salary'],
+   426→   426→    tax: ['rate', 'order'],
+   427→   427→    village: ['population', 'totalArea'],
+   428→   428→    bankAccount: ['balance'],
+   429→   429→    budgetHead: [],
+   430→   430→    schemeInfo: ['totalAllocation'],
+   431→   431→    contractorMaster: [],
+   432→   432→    financialYear: [],
+   433→   433→    floorInfo: ['floorIndex'],
+   434→   434→    demandCategory: [],
+   435→   435→  };
+   436→   436→  const numericFields = numericFieldsForTable[table] || [];
+   437→   437→
+   438→   438→  // Integer fields (must be converted to Int, not Float)
+   439→   439→  const intFieldsForTable: Record<string, string[]> = {
+   440→   440→    ward: ['population'],
+   441→   441→    employee: [],
+   442→   442→    tax: ['order'],
+   443→   443→    floorInfo: ['floorIndex'],
+   444→   444→  };
+   445→   445→  // Boolean fields that must not be converted to null when false
+   446→   446→  const boolFieldsForTable: Record<string, string[]> = {
+   447→   447→    owner: ['isDisabled'],
+   448→   448→    employee: ['isActive'],
+   449→   449→    financialYear: ['isActive', 'isLocked'],
+   450→   450→    bankAccount: ['isActive'],
+   451→   451→    budgetHead: ['isActive'],
+   452→   452→    schemeInfo: ['isActive'],
+   453→   453→    contractorMaster: ['isActive'],
+   454→   454→    contractor: ['isActive'],
+   455→   455→  };
+   456→   456→  const boolFields = boolFieldsForTable[table] || [];
+   457→   457→  const intFields = intFieldsForTable[table] || [];
+   458→   458→
+   459→   459→  const cleanData: Record<string, unknown> = {};
+   460→   460→  for (const [key, value] of Object.entries(createData)) {
+   461→   461→    if (boolFields.includes(key)) {
+   462→   462→      cleanData[key] = value === true || value === 'true' || value === 1;
+   463→   463→    } else if (intFields.includes(key)) {
+   464→   464→      cleanData[key] = value ? parseInt(String(value)) : null;
+   465→   465→    } else if (numericFields.includes(key)) {
+   466→   466→      cleanData[key] = value ? parseFloat(String(value)) : null;
+   467→   467→    } else {
+   468→   468→      cleanData[key] = (value === null || value === undefined) ? null : value;
+   469→   469→    }
+   470→   470→  }
+   471→   471→
+   472→   472→  // Remove null values for optional fields that Prisma doesn't accept as null on create
+   473→   473→  if (!isUpdate) {
+   474→   474→    for (const [key, value] of Object.entries(cleanData)) {
+   475→   475→      if (value === null || value === undefined || value === '') {
+   476→   476→        delete cleanData[key];
+   477→   477→      }
+   478→   478→    }
+   479→   479→  }
+   480→   480→
+   481→   481→  // Generic upsert for other tables
+   482→   482→  if (isUpdate && id) {
+   483→   483→    switch (table) {
+   484→   484→      case 'ward': return db.wardMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.wardMaster.update>[0]['data'] });
+   485→   485→      case 'owner': return db.ownerMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.ownerMaster.update>[0]['data'] });
+   486→   486→      case 'road': return db.roadMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.roadMaster.update>[0]['data'] });
+   487→   487→      case 'drainage': return db.drainageMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.drainageMaster.update>[0]['data'] });
+   488→   488→      case 'waterSupply': return db.waterSupplyMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.waterSupplyMaster.update>[0]['data'] });
+   489→   489→      case 'streetLight': return db.streetLightMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.streetLightMaster.update>[0]['data'] });
+   490→   490→      case 'readyReckoner': return db.readyReckonerMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.readyReckonerMaster.update>[0]['data'] });
+   491→   491→      case 'disability': return db.disabilityMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.disabilityMaster.update>[0]['data'] });
+   492→   492→      case 'employee': return db.employeeMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.employeeMaster.update>[0]['data'] });
+   493→   493→      case 'tax': return db.taxMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.taxMaster.update>[0]['data'] });
+   494→   494→      case 'village': return db.villageInfo.update({ where: { id }, data: cleanData as Parameters<typeof db.villageInfo.update>[0]['data'] });
+   495→   495→      // New master tables
+   496→   496→      case 'financialYear': return db.financialYear.update({ where: { id }, data: cleanData as Parameters<typeof db.financialYear.update>[0]['data'] });
+   497→   497→      case 'bankAccount': return db.bankAccount.update({ where: { id }, data: cleanData as Parameters<typeof db.bankAccount.update>[0]['data'] });
+   498→   498→      case 'budgetHead': return db.budgetHead.update({ where: { id }, data: cleanData as Parameters<typeof db.budgetHead.update>[0]['data'] });
+   499→   499→      case 'schemeInfo': return db.schemeInfo.update({ where: { id }, data: cleanData as Parameters<typeof db.schemeInfo.update>[0]['data'] });
+   500→   500→      case 'floorInfo': return db.floorInfo.update({ where: { id }, data: cleanData as Parameters<typeof db.floorInfo.update>[0]['data'] });
+   501→   501→      case 'demandCategory': return db.demandCategory.update({ where: { id }, data: cleanData as Parameters<typeof db.demandCategory.update>[0]['data'] });
+   502→   502→      case 'contractor': return db.contractorMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.contractorMaster.update>[0]['data'] });
+   503→   503→      case 'contractorMaster': return db.contractorMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.contractorMaster.update>[0]['data'] });
+   504→   504→    }
+   505→   505→  }
+   506→   506→
+   507→   507→  // Create
+   508→   508→  switch (table) {
+   509→   509→    case 'ward': return db.wardMaster.create({ data: cleanData as Parameters<typeof db.wardMaster.create>[0]['data'] });
+   510→   510→    case 'owner': return db.ownerMaster.create({ data: cleanData as Parameters<typeof db.ownerMaster.create>[0]['data'] });
+   511→   511→    case 'road': return db.roadMaster.create({ data: cleanData as Parameters<typeof db.roadMaster.create>[0]['data'] });
+   512→   512→    case 'drainage': return db.drainageMaster.create({ data: cleanData as Parameters<typeof db.drainageMaster.create>[0]['data'] });
+   513→   513→    case 'waterSupply': return db.waterSupplyMaster.create({ data: cleanData as Parameters<typeof db.waterSupplyMaster.create>[0]['data'] });
+   514→   514→    case 'streetLight': return db.streetLightMaster.create({ data: cleanData as Parameters<typeof db.streetLightMaster.create>[0]['data'] });
+   515→   515→    case 'readyReckoner': return db.readyReckonerMaster.create({ data: cleanData as Parameters<typeof db.readyReckonerMaster.create>[0]['data'] });
+   516→   516→    case 'disability': return db.disabilityMaster.create({ data: cleanData as Parameters<typeof db.disabilityMaster.create>[0]['data'] });
+   517→   517→    case 'employee': return db.employeeMaster.create({ data: cleanData as Parameters<typeof db.employeeMaster.create>[0]['data'] });
+   518→   518→    case 'tax': return db.taxMaster.create({ data: cleanData as Parameters<typeof db.taxMaster.create>[0]['data'] });
+   519→   519→    case 'village': return db.villageInfo.create({ data: cleanData as Parameters<typeof db.villageInfo.create>[0]['data'] });
+   520→   520→    // New master tables
+   521→   521→    case 'financialYear': return db.financialYear.create({ data: cleanData as Parameters<typeof db.financialYear.create>[0]['data'] });
+   522→   522→    case 'bankAccount': return db.bankAccount.create({ data: cleanData as Parameters<typeof db.bankAccount.create>[0]['data'] });
+   523→   523→    case 'budgetHead': return db.budgetHead.create({ data: cleanData as Parameters<typeof db.budgetHead.create>[0]['data'] });
+   524→   524→    case 'schemeInfo': return db.schemeInfo.create({ data: cleanData as Parameters<typeof db.schemeInfo.create>[0]['data'] });
+   525→   525→    case 'floorInfo': return db.floorInfo.create({ data: cleanData as Parameters<typeof db.floorInfo.create>[0]['data'] });
+   526→   526→    case 'demandCategory': return db.demandCategory.create({ data: cleanData as Parameters<typeof db.demandCategory.create>[0]['data'] });
+   527→   527→    case 'contractor': return db.contractorMaster.create({ data: cleanData as Parameters<typeof db.contractorMaster.create>[0]['data'] });
+   528→   528→    case 'contractorMaster': return db.contractorMaster.create({ data: cleanData as Parameters<typeof db.contractorMaster.create>[0]['data'] });
+   529→   529→    default: throw new Error(`Unknown table: ${table}`);
+   530→   530→  }
+   531→   531→}
+   532→   532→
+   533→   533→async function handleDelete(table: string, id: string) {
+   534→   534→  switch (table) {
+   535→   535→    case 'ward': return db.wardMaster.delete({ where: { id } });
+   536→   536→    case 'owner': return db.ownerMaster.delete({ where: { id } });
+   537→   537→    case 'road': return db.roadMaster.delete({ where: { id } });
+   538→   538→    case 'drainage': return db.drainageMaster.delete({ where: { id } });
+   539→   539→    case 'waterSupply': return db.waterSupplyMaster.delete({ where: { id } });
+   540→   540→    case 'streetLight': return db.streetLightMaster.delete({ where: { id } });
+   541→   541→    case 'readyReckoner': return db.readyReckonerMaster.delete({ where: { id } });
+   542→   542→    case 'disability': return db.disabilityMaster.delete({ where: { id } });
+   543→   543→    case 'employee': return db.employeeMaster.delete({ where: { id } });
+   544→   544→    case 'tax': return db.taxMaster.delete({ where: { id } });
+   545→   545→    case 'property': return db.propertyMaster.delete({ where: { id } });
+   546→   546→    case 'village': return db.villageInfo.delete({ where: { id } });
+   547→   547→    // New master tables
+   548→   548→    case 'financialYear': return db.financialYear.delete({ where: { id } });
+   549→   549→    case 'bankAccount': return db.bankAccount.delete({ where: { id } });
+   550→   550→    case 'budgetHead': return db.budgetHead.delete({ where: { id } });
+   551→   551→    case 'schemeInfo': return db.schemeInfo.delete({ where: { id } });
+   552→   552→    case 'floorInfo': return db.floorInfo.delete({ where: { id } });
+   553→   553→    case 'demandCategory': return db.demandCategory.delete({ where: { id } });
+   554→   554→    case 'contractor': return db.contractorMaster.delete({ where: { id } });
+   555→   555→    default: throw new Error(`Unknown table: ${table}`);
+   556→   556→  }
+   557→   557→}
+   558→   558→
