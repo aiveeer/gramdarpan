@@ -441,11 +441,6 @@ export default function Home() {
   // ─── Render Main Content ─────────────────────────────────────────────────
 
   const renderMainContent = () => {
-    // Auth guard: if NOT authenticated, only show login form
-    if (!user?.authenticated) {
-      return <LoginForm onLoginSuccess={handleLoginSuccess} onLogout={handleLogout} />;
-    }
-
     switch (activeView) {
       case 'dashboard':
         return <ERPDashboard stats={stats} user={user} recentLogs={recentLogs} setActiveView={setActiveView} formatTime={formatTime} refreshStats={refreshStats} />;
@@ -611,6 +606,44 @@ export default function Home() {
     const found = allItems.find((item) => item.id === activeView);
     return found ? found.label : 'डॅशबोर्ड';
   };
+
+  // If not authenticated, show full-screen login page (no sidebar, no header, no features)
+  if (!user?.authenticated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center" style={{ background: 'linear-gradient(135deg, #0d7377 0%, #0a5c5f 30%, #1a5632 100%)' }}>
+        <div className="w-full max-w-md mx-4">
+          {/* Indian Flag Tricolor Bar */}
+          <div className="flex h-1.5 w-full rounded-t-xl overflow-hidden mb-0">
+            <div className="flex-1" style={{ background: '#FF9933' }} />
+            <div className="flex-1 bg-white" />
+            <div className="flex-1" style={{ background: '#138808' }} />
+          </div>
+          {/* Logo and Title */}
+          <div className="bg-white/10 backdrop-blur-sm p-6 text-center border-b border-white/10">
+            <div className="h-16 w-16 rounded-2xl flex items-center justify-center mx-auto shadow-lg mb-3" style={{ background: 'linear-gradient(135deg, #e67e22, #f39c12)' }}>
+              <Landmark className="h-8 w-8 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold text-white mb-1">ग्रामपंचायत लेखा संहिता</h1>
+            <p className="text-sm text-teal-100/80">ERP पोर्टल — महाराष्ट्र ग्रामपंचायत लेखा संहिता २०११</p>
+          </div>
+          {/* Login Form */}
+          <div className="bg-white rounded-b-xl shadow-2xl">
+            <LoginForm onLoginSuccess={handleLoginSuccess} onLogout={handleLogout} />
+          </div>
+          {/* Footer */}
+          <div className="mt-6 text-center">
+            <p className="text-xs text-teal-100/60">© 2024 महाराष्ट्र ग्रामपंचायत लेखा संहिता २०११</p>
+          </div>
+          {/* Indian Flag Tricolor Bar Bottom */}
+          <div className="flex h-1 w-full rounded-b-xl overflow-hidden mt-4">
+            <div className="flex-1" style={{ background: '#FF9933' }} />
+            <div className="flex-1 bg-white" />
+            <div className="flex-1" style={{ background: '#138808' }} />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider>

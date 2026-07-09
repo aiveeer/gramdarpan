@@ -1,0 +1,816 @@
+     1→     1→generator client {
+     2→     2→  provider = "prisma-client-js"
+     3→     3→}
+     4→     4→
+     5→     5→datasource db {
+     6→     6→  provider = "sqlite"
+     7→     7→  url      = env("DATABASE_URL")
+     8→     8→}
+     9→     9→
+    10→    10→// ===== AUTH & USERS =====
+    11→    11→
+    12→    12→model User {
+    13→    13→  id        String   @id @default(cuid())
+    14→    14→  username  String   @unique
+    15→    15→  password  String
+    16→    16→  name      String
+    17→    17→  nameMarathi String
+    18→    18→  role      String   @default("operator") // "gpo" or "operator"
+    19→    19→  isActive  Boolean  @default(true)
+    20→    20→  createdAt DateTime @default(now())
+    21→    21→  updatedAt DateTime @updatedAt
+    22→    22→
+    23→    23→  sessions   UserSession[]
+    24→    24→  auditLogs  AuditLog[]
+    25→    25→}
+    26→    26→
+    27→    27→model UserSession {
+    28→    28→  id        String   @id @default(cuid())
+    29→    29→  userId    String
+    30→    30→  loginAt   DateTime @default(now())
+    31→    31→  logoutAt  DateTime?
+    32→    32→  ipAddress String?
+    33→    33→  userAgent String?
+    34→    34→  action    String   @default("login")
+    35→    35→
+    36→    36→  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+    37→    37→}
+    38→    38→
+    39→    39→model AuditLog {
+    40→    40→  id        String   @id @default(cuid())
+    41→    41→  userId    String
+    42→    42→  action    String
+    43→    43→  module    String
+    44→    44→  recordId  String?
+    45→    45→  details   String?
+    46→    46→  createdAt DateTime @default(now())
+    47→    47→
+    48→    48→  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+    49→    49→}
+    50→    50→
+    51→    51→// ===== MASTER TABLES =====
+    52→    52→
+    53→    53→model VillageInfo {
+    54→    54→  id              String   @id @default(cuid())
+    55→    55→  gramPanchayatName String
+    56→    56→  gramPanchayatNameMr String
+    57→    57→  taluka          String
+    58→    58→  district        String
+    59→    59→  state           String   @default("महाराष्ट्र")
+    60→    60→  pinCode         String?
+    61→    61→  population      Int?
+    62→    62→  totalArea       Float?
+    63→    63→  gramSabhaDate   String?
+    64→    64→  sarpanchName    String?
+    65→    65→  sarpanchNameMr  String?
+    66→    66→  secretaryName   String?
+    67→    67→  secretaryNameMr String?
+    68→    68→  createdAt       DateTime @default(now())
+    69→    69→  updatedAt       DateTime @updatedAt
+    70→    70→}
+    71→    71→
+    72→    72→model WardMaster {
+    73→    73→  id          String   @id @default(cuid())
+    74→    74→  wardNumber  String   @unique
+    75→    75→  wardName    String
+    76→    76→  wardNameMr  String
+    77→    77→  population  Int?
+    78→    78→  area        Float?
+    79→    79→  description String?
+    80→    80→  createdAt   DateTime @default(now())
+    81→    81→  updatedAt   DateTime @updatedAt
+    82→    82→
+    83→    83→  properties  PropertyMaster[]
+    84→    84→}
+    85→    85→
+    86→    86→model OwnerMaster {
+    87→    87→  id              String   @id @default(cuid())
+    88→    88→  ownerNumber     String   @unique
+    89→    89→  firstName       String
+    90→    90→  middleName      String?
+    91→    91→  lastName        String
+    92→    92→  firstNameMr     String
+    93→    93→  middleNameMr    String?
+    94→    94→  lastNameMr      String?
+    95→    95→  mobileNumber    String?
+    96→    96→  aadhaarNumber   String?
+    97→    97→  panNumber       String?
+    98→    98→  email           String?
+    99→    99→  address         String?
+   100→   100→  addressMr       String?
+   101→   101→  isDisabled      Boolean  @default(false)
+   102→   102→  disabilityType  String?
+   103→   103→  disabilityPercentage Float?
+   104→   104→  createdAt       DateTime @default(now())
+   105→   105→  updatedAt       DateTime @updatedAt
+   106→   106→
+   107→   107→  properties      PropertyOwner[]
+   108→   108→}
+   109→   109→
+   110→   110→model RoadMaster {
+   111→   111→  id          String   @id @default(cuid())
+   112→   112→  roadNumber  String   @unique
+   113→   113→  roadName    String
+   114→   114→  roadNameMr  String
+   115→   115→  roadType    String?
+   116→   116→  length      Float?
+   117→   117→  width       Float?
+   118→   118→  wardId      String?
+   119→   119→  createdAt   DateTime @default(now())
+   120→   120→  updatedAt   DateTime @updatedAt
+   121→   121→
+   122→   122→  properties  PropertyMaster[]
+   123→   123→}
+   124→   124→
+   125→   125→model DrainageMaster {
+   126→   126→  id            String   @id @default(cuid())
+   127→   127→  drainageNumber String  @unique
+   128→   128→  drainageName  String
+   129→   129→  drainageNameMr String
+   130→   130→  drainageType  String?
+   131→   131→  length        Float?
+   132→   132→  wardId        String?
+   133→   133→  status        String   @default("Active")
+   134→   134→  createdAt     DateTime @default(now())
+   135→   135→  updatedAt     DateTime @updatedAt
+   136→   136→}
+   137→   137→
+   138→   138→model WaterSupplyMaster {
+   139→   139→  id              String   @id @default(cuid())
+   140→   140→  connectionNumber String  @unique
+   141→   141→  connectionType  String
+   142→   142→  connectionStatus String  @default("Active")
+   143→   143→  tapSize         String?
+   144→   144→  propertyId      String?
+   145→   145→  wardId          String?
+   146→   146→  monthlyRate     Float    @default(0)
+   147→   147→  createdAt       DateTime @default(now())
+   148→   148→  updatedAt       DateTime @updatedAt
+   149→   149→}
+   150→   150→
+   151→   151→model StreetLightMaster {
+   152→   152→  id            String   @id @default(cuid())
+   153→   153→  lightNumber   String   @unique
+   154→   154→  lightType     String
+   155→   155→  wattage       Float?
+   156→   156→  poleNumber    String?
+   157→   157→  wardId        String?
+   158→   158→  roadId        String?
+   159→   159→  status        String   @default("Working")
+   160→   160→  createdAt     DateTime @default(now())
+   161→   161→  updatedAt     DateTime @updatedAt
+   162→   162→}
+   163→   163→
+   164→   164→model ReadyReckonerMaster {
+   165→   165→  id                String   @id @default(cuid())
+   166→   166→  usageType         String
+   167→   167→  constructionType  String
+   168→   168→  ratePerSqFt       Float
+   169→   169→  year              String
+   170→   170→  zone              String?
+   171→   171→  createdAt         DateTime @default(now())
+   172→   172→  updatedAt         DateTime @updatedAt
+   173→   173→
+   174→   174→  @@unique([usageType, constructionType, year])
+   175→   175→}
+   176→   176→
+   177→   177→model DisabilityMaster {
+   178→   178→  id                String   @id @default(cuid())
+   179→   179→  disabilityType    String
+   180→   180→  disabilityTypeMr  String
+   181→   181→  percentageRange   String
+   182→   182→  description       String?
+   183→   183→  createdAt         DateTime @default(now())
+   184→   184→  updatedAt         DateTime @updatedAt
+   185→   185→}
+   186→   186→
+   187→   187→model EmployeeMaster {
+   188→   188→  id            String   @id @default(cuid())
+   189→   189→  employeeId    String   @unique
+   190→   190→  firstName     String
+   191→   191→  middleName    String?
+   192→   192→  lastName      String
+   193→   193→  firstNameMr   String
+   194→   194→  middleNameMr  String?
+   195→   195→  lastNameMr    String?
+   196→   196→  designation   String
+   197→   197→  designationMr String?
+   198→   198→  mobileNumber  String?
+   199→   199→  aadhaarNumber String?
+   200→   200→  joinDate      String?
+   201→   201→  salary        Float?
+   202→   202→  isActive      Boolean  @default(true)
+   203→   203→  createdAt     DateTime @default(now())
+   204→   204→  updatedAt     DateTime @updatedAt
+   205→   205→}
+   206→   206→
+   207→   207→model TaxMaster {
+   208→   208→  id          String   @id @default(cuid())
+   209→   209→  name        String
+   210→   210→  nameMarathi String
+   211→   211→  rate        Float    @default(0)
+   212→   212→  isEnabled   Boolean  @default(true)
+   213→   213→  order       Int      @default(0)
+   214→   214→  category    String   @default("general")
+   215→   215→  createdAt   DateTime @default(now())
+   216→   216→  updatedAt   DateTime @updatedAt
+   217→   217→
+   218→   218→  propertyTaxRates PropertyTaxRate[]
+   219→   219→}
+   220→   220→
+   221→   221→// ===== NEW MASTER TABLES FOR ERP =====
+   222→   222→
+   223→   223→model FinancialYear {
+   224→   224→  id          String   @id @default(cuid())
+   225→   225→  year        String   @unique  // "2024-25"
+   226→   226→  startDate   String
+   227→   227→  endDate     String
+   228→   228→  isActive    Boolean  @default(true)
+   229→   229→  isLocked    Boolean  @default(false)
+   230→   230→  createdAt   DateTime @default(now())
+   231→   231→  updatedAt   DateTime @updatedAt
+   232→   232→}
+   233→   233→
+   234→   234→model BankAccount {
+   235→   235→  id            String   @id @default(cuid())
+   236→   236→  accountNumber String   @unique
+   237→   237→  bankName      String
+   238→   238→  branchName    String?
+   239→   239→  ifscCode      String?
+   240→   240→  accountType   String   @default("Savings") // Savings, Current, FD
+   241→   241→  balance       Float    @default(0)
+   242→   242→  isActive      Boolean  @default(true)
+   243→   243→  createdAt     DateTime @default(now())
+   244→   244→  updatedAt     DateTime @updatedAt
+   245→   245→}
+   246→   246→
+   247→   247→model BudgetHead {
+   248→   248→  id          String   @id @default(cuid())
+   249→   249→  code        String   @unique
+   250→   250→  name        String
+   251→   251→  nameMr      String
+   252→   252→  category    String   // "income", "expenditure", "asset", "liability"
+   253→   253→  type        String   // "revenue", "capital"
+   254→   254→  parentCode  String?
+   255→   255→  isActive    Boolean  @default(true)
+   256→   256→  createdAt   DateTime @default(now())
+   257→   257→  updatedAt   DateTime @updatedAt
+   258→   258→}
+   259→   259→
+   260→   260→model SchemeInfo {
+   261→   261→  id              String   @id @default(cuid())
+   262→   262→  schemeNumber    String   @unique
+   263→   263→  schemeName      String
+   264→   264→  schemeNameMr    String
+   265→   265→  schemeType      String?  // "Central", "State", "GP"
+   266→   266→  fundSource      String?
+   267→   267→  totalAllocation Float    @default(0)
+   268→   268→  financialYear   String?
+   269→   269→  isActive        Boolean  @default(true)
+   270→   270→  createdAt       DateTime @default(now())
+   271→   271→  updatedAt       DateTime @updatedAt
+   272→   272→}
+   273→   273→
+   274→   274→model FloorInfo {
+   275→   275→  id          String   @id @default(cuid())
+   276→   276→  floorNumber String
+   277→   277→  floorName   String
+   278→   278→  floorNameMr String
+   279→   279→  floorIndex  Int      @default(0)
+   280→   280→  createdAt   DateTime @default(now())
+   281→   281→  updatedAt   DateTime @updatedAt
+   282→   282→}
+   283→   283→
+   284→   284→model DemandCategory {
+   285→   285→  id          String   @id @default(cuid())
+   286→   286→  code        String   @unique
+   287→   287→  name        String
+   288→   288→  nameMr      String
+   289→   289→  description String?
+   290→   290→  isActive    Boolean  @default(true)
+   291→   291→  createdAt   DateTime @default(now())
+   292→   292→  updatedAt   DateTime @updatedAt
+   293→   293→}
+   294→   294→
+   295→   295→// ===== PROPERTY WITH LINKS TO MASTERS =====
+   296→   296→
+   297→   297→model PropertyMaster {
+   298→   298→  id               String   @id @default(cuid())
+   299→   299→  propertyNumber   String   @unique
+   300→   300→  wardId           String?
+   301→   301→  roadId           String?
+   302→   302→  citySurveyNo     String?
+   303→   303→  area             Float?
+   304→   304→  builtUpArea      Float?
+   305→   305→  boundaries       String?
+   306→   306→  constructionType String?
+   307→   307→  usageType        String?
+   308→   308→  floorInfo        String?
+   309→   309→  yearBuilt        String?
+   310→   310→  propertyStatus   String   @default("Active")
+   311→   311→  waterConnectionId String?
+   312→   312→  boundaryEast     String?
+   313→   313→  boundaryWest     String?
+   314→   314→  boundarySouth    String?
+   315→   315→  boundaryNorth    String?
+   316→   316→  lengthEast       Float?
+   317→   317→  widthEast        Float?
+   318→   318→  lengthWest       Float?
+   319→   319→  widthWest        Float?
+   320→   320→  lengthSouth      Float?
+   321→   321→  widthSouth       Float?
+   322→   322→  lengthNorth      Float?
+   323→   323→  widthNorth       Float?
+   324→   324→  totalLength      Float?
+   325→   325→  totalWidth       Float?
+   326→   326→  depreciationRate Float?   @default(0)
+   327→   327→  usageFactor      Float?   @default(1)
+   328→   328→  taxRate          Float?   @default(0)
+   329→   329→  houseTax         Float?   @default(0)
+   330→   330→  lightTax         Float?   @default(0)
+   331→   331→  healthTax        Float?   @default(0)
+   332→   332→  waterTax         Float?   @default(0)
+   333→   333→  constructionDetails String?
+   334→   334→  createdAt        DateTime @default(now())
+   335→   335→  updatedAt        DateTime @updatedAt
+   336→   336→
+   337→   337→  ward            WardMaster?       @relation(fields: [wardId], references: [id])
+   338→   338→  road            RoadMaster?       @relation(fields: [roadId], references: [id])
+   339→   339→  owners          PropertyOwner[]
+   340→   340→  taxRates        PropertyTaxRate[]
+   341→   341→  namuna8s        Namuna8[]
+   342→   342→  namuna9s        Namuna9[]
+   343→   343→  payments        Payment[]
+   344→   344→}
+   345→   345→
+   346→   346→model PropertyOwner {
+   347→   347→  id           String   @id @default(cuid())
+   348→   348→  propertyId   String
+   349→   349→  ownerId      String
+   350→   350→  ownershipType String  @default("मालक")
+   351→   351→  startDate    String?
+   352→   352→  endDate      String?
+   353→   353→  createdAt    DateTime @default(now())
+   354→   354→  updatedAt    DateTime @updatedAt
+   355→   355→
+   356→   356→  property PropertyMaster @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+   357→   357→  owner    OwnerMaster    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+   358→   358→
+   359→   359→  @@unique([propertyId, ownerId, ownershipType])
+   360→   360→}
+   361→   361→
+   362→   362→model PropertyTaxRate {
+   363→   363→  id          String   @id @default(cuid())
+   364→   364→  propertyId  String
+   365→   365→  taxMasterId String
+   366→   366→  rate        Float    @default(0)
+   367→   367→  createdAt   DateTime @default(now())
+   368→   368→  updatedAt   DateTime @updatedAt
+   369→   369→
+   370→   370→  property  PropertyMaster @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+   371→   371→  taxMaster TaxMaster      @relation(fields: [taxMasterId], references: [id], onDelete: Cascade)
+   372→   372→
+   373→   373→  @@unique([propertyId, taxMasterId])
+   374→   374→}
+   375→   375→
+   376→   376→// ===== NAMUNA FORMS =====
+   377→   377→
+   378→   378→model Namuna8 {
+   379→   379→  id            String   @id @default(cuid())
+   380→   380→  propertyId    String
+   381→   381→  financialYear String
+   382→   382→  taxDetails    String   @default("[]")
+   383→   383→  totalTax      Float    @default(0)
+   384→   384→  totalArea        Float?   @default(0)
+   385→   385→  landRate         Float?   @default(0)
+   386→   386→  buildingRate     Float?   @default(0)
+   387→   387→  constructionRate Float?   @default(0)
+   388→   388→  depreciationRate Float?   @default(0)
+   389→   389→  usageFactor      Float?   @default(1)
+   390→   390→  capitalValue     Float?   @default(0)
+   391→   391→  taxRatePercent   Float?   @default(0)
+   392→   392→  houseTaxAmt      Float?   @default(0)
+   393→   393→  lightTaxAmt      Float?   @default(0)
+   394→   394→  healthTaxAmt     Float?   @default(0)
+   395→   395→  waterTaxAmt      Float?   @default(0)
+   396→   396→  totalTaxAmt      Float?   @default(0)
+   397→   397→  constructionDetails String?
+   398→   398→  appealHouseTax   Float?   @default(0)
+   399→   399→  appealLightTax   Float?   @default(0)
+   400→   400→  appealHealthTax  Float?   @default(0)
+   401→   401→  appealWaterTax   Float?   @default(0)
+   402→   402→  appealTotalTax   Float?   @default(0)
+   403→   403→  remarks          String?
+   404→   404→  createdAt     DateTime @default(now())
+   405→   405→  updatedAt     DateTime @updatedAt
+   406→   406→
+   407→   407→  property PropertyMaster @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+   408→   408→}
+   409→   409→
+   410→   410→model Namuna9 {
+   411→   411→  id              String   @id @default(cuid())
+   412→   412→  propertyId      String
+   413→   413→  financialYear   String
+   414→   414→  currentTax      Float    @default(0)
+   415→   415→  previousBalance Float    @default(0)
+   416→   416→  penalty         Float    @default(0)
+   417→   417→  interest        Float    @default(0)
+   418→   418→  totalDemand     Float    @default(0)
+   419→   419→  createdAt       DateTime @default(now())
+   420→   420→  updatedAt       DateTime @updatedAt
+   421→   421→
+   422→   422→  property PropertyMaster @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+   423→   423→  payments Payment[]
+   424→   424→}
+   425→   425→
+   426→   426→model Payment {
+   427→   427→  id            String   @id @default(cuid())
+   428→   428→  propertyId    String
+   429→   429→  namuna9Id     String
+   430→   430→  amountPaid    Float
+   431→   431→  balance       Float
+   432→   432→  receiptNumber String
+   433→   433→  paymentDate   DateTime @default(now())
+   434→   434→  paymentMethod String   @default("Cash")
+   435→   435→  createdAt     DateTime @default(now())
+   436→   436→  updatedAt     DateTime @updatedAt
+   437→   437→
+   438→   438→  property PropertyMaster @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+   439→   439→  namuna9  Namuna9        @relation(fields: [namuna9Id], references: [id], onDelete: Cascade)
+   440→   440→}
+   441→   441→
+   442→   442→// ===== DAILY TRANSACTION ENTRIES =====
+   443→   443→
+   444→   444→model ReceiptEntry {
+   445→   445→  id              String   @id @default(cuid())
+   446→   446→  voucherNumber   String
+   447→   447→  receiptDate     String
+   448→   448→  financialYear   String
+   449→   449→  receivedFrom    String
+   450→   450→  receivedFromMr  String?
+   451→   451→  amount          Float    @default(0)
+   452→   452→  headOfAccount   String?
+   453→   453→  headOfAccountMr String?
+   454→   454→  description     String?
+   455→   455→  descriptionMr   String?
+   456→   456→  paymentMethod   String   @default("Cash")
+   457→   457→  bankAccountId   String?
+   458→   458→  chequeNumber    String?
+   459→   459→  isPosted        Boolean  @default(false)
+   460→   460→  createdAt       DateTime @default(now())
+   461→   461→  updatedAt       DateTime @updatedAt
+   462→   462→}
+   463→   463→
+   464→   464→model PaymentEntry {
+   465→   465→  id              String   @id @default(cuid())
+   466→   466→  voucherNumber   String
+   467→   467→  paymentDate     String
+   468→   468→  financialYear   String
+   469→   469→  paidTo          String
+   470→   470→  paidToMr        String?
+   471→   471→  amount          Float    @default(0)
+   472→   472→  headOfAccount   String?
+   473→   473→  headOfAccountMr String?
+   474→   474→  description     String?
+   475→   475→  descriptionMr   String?
+   476→   476→  paymentMethod   String   @default("Cash")
+   477→   477→  bankAccountId   String?
+   478→   478→  chequeNumber    String?
+   479→   479→  isPosted        Boolean  @default(false)
+   480→   480→  createdAt       DateTime @default(now())
+   481→   481→  updatedAt       DateTime @updatedAt
+   482→   482→}
+   483→   483→
+   484→   484→model JournalEntry {
+   485→   485→  id              String   @id @default(cuid())
+   486→   486→  voucherNumber   String
+   487→   487→  entryDate       String
+   488→   488→  financialYear   String
+   489→   489→  debitAccount    String?
+   490→   490→  creditAccount   String?
+   491→   491→  amount          Float    @default(0)
+   492→   492→  description     String?
+   493→   493→  descriptionMr   String?
+   494→   494→  isPosted        Boolean  @default(false)
+   495→   495→  createdAt       DateTime @default(now())
+   496→   496→  updatedAt       DateTime @updatedAt
+   497→   497→}
+   498→   498→
+   499→   499→model AssetEntry {
+   500→   500→  id              String   @id @default(cuid())
+   501→   501→  assetNumber     String   @unique
+   502→   502→  assetName       String
+   503→   503→  assetNameMr     String
+   504→   504→  assetType       String?  // "Building", "Vehicle", "Equipment", "Furniture", "Land", "Other"
+   505→   505→  purchaseDate    String?
+   506→   506→  purchaseCost    Float    @default(0)
+   507→   507→  currentValue    Float    @default(0)
+   508→   508→  depreciationRate Float?  @default(10)
+   509→   509→  location        String?
+   510→   510→  locationMr      String?
+   511→   511→  wardId          String?
+   512→   512→  status          String   @default("Active")
+   513→   513→  description     String?
+   514→   514→  createdAt       DateTime @default(now())
+   515→   515→  updatedAt       DateTime @updatedAt
+   516→   516→}
+   517→   517→
+   518→   518→model StockEntry {
+   519→   519→  id              String   @id @default(cuid())
+   520→   520→  stockNumber     String   @unique
+   521→   521→  itemName        String
+   522→   522→  itemNameMr      String
+   523→   523→  category        String?
+   524→   524→  quantity        Int      @default(0)
+   525→   525→  unit            String?  // "Pieces", "Kg", "Liter"
+   526→   526→  unitPrice       Float    @default(0)
+   527→   527→  totalValue      Float    @default(0)
+   528→   528→  receivedDate    String?
+   529→   529→  issuedDate      String?
+   530→   530→  issuedTo        String?
+   531→   531→  status          String   @default("In Stock")
+   532→   532→  createdAt       DateTime @default(now())
+   533→   533→  updatedAt       DateTime @updatedAt
+   534→   534→}
+   535→   535→
+   536→   536→model SchemeFundEntry {
+   537→   537→  id              String   @id @default(cuid())
+   538→   538→  schemeId        String?
+   539→   539→  voucherNumber   String
+   540→   540→  entryDate       String
+   541→   541→  financialYear   String
+   542→   542→  amount          Float    @default(0)
+   543→   543→  entryType       String   @default("Receipt") // "Receipt", "Payment"
+   544→   544→  description     String?
+   545→   545→  descriptionMr   String?
+   546→   546→  createdAt       DateTime @default(now())
+   547→   547→  updatedAt       DateTime @updatedAt
+   548→   548→}
+   549→   549→
+   550→   550→model WaterBillEntry {
+   551→   551→  id              String   @id @default(cuid())
+   552→   552→  propertyId      String?
+   553→   553→  connectionId    String?
+   554→   554→  billNumber      String
+   555→   555→  billDate        String
+   556→   556→  financialYear   String
+   557→   557→  amount          Float    @default(0)
+   558→   558→  penalty         Float    @default(0)
+   559→   559→  totalAmount     Float    @default(0)
+   560→   560→  paidAmount      Float    @default(0)
+   561→   561→  paidDate        String?
+   562→   562→  status          String   @default("Pending")
+   563→   563→  createdAt       DateTime @default(now())
+   564→   564→  updatedAt       DateTime @updatedAt
+   565→   565→}
+   566→   566→
+   567→   567→model CollectionEntry {
+   568→   568→  id              String   @id @default(cuid())
+   569→   569→  collectionNumber String  @unique
+   570→   570→  propertyId      String?
+   571→   571→  financialYear   String
+   572→   572→  collectionDate  String
+   573→   573→  amount          Float    @default(0)
+   574→   574→  collectionType  String?  // "Tax", "Water", "Light", "Health", "Other"
+   575→   575→  receiptNumber   String?
+   576→   576→  paymentMethod   String   @default("Cash")
+   577→   577→  description     String?
+   578→   578→  createdAt       DateTime @default(now())
+   579→   579→  updatedAt       DateTime @updatedAt
+   580→   580→}
+   581→   581→
+   582→   582→// ===== BUDGET ENTRY (नमुना १, २, ३ अंदाजपत्रक) =====
+   583→   583→
+   584→   584→model BudgetEntry {
+   585→   585→  id              String   @id @default(cuid())
+   586→   586→  financialYear   String
+   587→   587→  budgetHeadCode  String
+   588→   588→  budgetHeadName  String?
+   589→   589→  budgetHeadNameMr String?
+   590→   590→  category        String   @default("income") // "income", "expenditure"
+   591→   591→  type            String   @default("revenue") // "revenue", "capital"
+   592→   592→  originalBudget  Float    @default(0)
+   593→   593→  revisedBudget   Float    @default(0)
+   594→   594→  actualAmount    Float    @default(0)
+   595→   595→  description     String?
+   596→   596→  createdAt       DateTime @default(now())
+   597→   597→  updatedAt       DateTime @updatedAt
+   598→   598→}
+   599→   599→
+   600→   600→// ===== WORK ENTRY (विकास कामे) =====
+   601→   601→
+   602→   602→model WorkEntry {
+   603→   603→  id                String   @id @default(cuid())
+   604→   604→  workNumber        String   @unique
+   605→   605→  workName          String
+   606→   606→  workNameMr        String
+   607→   607→  schemeId          String?
+   608→   608→  contractorId      String?
+   609→   609→  workType          String?  // "New", "Repair", "Maintenance"
+   610→   610→  sanctionDate      String?
+   611→   611→  sanctionAmount    Float    @default(0)
+   612→   612→  workOrderDate     String?
+   613→   613→  completionDate    String?
+   614→   614→  progressPercent   Float    @default(0)
+   615→   615→  totalExpenditure  Float    @default(0)
+   616→   616→  status            String   @default("Sanctioned") // "Sanctioned", "InProgress", "Completed", "Billed"
+   617→   617→  financialYear     String?
+   618→   618→  description       String?
+   619→   619→  createdAt         DateTime @default(now())
+   620→   620→  updatedAt         DateTime @updatedAt
+   621→   621→}
+   622→   622→
+   623→   623→// ===== CONTRACTOR MASTER =====
+   624→   624→
+   625→   625→model ContractorMaster {
+   626→   626→  id              String   @id @default(cuid())
+   627→   627→  contractorId    String   @unique
+   628→   628→  firstName       String
+   629→   629→  middleName      String?
+   630→   630→  lastName        String
+   631→   631→  firstNameMr     String?
+   632→   632→  middleNameMr    String?
+   633→   633→  lastNameMr      String?
+   634→   634→  firmName        String?
+   635→   635→  firmNameMr      String?
+   636→   636→  mobileNumber    String?
+   637→   637→  aadhaarNumber   String?
+   638→   638→  panNumber       String?
+   639→   639→  gstNumber       String?
+   640→   640→  address         String?
+   641→   641→  addressMr       String?
+   642→   642→  bankName        String?
+   643→   643→  bankAccountNo   String?
+   644→   644→  ifscCode        String?
+   645→   645→  isActive        Boolean  @default(true)
+   646→   646→  createdAt       DateTime @default(now())
+   647→   647→  updatedAt       DateTime @updatedAt
+   648→   648→}
+   649→   649→
+   650→   650→// ===== SALARY ENTRY =====
+   651→   651→
+   652→   652→model SalaryEntry {
+   653→   653→  id              String   @id @default(cuid())
+   654→   654→  employeeId      String
+   655→   655→  financialYear   String
+   656→   656→  month           String   // "January", "February" etc.
+   657→   657→  basicPay        Float    @default(0)
+   658→   658→  da              Float    @default(0)  // Dearness Allowance
+   659→   659→  hra             Float    @default(0)  // House Rent Allowance
+   660→   660→  ta              Float    @default(0)  // Travel Allowance
+   661→   661→  ma              Float    @default(0)  // Medical Allowance
+   662→   662→  otherAllowance  Float    @default(0)
+   663→   663→  grossSalary     Float    @default(0)
+   664→   664→  pf              Float    @default(0)  // Provident Fund
+   665→   665→  esi             Float    @default(0)  // Employee State Insurance
+   666→   666→  tds             Float    @default(0)  // Tax Deducted at Source
+   667→   667→  professionalTax Float    @default(0)
+   668→   668→  otherDeduction  Float    @default(0)
+   669→   669→  totalDeduction  Float    @default(0)
+   670→   670→  netSalary       Float    @default(0)
+   671→   671→  paymentDate     String?
+   672→   672→  paymentMethod   String   @default("Bank")
+   673→   673→  status          String   @default("Pending") // "Pending", "Paid"
+   674→   674→  createdAt       DateTime @default(now())
+   675→   675→  updatedAt       DateTime @updatedAt
+   676→   676→}
+   677→   677→
+   678→   678→// ===== LEDGER ENTRY (Auto-generated from vouchers) =====
+   679→   679→
+   680→   680→model LedgerEntry {
+   681→   681→  id              String   @id @default(cuid())
+   682→   682→  financialYear   String
+   683→   683→  accountCode     String
+   684→   684→  accountName     String?
+   685→   685→  accountNameMr   String?
+   686→   686→  entryDate       String
+   687→   687→  voucherNumber   String
+   688→   688→  voucherType     String   // "Receipt", "Payment", "Journal"
+   689→   689→  debitAmount     Float    @default(0)
+   690→   690→  creditAmount    Float    @default(0)
+   691→   691→  balance         Float    @default(0)
+   692→   692→  description     String?
+   693→   693→  isPosted        Boolean  @default(true)
+   694→   694→  createdAt       DateTime @default(now())
+   695→   695→  updatedAt       DateTime @updatedAt
+   696→   696→}
+   697→   697→
+   698→   698→// ===== नमुना १३ - कर्मचारी वर्ग सूची (Employee Category List) =====
+   699→   699→
+   700→   700→model Namuna13 {
+   701→   701→  id               String   @id @default(cuid())
+   702→   702→  serialNo         Int      @default(0)          // अ.क्र.
+   703→   703→  designation      String                        // पदनाम
+   704→   704→  designationMr    String?                       // पदनाम (मराठी)
+   705→   705→  sanctionedPosts  Int      @default(0)          // मंजुर पदे
+   706→   706→  orderNumber      String?                       // आदेश क्रमांक
+   707→   707→  orderDate        String?                       // आदेश दिनांक
+   708→   708→  employmentType   String   @default("Full-Time") // पूर्णवेळ/अर्धवेळ
+   709→   709→  payScale         String?                       // वेतनश्रेणी
+   710→   710→  employeeName     String?                       // नियुक्त कर्मचारी नाव
+   711→   711→  employeeNameMr   String?                       // नियुक्त कर्मचारी नाव (मराठी)
+   712→   712→  appointmentDate  String?                       // नियुक्ती दिनांक
+   713→   713→  sarpanchSignature Boolean  @default(false)      // सरपंच सही
+   714→   714→  secretarySignature Boolean @default(false)      // सचिव सही
+   715→   715→  wardId           String?                       // वार्ड
+   716→   716→  status           String   @default("Active")   // स्थिती
+   717→   717→  remarks          String?                       // शेरा
+   718→   718→  financialYear    String?                       // वित्तीय वर्ष
+   719→   719→  createdAt        DateTime @default(now())
+   720→   720→  updatedAt        DateTime @updatedAt
+   721→   721→}
+   722→   722→
+   723→   723→// ===== नमुना २२ - स्थावर मालमत्ता नोंदवही (Fixed Asset Register) =====
+   724→   724→
+   725→   725→model Namuna22 {
+   726→   726→  id                String   @id @default(cuid())
+   727→   727→  serialNo          Int      @default(0)        // अ.क्र.
+   728→   728→  assetType         String   @default("Building") // "Building", "Dam", "Well", "Other"
+   729→   729→  groupName         String?                     // गट / भुमापन क्रमांक
+   730→   730→  description       String?                     // मालमत्तेचे वर्णन
+   731→   731→  descriptionMr     String?                     // मालमत्तेचे वर्णन (मराठी)
+   732→   732→  acquisitionDate   String?                     // संपादन/खरेदीची तारीख
+   733→   733→  acquisitionOrder  String?                     // संपादन आदेश क्रमांक
+   734→   734→  constructionCost  Float    @default(0)         // उभारणीचा खर्च
+   735→   735→  repairCost        Float    @default(0)         // दुरुस्तीचा खर्च
+   736→   736→  currentValue      Float    @default(0)         // सध्याचे मूल्य
+   737→   737→  location          String?                     // स्थान
+   738→   738→  locationMr        String?                     // स्थान (मराठी)
+   739→   739→  wardId            String?                     // वार्ड
+   740→   740→  status            String   @default("Active")  // स्थिती
+   741→   741→  remarks           String?                     // शेरा
+   742→   742→  financialYear     String?                     // वित्तीय वर्ष
+   743→   743→  createdAt         DateTime @default(now())
+   744→   744→  updatedAt         DateTime @updatedAt
+   745→   745→}
+   746→   746→
+   747→   747→// ===== नमुना २३ - ताब्यातील रस्त्यांची नोंदवही (Road Register) =====
+   748→   748→
+   749→   749→model Namuna23 {
+   750→   750→  id              String   @id @default(cuid())
+   751→   751→  serialNo        Int      @default(0)          // अ.क्र.
+   752→   752→  roadName        String                        // रस्त्याचे नाव
+   753→   753→  roadNameMr      String?                       // रस्त्याचे नाव (मराठी)
+   754→   754→  roadLength      Float    @default(0)          // लांबी (कि.मी.)
+   755→   755→  roadWidth       Float    @default(0)          // रुंदी (मीटर)
+   756→   756→  roadType        String   @default("Kaccha")   // प्रकार: "Kaccha" खडीचा, "Pucca" डांबरी, "Cement" सिमेंटचा
+   757→   757→  constructionYear String?                      // बांधणीचे वर्ष
+   758→   758→  wardId          String?                       // वार्ड
+   759→   759→  fromLocation    String?                       // कोठून
+   760→   760→  toLocation      String?                       // कोठेपर्यंत
+   761→   761→  status          String   @default("Active")   // स्थिती
+   762→   762→  remarks         String?                       // शेरा
+   763→   763→  financialYear   String?                       // वित्तीय वर्ष
+   764→   764→  createdAt       DateTime @default(now())
+   765→   765→  updatedAt       DateTime @updatedAt
+   766→   766→}
+   767→   767→
+   768→   768→// ===== नमुना २४ - जमिनीची नोंदवही (Land Register) =====
+   769→   769→
+   770→   770→model Namuna24 {
+   771→   771→  id              String   @id @default(cuid())
+   772→   772→  serialNo        Int      @default(0)          // अ.क्र.
+   773→   773→  groupName       String?                       // गट / भुमापन क्रमांक
+   774→   774→  landType        String   @default("Open")     // प्रकार: "Open" मोकळी जागा, "Gairan" गायरान, "Farm" शेतजमीन, "Other"
+   775→   775→  areaHectares    Float    @default(0)          // क्षेत्रफळ (हेक्टर)
+   776→   776→  areaSqMeters    Float    @default(0)          // क्षेत्रफळ (चौ.मी.)
+   777→   777→  acquisitionDate String?                       // संपादन तारीख
+   778→   778→  acquisitionOrder String?                      // संपादन आदेश क्रमांक
+   779→   779→  boundaryEast    String?                       // पूर्वेला
+   780→   780→  boundaryWest    String?                       // पश्चिमेला
+   781→   781→  boundaryNorth   String?                       // उत्तरेला
+   782→   782→  boundarySouth   String?                       // दक्षिणेला
+   783→   783→  currentUse      String?                       // सध्याचा वापर
+   784→   784→  leaseInfo       String?                       // पट्टा माहिती
+   785→   785→  wardId          String?                       // वार्ड
+   786→   786→  status          String   @default("Active")   // स्थिती
+   787→   787→  remarks         String?                       // शेरा
+   788→   788→  financialYear   String?                       // वित्तीय वर्ष
+   789→   789→  createdAt       DateTime @default(now())
+   790→   790→  updatedAt       DateTime @updatedAt
+   791→   791→}
+   792→   792→
+   793→   793→// ===== नमुना ३३ - वृक्ष नोंदवही (Tree Register) =====
+   794→   794→
+   795→   795→model Namuna33 {
+   796→   796→  id              String   @id @default(cuid())
+   797→   797→  serialNo        Int      @default(0)          // अ.क्र.
+   798→   798→  treeType        String                        // झाडाचा प्रकार
+   799→   799→  treeTypeMr      String?                       // झाडाचा प्रकार (मराठी)
+   800→   800→  location        String?                       // स्थान
+   801→   801→  locationMr      String?                       // स्थान (मराठी)
+   802→   802→  roadName        String?                       // रस्त्याचे नाव
+   803→   803→  roadNameMr      String?                       // रस्त्याचे नाव (मराठी)
+   804→   804→  plantYear       String?                       // लावणीचे वर्ष
+   805→   805→  height          Float    @default(0)          // उंची (फूट)
+   806→   806→  girth           Float    @default(0)          // घेर (फूट)
+   807→   807→  condition       String   @default("Healthy")  // स्थिती: "Healthy", "Damaged", "Dead"
+   808→   808→  wardId          String?                       // वार्ड
+   809→   809→  ownership       String   @default("GP")       // मालकी: "GP" ग्रामपंचायत, "Private", "Government"
+   810→   810→  estimatedValue  Float    @default(0)          // अंदाजे मूल्य
+   811→   811→  remarks         String?                       // शेरा
+   812→   812→  financialYear   String?                       // वित्तीय वर्ष
+   813→   813→  createdAt       DateTime @default(now())
+   814→   814→  updatedAt       DateTime @updatedAt
+   815→   815→}
+   816→   816→
