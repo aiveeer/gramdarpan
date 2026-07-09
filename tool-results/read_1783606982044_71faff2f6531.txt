@@ -1,0 +1,602 @@
+  1800→                      <SelectItem value="__none__">कोणताही नाही</SelectItem>
+  1801→                      {roads.map((r) => (
+  1802→                        <SelectItem key={String(r.id)} value={String(r.id)}>
+  1803→                          {String(r.roadNumber)} - {String(r.roadNameMr || r.roadName)}
+  1804→                        </SelectItem>
+  1805→                      ))}
+  1806→                    </SelectContent>
+  1807→                  </Select>
+  1808→                </div>
+  1809→                <div className="space-y-1">
+  1810→                  <Label className="text-sm">शहर सर्वेक्षण क्र.</Label>
+  1811→                  <Input value={String(formData.citySurveyNo || '')} onChange={(e) => setFormData((p) => ({ ...p, citySurveyNo: e.target.value }))} />
+  1812→                </div>
+  1813→                <div className="space-y-1">
+  1814→                  <Label className="text-sm">क्षेत्रफळ (चौ.मी.)</Label>
+  1815→                  <Input type="number" value={String(formData.area ?? '')} onChange={(e) => setFormData((p) => ({ ...p, area: e.target.value }))} />
+  1816→                </div>
+  1817→                <div className="space-y-1">
+  1818→                  <Label className="text-sm">बांधलेले क्षेत्रफळ (चौ.मी.)</Label>
+  1819→                  <Input type="number" value={String(formData.builtUpArea ?? '')} onChange={(e) => setFormData((p) => ({ ...p, builtUpArea: e.target.value }))} />
+  1820→                </div>
+  1821→                <div className="space-y-1">
+  1822→                  <Label className="text-sm">बांधकाम प्रकार</Label>
+  1823→                  <Select value={String(formData.constructionType || '__none__')} onValueChange={(v) => setFormData((p) => ({ ...p, constructionType: v === '__none__' ? '' : v }))}>
+  1824→                    <SelectTrigger><SelectValue placeholder="निवडा" /></SelectTrigger>
+  1825→                    <SelectContent>
+  1826→                      <SelectItem value="__none__">कोणताही नाही</SelectItem>
+  1827→                      <SelectItem value="झोपडी किंवा मातीचे घर">झोपडी किंवा मातीचे घर</SelectItem>
+  1828→                      <SelectItem value="दगड विटा/मातीचे बांधकाम">दगड विटा/मातीचे बांधकाम</SelectItem>
+  1829→                      <SelectItem value="दगड विट/सिमेंटचे बांधकाम">दगड विट/सिमेंटचे बांधकाम</SelectItem>
+  1830→                      <SelectItem value="आर.सि.सि. बांधकाम">आर.सि.सि. बांधकाम</SelectItem>
+  1831→                      <SelectItem value="पहिला मजला">पहिला मजला</SelectItem>
+  1832→                      <SelectItem value="जमीन/खुली जागा">जमीन/खुली जागा</SelectItem>
+  1833→                      <SelectItem value="पक्के">पक्के</SelectItem>
+  1834→                      <SelectItem value="अर्धपक्के">अर्धपक्के</SelectItem>
+  1835→                      <SelectItem value="कच्चे">कच्चे</SelectItem>
+  1836→                      <SelectItem value="इतर">इतर</SelectItem>
+  1837→                    </SelectContent>
+  1838→                  </Select>
+  1839→                </div>
+  1840→                <div className="space-y-1">
+  1841→                  <Label className="text-sm">वापर प्रकार</Label>
+  1842→                  <Select value={String(formData.usageType || '__none__')} onValueChange={(v) => setFormData((p) => ({ ...p, usageType: v === '__none__' ? '' : v }))}>
+  1843→                    <SelectTrigger><SelectValue placeholder="निवडा" /></SelectTrigger>
+  1844→                    <SelectContent>
+  1845→                      <SelectItem value="__none__">कोणताही नाही</SelectItem>
+  1846→                      <SelectItem value="राहणीमान">राहणीमान</SelectItem>
+  1847→                      <SelectItem value="व्यावसायिक">व्यावसायिक</SelectItem>
+  1848→                      <SelectItem value="औद्योगिक">औद्योगिक</SelectItem>
+  1849→                      <SelectItem value="शेती">शेती</SelectItem>
+  1850→                    </SelectContent>
+  1851→                  </Select>
+  1852→                </div>
+  1853→                <div className="space-y-1">
+  1854→                  <Label className="text-sm">मजला माहिती</Label>
+  1855→                  <Input value={String(formData.floorInfo || '')} onChange={(e) => setFormData((p) => ({ ...p, floorInfo: e.target.value }))} />
+  1856→                </div>
+  1857→                <div className="space-y-1">
+  1858→                  <Label className="text-sm">बांधणी वर्ष</Label>
+  1859→                  <Input value={String(formData.yearBuilt || '')} onChange={(e) => setFormData((p) => ({ ...p, yearBuilt: e.target.value }))} placeholder="उदा. 2020" />
+  1860→                </div>
+  1861→                <div className="space-y-1">
+  1862→                  <Label className="text-sm">स्थिती</Label>
+  1863→                  <Select value={String(formData.propertyStatus || 'Active')} onValueChange={(v) => setFormData((p) => ({ ...p, propertyStatus: v }))}>
+  1864→                    <SelectTrigger><SelectValue /></SelectTrigger>
+  1865→                    <SelectContent>
+  1866→                      <SelectItem value="Active">सक्रिय</SelectItem>
+  1867→                      <SelectItem value="Inactive">निष्क्रिय</SelectItem>
+  1868→                      <SelectItem value="Demolished">विध्वंस</SelectItem>
+  1869→                    </SelectContent>
+  1870→                  </Select>
+  1871→                </div>
+  1872→              </div>
+  1873→            </div>
+  1874→
+  1875→            <Separator />
+  1876→
+  1877→            {/* Boundaries (चतु:सीमा) */}
+  1878→            <div>
+  1879→              <h4 className={`font-semibold mb-3 flex items-center gap-2 ${c.text}`}>
+  1880→                <div className={`${c.icon} p-1 rounded text-white`}><Compass className="h-3.5 w-3.5" /></div>
+  1881→                चतु:सीमा (Boundaries) - नमुना ८
+  1882→              </h4>
+  1883→              <div className="space-y-4">
+  1884→                {[
+  1885→                  { dir: 'East', label: 'पूर्व', bKey: 'boundaryEast', lKey: 'lengthEast', wKey: 'widthEast' },
+  1886→                  { dir: 'West', label: 'पश्चिम', bKey: 'boundaryWest', lKey: 'lengthWest', wKey: 'widthWest' },
+  1887→                  { dir: 'South', label: 'दक्षिण', bKey: 'boundarySouth', lKey: 'lengthSouth', wKey: 'widthSouth' },
+  1888→                  { dir: 'North', label: 'उत्तर', bKey: 'boundaryNorth', lKey: 'lengthNorth', wKey: 'widthNorth' },
+  1889→                ].map((b) => (
+  1890→                  <div key={b.dir} className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-lg border bg-white/50">
+  1891→                    <div className="space-y-1">
+  1892→                      <Label className="text-sm font-semibold">{b.label} ({b.dir}) सीमा नाव</Label>
+  1893→                      <Input value={String(formData[b.bKey] || '')} onChange={(e) => setFormData((p) => ({ ...p, [b.bKey]: e.target.value }))} placeholder={`${b.label}ेकडील सीमा`} />
+  1894→                    </div>
+  1895→                    <div className="space-y-1">
+  1896→                      <Label className="text-sm">लांबी (मी./फूट)</Label>
+  1897→                      <Input type="number" value={String(formData[b.lKey] ?? '')} onChange={(e) => setFormData((p) => ({ ...p, [b.lKey]: e.target.value }))} placeholder="लांबी" />
+  1898→                    </div>
+  1899→                    <div className="space-y-1">
+  1900→                      <Label className="text-sm">रुंदी (मी./फूट)</Label>
+  1901→                      <Input type="number" value={String(formData[b.wKey] ?? '')} onChange={(e) => setFormData((p) => ({ ...p, [b.wKey]: e.target.value }))} placeholder="रुंदी" />
+  1902→                    </div>
+  1903→                  </div>
+  1904→                ))}
+  1905→              </div>
+  1906→            </div>
+  1907→
+  1908→            <Separator />
+  1909→
+  1910→            {/* Namuna 8 Tax Calculation Fields */}
+  1911→            <div>
+  1912→              <h4 className={`font-semibold mb-3 flex items-center gap-2 ${c.text}`}>
+  1913→                <div className={`${c.icon} p-1 rounded text-white`}><Calculator className="h-3.5 w-3.5" /></div>
+  1914→                नमुना ८ कर गणना (Tax Calculation)
+  1915→              </h4>
+  1916→              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  1917→                <div className="space-y-1">
+  1918→                  <Label className="text-sm">घसारा दर (Depreciation)</Label>
+  1919→                  <Input type="number" step="0.1" value={String(formData.depreciationRate ?? '')} onChange={(e) => setFormData((p) => ({ ...p, depreciationRate: e.target.value }))} placeholder="उदा. 0.7" />
+  1920→                </div>
+  1921→                <div className="space-y-1">
+  1922→                  <Label className="text-sm">वापरानुसार भारांक (Usage Factor)</Label>
+  1923→                  <Input type="number" step="0.1" value={String(formData.usageFactor ?? '1')} onChange={(e) => setFormData((p) => ({ ...p, usageFactor: e.target.value }))} placeholder="उदा. 1.0" />
+  1924→                </div>
+  1925→                <div className="space-y-1">
+  1926→                  <Label className="text-sm">कर दर % (Tax Rate)</Label>
+  1927→                  <Input type="number" step="0.1" value={String(formData.taxRate ?? '')} onChange={(e) => setFormData((p) => ({ ...p, taxRate: e.target.value }))} placeholder="उदा. 1.2" />
+  1928→                </div>
+  1929→              </div>
+  1930→              <div className="mt-4 p-3 rounded-lg border bg-gradient-to-r from-amber-50 to-orange-50">
+  1931→                <p className="text-xs font-semibold text-amber-800 mb-2">कर रक्कम (Tax Amounts in ₹)</p>
+  1932→                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+  1933→                  <div className="space-y-1">
+  1934→                    <Label className="text-xs">घरपट्टी (House Tax)</Label>
+  1935→                    <Input type="number" value={String(formData.houseTax ?? '')} onChange={(e) => setFormData((p) => ({ ...p, houseTax: e.target.value }))} placeholder="₹" />
+  1936→                  </div>
+  1937→                  <div className="space-y-1">
+  1938→                    <Label className="text-xs">दिवाबत्ती कर (Light Tax)</Label>
+  1939→                    <Input type="number" value={String(formData.lightTax ?? '')} onChange={(e) => setFormData((p) => ({ ...p, lightTax: e.target.value }))} placeholder="₹" />
+  1940→                  </div>
+  1941→                  <div className="space-y-1">
+  1942→                    <Label className="text-xs">आरोग्यरक्षण कर (Health Tax)</Label>
+  1943→                    <Input type="number" value={String(formData.healthTax ?? '')} onChange={(e) => setFormData((p) => ({ ...p, healthTax: e.target.value }))} placeholder="₹" />
+  1944→                  </div>
+  1945→                  <div className="space-y-1">
+  1946→                    <Label className="text-xs">सा. पाणीपट्टी (Water Tax)</Label>
+  1947→                    <Input type="number" value={String(formData.waterTax ?? '')} onChange={(e) => setFormData((p) => ({ ...p, waterTax: e.target.value }))} placeholder="₹" />
+  1948→                  </div>
+  1949→                </div>
+  1950→              </div>
+  1951→            </div>
+  1952→
+  1953→            <Separator />
+  1954→
+  1955→            {/* Owner Selection */}
+  1956→            <div>
+  1957→              <div className="flex items-center justify-between mb-3">
+  1958→                <h4 className={`font-semibold flex items-center gap-2 ${c.text}`}>
+  1959→                  <div className={`${c.icon} p-1 rounded text-white`}><User className="h-3.5 w-3.5" /></div>
+  1960→                  मालक माहिती
+  1961→                </h4>
+  1962→                <Button variant="outline" size="sm" onClick={addOwnerRow} className={`${c.text} border-current`}>
+  1963→                  <Plus className="h-4 w-4 mr-1" /> मालक जोडा
+  1964→                </Button>
+  1965→              </div>
+  1966→              {selectedOwners.length === 0 ? (
+  1967→                <div className="text-center text-muted-foreground py-4 border rounded-lg border-dashed">
+  1968→                  कोणताही मालक जोडलेला नाही. &quot;मालक जोडा&quot; बटण क्लिक करा.
+  1969→                </div>
+  1970→              ) : (
+  1971→                <div className="space-y-3">
+  1972→                  {selectedOwners.map((o, idx) => (
+  1973→                    <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-end gap-3 p-3 border rounded-lg bg-white/50">
+  1974→                      <div className="space-y-1 flex-1 w-full sm:w-auto">
+  1975→                        <Label className="text-sm">मालक</Label>
+  1976→                        <Select value={o.ownerId} onValueChange={(v) => updateOwnerRow(idx, 'ownerId', v)}>
+  1977→                          <SelectTrigger><SelectValue placeholder="मालक निवडा" /></SelectTrigger>
+  1978→                          <SelectContent>
+  1979→                            {owners.map((ow) => (
+  1980→                              <SelectItem key={String(ow.id)} value={String(ow.id)}>
+  1981→                                {String(ow.ownerNumber)} - {String(ow.firstNameMr || ow.firstName)} {String(ow.lastNameMr || ow.lastName)}
+  1982→                              </SelectItem>
+  1983→                            ))}
+  1984→                          </SelectContent>
+  1985→                        </Select>
+  1986→                      </div>
+  1987→                      <div className="space-y-1 w-full sm:w-40">
+  1988→                        <Label className="text-sm">मालकी प्रकार</Label>
+  1989→                        <Select value={o.ownershipType} onValueChange={(v) => updateOwnerRow(idx, 'ownershipType', v)}>
+  1990→                          <SelectTrigger><SelectValue /></SelectTrigger>
+  1991→                          <SelectContent>
+  1992→                            <SelectItem value="मालक">मालक</SelectItem>
+  1993→                            <SelectItem value="भोगवटादार">भोगवटादार</SelectItem>
+  1994→                            <SelectItem value="कर्ता">कर्ता</SelectItem>
+  1995→                          </SelectContent>
+  1996→                        </Select>
+  1997→                      </div>
+  1998→                      <Button variant="ghost" size="sm" className="text-red-500" onClick={() => removeOwnerRow(idx)}>
+  1999→                        <Trash2 className="h-4 w-4" />
+  2000→                      </Button>
+  2001→                    </div>
+  2002→                  ))}
+  2003→                </div>
+  2004→              )}
+  2005→            </div>
+  2006→
+  2007→            <Separator />
+  2008→
+  2009→            {/* Tax Rate Assignment */}
+  2010→            <div>
+  2011→              <h4 className={`font-semibold mb-3 flex items-center gap-2 ${c.text}`}>
+  2012→                <div className={`${c.icon} p-1 rounded text-white`}><Settings className="h-3.5 w-3.5" /></div>
+  2013→                कर दर सेटिंग
+  2014→              </h4>
+  2015→              {taxMasters.length === 0 ? (
+  2016→                <div className="text-center text-muted-foreground py-4">कोणताही सक्षम कर नाही. कर मास्टर तयार करा.</div>
+  2017→              ) : (
+  2018→                <div className="border rounded-lg overflow-hidden">
+  2019→                  <Table>
+  2020→                    <ColoredTableHeader colorKey="property">
+  2021→                      <ColoredTableHead colorKey="property">कर नाव</ColoredTableHead>
+  2022→                      <ColoredTableHead colorKey="property">मराठी नाव</ColoredTableHead>
+  2023→                      <ColoredTableHead colorKey="property" className="w-32">दर (₹)</ColoredTableHead>
+  2024→                    </ColoredTableHeader>
+  2025→                    <TableBody>
+  2026→                      {taxMasters.map((tax) => {
+  2027→                        const tr = selectedTaxRates.find((t) => t.taxMasterId === tax.id);
+  2028→                        return (
+  2029→                          <TableRow key={tax.id} className="hover:bg-white/60">
+  2030→                            <TableCell className="font-medium">{tax.name}</TableCell>
+  2031→                            <TableCell>{tax.nameMarathi}</TableCell>
+  2032→                            <TableCell>
+  2033→                              <Input
+  2034→                                type="number"
+  2035→                                value={tr?.rate ?? tax.rate}
+  2036→                                onChange={(e) => updateTaxRate(tax.id, parseFloat(e.target.value) || 0)}
+  2037→                                className="h-8 w-24 text-sm"
+  2038→                                min={0}
+  2039→                              />
+  2040→                            </TableCell>
+  2041→                          </TableRow>
+  2042→                        );
+  2043→                      })}
+  2044→                    </TableBody>
+  2045→                  </Table>
+  2046→                </div>
+  2047→              )}
+  2048→            </div>
+  2049→          </div>
+  2050→
+  2051→          <DialogFooter>
+  2052→            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+  2053→              <X className="h-4 w-4 mr-1" /> रद्द करा
+  2054→            </Button>
+  2055→            <Button onClick={handleSave} disabled={saving} className={`bg-gradient-to-r ${c.header} text-white border-0 hover:opacity-90`}>
+  2056→              {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
+  2057→              {saving ? 'जतन करत आहे...' : 'जतन करा'}
+  2058→            </Button>
+  2059→          </DialogFooter>
+  2060→        </DialogContent>
+  2061→      </Dialog>
+  2062→    </Card>
+  2063→  );
+  2064→}
+  2065→
+  2066→// ================================================================
+  2067→// TAB 13: FINANCIAL YEAR (वित्तीय वर्ष) - uses 'village' color key (teal)
+  2068→// ================================================================
+  2069→
+  2070→function FinancialYearTab() {
+  2071→  return (
+  2072→    <CrudList
+  2073→      title="वित्तीय वर्ष"
+  2074→      table="fy"
+  2075→      colorKey="village"
+  2076→      icon={<CalendarDays className="h-5 w-5" />}
+  2077→      seedOnEmpty
+  2078→      columns={[
+  2079→        { key: 'year', label: 'वर्ष' },
+  2080→        { key: 'startDate', label: 'सुरू दिनांक' },
+  2081→        { key: 'endDate', label: 'शेवटचा दिनांक' },
+  2082→        { key: 'isActive', label: 'सक्रिय', render: (i) => i.isActive ? <Badge className="bg-green-100 text-green-800 border-0">होय</Badge> : 'नाही' },
+  2083→        { key: 'isLocked', label: 'लॉक', render: (i) => i.isLocked ? <Badge className="bg-red-100 text-red-800 border-0">लॉक</Badge> : <Badge className="bg-gray-100 text-gray-600 border-0">उघडे</Badge> },
+  2084→      ]}
+  2085→      formFields={[
+  2086→        { key: 'year', label: 'वित्तीय वर्ष (उदा. 2024-25)', required: true },
+  2087→        { key: 'startDate', label: 'सुरू दिनांक (YYYY-MM-DD)', required: true, placeholder: '2024-04-01' },
+  2088→        { key: 'endDate', label: 'शेवटचा दिनांक (YYYY-MM-DD)', required: true, placeholder: '2025-03-31' },
+  2089→        { key: 'isActive', label: 'सक्रिय वर्ष', type: 'checkbox', placeholder: 'हे सध्याचे सक्रिय वर्ष आहे' },
+  2090→        { key: 'isLocked', label: 'लॉक', type: 'checkbox', placeholder: 'हे वर्ष लॉक करा' },
+  2091→      ]}
+  2092→      defaultFormData={{ isActive: false, isLocked: false }}
+  2093→    />
+  2094→  );
+  2095→}
+  2096→
+  2097→// ================================================================
+  2098→// TAB 14: BANK ACCOUNT (बँक खाते) - uses 'bank' color key (emerald)
+  2099→// ================================================================
+  2100→
+  2101→function BankAccountTab() {
+  2102→  return (
+  2103→    <CrudList
+  2104→      title="बँक खाते"
+  2105→      table="bank"
+  2106→      colorKey="bank"
+  2107→      icon={<PiggyBank className="h-5 w-5" />}
+  2108→      columns={[
+  2109→        { key: 'accountNumber', label: 'खाते क्र.' },
+  2110→        { key: 'bankName', label: 'बँकेचे नाव' },
+  2111→        { key: 'branchName', label: 'शाखा' },
+  2112→        { key: 'ifscCode', label: 'IFSC कोड' },
+  2113→        { key: 'accountType', label: 'खाते प्रकार' },
+  2114→        { key: 'balance', label: 'शिल्लक', render: (i) => `₹${Number(i.balance || 0).toLocaleString('mr-IN')}` },
+  2115→        { key: 'isActive', label: 'सक्रिय', render: (i) => i.isActive ? <Badge className="bg-green-100 text-green-800 border-0">होय</Badge> : 'नाही' },
+  2116→      ]}
+  2117→      formFields={[
+  2118→        { key: 'accountNumber', label: 'खाते क्रमांक', required: true },
+  2119→        { key: 'bankName', label: 'बँकेचे नाव', required: true },
+  2120→        { key: 'branchName', label: 'शाखेचे नाव' },
+  2121→        { key: 'ifscCode', label: 'IFSC कोड' },
+  2122→        { key: 'accountType', label: 'खाते प्रकार', type: 'select', required: true, options: [
+  2123→          { value: 'Savings', label: 'बचत (Savings)' },
+  2124→          { value: 'Current', label: 'चालू (Current)' },
+  2125→          { value: 'FD', label: 'मुदत ठेव (FD)' },
+  2126→        ]},
+  2127→        { key: 'balance', label: 'शिल्लक रक्कम (₹)', type: 'number' },
+  2128→        { key: 'isActive', label: 'सक्रिय', type: 'checkbox', placeholder: 'खाते सक्रिय आहे' },
+  2129→      ]}
+  2130→      defaultFormData={{ accountType: 'Savings', balance: 0, isActive: true }}
+  2131→    />
+  2132→  );
+  2133→}
+  2134→
+  2135→// ================================================================
+  2136→// TAB 15: BUDGET HEAD (बजेट शिर्ष) - uses 'tax' color key (rose)
+  2137→// ================================================================
+  2138→
+  2139→function BudgetHeadTab() {
+  2140→  return (
+  2141→    <CrudList
+  2142→      title="बजेट शिर्ष"
+  2143→      table="budget-head"
+  2144→      colorKey="tax"
+  2145→      icon={<BanknoteIcon className="h-5 w-5" />}
+  2146→      seedOnEmpty
+  2147→      columns={[
+  2148→        { key: 'code', label: 'कोड' },
+  2149→        { key: 'name', label: 'नाव' },
+  2150→        { key: 'nameMr', label: 'नाव (मराठी)' },
+  2151→        { key: 'category', label: 'वर्ग', render: (i) => {
+  2152→          const catMap: Record<string, { label: string; cls: string }> = {
+  2153→            income: { label: 'उत्पन्न', cls: 'bg-green-100 text-green-800' },
+  2154→            expenditure: { label: 'खर्च', cls: 'bg-red-100 text-red-800' },
+  2155→            asset: { label: 'मालमत्ता', cls: 'bg-amber-100 text-amber-800' },
+  2156→            liability: { label: 'दायित्व', cls: 'bg-purple-100 text-purple-800' },
+  2157→          };
+  2158→          const cat = catMap[String(i.category)] || { label: String(i.category ?? '-'), cls: 'bg-gray-100 text-gray-800' };
+  2159→          return <Badge className={`${cat.cls} border-0`}>{cat.label}</Badge>;
+  2160→        }},
+  2161→        { key: 'type', label: 'प्रकार', render: (i) => {
+  2162→          const typeMap: Record<string, { label: string; cls: string }> = {
+  2163→            revenue: { label: 'महसूल', cls: 'bg-teal-100 text-teal-800' },
+  2164→            capital: { label: 'भांडवल', cls: 'bg-indigo-100 text-indigo-800' },
+  2165→          };
+  2166→          const t = typeMap[String(i.type)] || { label: String(i.type ?? '-'), cls: 'bg-gray-100 text-gray-800' };
+  2167→          return <Badge className={`${t.cls} border-0`}>{t.label}</Badge>;
+  2168→        }},
+  2169→        { key: 'isActive', label: 'सक्रिय', render: (i) => i.isActive ? <Badge className="bg-green-100 text-green-800 border-0">होय</Badge> : 'नाही' },
+  2170→      ]}
+  2171→      formFields={[
+  2172→        { key: 'code', label: 'शिर्ष कोड', required: true },
+  2173→        { key: 'name', label: 'शिर्ष नाव (English)', required: true },
+  2174→        { key: 'nameMr', label: 'शिर्ष नाव (मराठी)', required: true },
+  2175→        { key: 'category', label: 'वर्ग', type: 'select', required: true, options: [
+  2176→          { value: 'income', label: 'उत्पन्न (Income)' },
+  2177→          { value: 'expenditure', label: 'खर्च (Expenditure)' },
+  2178→          { value: 'asset', label: 'मालमत्ता (Asset)' },
+  2179→          { value: 'liability', label: 'दायित्व (Liability)' },
+  2180→        ]},
+  2181→        { key: 'type', label: 'प्रकार', type: 'select', required: true, options: [
+  2182→          { value: 'revenue', label: 'महसूल (Revenue)' },
+  2183→          { value: 'capital', label: 'भांडवल (Capital)' },
+  2184→        ]},
+  2185→        { key: 'parentCode', label: 'पालक शिर्ष कोड' },
+  2186→        { key: 'isActive', label: 'सक्रिय', type: 'checkbox', placeholder: 'शिर्ष सक्रिय आहे' },
+  2187→      ]}
+  2188→      defaultFormData={{ category: 'income', type: 'revenue', isActive: true }}
+  2189→    />
+  2190→  );
+  2191→}
+  2192→
+  2193→// ================================================================
+  2194→// TAB 16: SCHEME (योजना) - uses 'owner' color key (purple)
+  2195→// ================================================================
+  2196→
+  2197→function SchemeTab() {
+  2198→  return (
+  2199→    <CrudList
+  2200→      title="योजना"
+  2201→      table="scheme"
+  2202→      colorKey="owner"
+  2203→      icon={<FolderOpen className="h-5 w-5" />}
+  2204→      columns={[
+  2205→        { key: 'schemeNumber', label: 'योजना क्र.' },
+  2206→        { key: 'schemeName', label: 'योजना नाव' },
+  2207→        { key: 'schemeNameMr', label: 'योजना नाव (मराठी)' },
+  2208→        { key: 'schemeType', label: 'प्रकार', render: (i) => {
+  2209→          const typeMap: Record<string, { label: string; cls: string }> = {
+  2210→            Central: { label: 'केंद्र', cls: 'bg-amber-100 text-amber-800' },
+  2211→            State: { label: 'राज्य', cls: 'bg-blue-100 text-blue-800' },
+  2212→            GP: { label: 'ग्रामपंचायत', cls: 'bg-green-100 text-green-800' },
+  2213→          };
+  2214→          const t = typeMap[String(i.schemeType)] || { label: String(i.schemeType ?? '-'), cls: 'bg-gray-100 text-gray-800' };
+  2215→          return <Badge className={`${t.cls} border-0`}>{t.label}</Badge>;
+  2216→        }},
+  2217→        { key: 'totalAllocation', label: 'एकूण तरतूद', render: (i) => `₹${Number(i.totalAllocation || 0).toLocaleString('mr-IN')}` },
+  2218→        { key: 'financialYear', label: 'वित्तीय वर्ष' },
+  2219→        { key: 'isActive', label: 'सक्रिय', render: (i) => i.isActive ? <Badge className="bg-green-100 text-green-800 border-0">होय</Badge> : 'नाही' },
+  2220→      ]}
+  2221→      formFields={[
+  2222→        { key: 'schemeNumber', label: 'योजना क्रमांक', required: true },
+  2223→        { key: 'schemeName', label: 'योजना नाव (English)', required: true },
+  2224→        { key: 'schemeNameMr', label: 'योजना नाव (मराठी)', required: true },
+  2225→        { key: 'schemeType', label: 'योजना प्रकार', type: 'select', required: true, options: [
+  2226→          { value: 'Central', label: 'केंद्र सरकार (Central)' },
+  2227→          { value: 'State', label: 'राज्य सरकार (State)' },
+  2228→          { value: 'GP', label: 'ग्रामपंचायत (GP)' },
+  2229→        ]},
+  2230→        { key: 'fundSource', label: 'निधी स्रोत' },
+  2231→        { key: 'totalAllocation', label: 'एकूण तरतूद (₹)', type: 'number' },
+  2232→        { key: 'financialYear', label: 'वित्तीय वर्ष' },
+  2233→        { key: 'isActive', label: 'सक्रिय', type: 'checkbox', placeholder: 'योजना सक्रिय आहे' },
+  2234→      ]}
+  2235→      defaultFormData={{ schemeType: 'State', totalAllocation: 0, isActive: true }}
+  2236→    />
+  2237→  );
+  2238→}
+  2239→
+  2240→// ================================================================
+  2241→// TAB 17: CONTRACTOR (कंत्राटदार) - uses 'employee' color key (indigo)
+  2242→// ================================================================
+  2243→
+  2244→function ContractorTab() {
+  2245→  return (
+  2246→    <CrudList
+  2247→      title="कंत्राटदार"
+  2248→      table="contractor"
+  2249→      colorKey="employee"
+  2250→      icon={<HardHat className="h-5 w-5" />}
+  2251→      columns={[
+  2252→        { key: 'contractorId', label: 'कंत्राटदार क्र.' },
+  2253→        { key: 'firstName', label: 'नाव', render: (i) => `${i.firstName || ''} ${i.middleName || ''} ${i.lastName || ''}`.trim() },
+  2254→        { key: 'firmName', label: 'फर्म नाव' },
+  2255→        { key: 'mobileNumber', label: 'मोबाईल' },
+  2256→        { key: 'panNumber', label: 'PAN' },
+  2257→        { key: 'gstNumber', label: 'GST' },
+  2258→        { key: 'isActive', label: 'सक्रिय', render: (i) => i.isActive ? <Badge className="bg-green-100 text-green-800 border-0">होय</Badge> : 'नाही' },
+  2259→      ]}
+  2260→      formFields={[
+  2261→        { key: 'contractorId', label: 'कंत्राटदार क्रमांक', required: true },
+  2262→        { key: 'firstName', label: 'पहिले नाव', required: true },
+  2263→        { key: 'middleName', label: 'मधले नाव' },
+  2264→        { key: 'lastName', label: 'आडनाव', required: true },
+  2265→        { key: 'firstNameMr', label: 'पहिले नाव (मराठी)' },
+  2266→        { key: 'middleNameMr', label: 'मधले नाव (मराठी)' },
+  2267→        { key: 'lastNameMr', label: 'आडनाव (मराठी)' },
+  2268→        { key: 'firmName', label: 'फर्म / कंपनीचे नाव' },
+  2269→        { key: 'firmNameMr', label: 'फर्म नाव (मराठी)' },
+  2270→        { key: 'mobileNumber', label: 'मोबाईल क्रमांक', placeholder: '10 अंकी क्रमांक' },
+  2271→        { key: 'aadhaarNumber', label: 'आधार क्रमांक' },
+  2272→        { key: 'panNumber', label: 'PAN क्रमांक' },
+  2273→        { key: 'gstNumber', label: 'GST क्रमांक' },
+  2274→        { key: 'address', label: 'पत्ता', type: 'textarea', colSpan: 2 },
+  2275→        { key: 'addressMr', label: 'पत्ता (मराठी)', type: 'textarea', colSpan: 2 },
+  2276→        { key: 'bankName', label: 'बँकेचे नाव' },
+  2277→        { key: 'bankAccountNo', label: 'बँक खाते क्र.' },
+  2278→        { key: 'ifscCode', label: 'IFSC कोड' },
+  2279→        { key: 'isActive', label: 'सक्रिय', type: 'checkbox', placeholder: 'कंत्राटदार सक्रिय आहे' },
+  2280→      ]}
+  2281→      defaultFormData={{ isActive: true }}
+  2282→    />
+  2283→  );
+  2284→}
+  2285→
+  2286→// ================================================================
+  2287→// TAB: FLOOR INFO (मजला माहिती)
+  2288→// ================================================================
+  2289→
+  2290→function FloorInfoTab() {
+  2291→  return (
+  2292→    <CrudList
+  2293→      title="मजला माहिती"
+  2294→      table="floorInfo"
+  2295→      colorKey="property"
+  2296→      icon={<Layers className="h-5 w-5" />}
+  2297→      columns={[
+  2298→        { key: 'floorNumber', label: 'मजला क्र.' },
+  2299→        { key: 'floorName', label: 'मजला नाव' },
+  2300→        { key: 'floorNameMr', label: 'मजला नाव (मराठी)' },
+  2301→        { key: 'floorIndex', label: 'क्रमांक', render: (i) => String(i.floorIndex ?? '-') },
+  2302→      ]}
+  2303→      formFields={[
+  2304→        { key: 'floorNumber', label: 'मजला क्रमांक', required: true },
+  2305→        { key: 'floorName', label: 'मजला नाव (English)', required: true },
+  2306→        { key: 'floorNameMr', label: 'मजला नाव (मराठी)', required: true },
+  2307→        { key: 'floorIndex', label: 'क्रमांक (Index)', type: 'number' },
+  2308→      ]}
+  2309→      seedOnEmpty
+  2310→    />
+  2311→  );
+  2312→}
+  2313→
+  2314→// ================================================================
+  2315→// TAB: DEMAND CATEGORY (मागणी प्रकार)
+  2316→// ================================================================
+  2317→
+  2318→function DemandCategoryTab() {
+  2319→  return (
+  2320→    <CrudList
+  2321→      title="मागणी प्रकार"
+  2322→      table="demandCategory"
+  2323→      colorKey="tax"
+  2324→      icon={<Tag className="h-5 w-5" />}
+  2325→      columns={[
+  2326→        { key: 'code', label: 'कोड' },
+  2327→        { key: 'name', label: 'नाव' },
+  2328→        { key: 'nameMr', label: 'नाव (मराठी)' },
+  2329→        { key: 'description', label: 'वर्णन', render: (i) => String(i.description || '-').slice(0, 40) },
+  2330→      ]}
+  2331→      formFields={[
+  2332→        { key: 'code', label: 'कोड', required: true },
+  2333→        { key: 'name', label: 'नाव (English)', required: true },
+  2334→        { key: 'nameMr', label: 'नाव (मराठी)', required: true },
+  2335→        { key: 'description', label: 'वर्णन', type: 'textarea', colSpan: 2 },
+  2336→      ]}
+  2337→      seedOnEmpty
+  2338→    />
+  2339→  );
+  2340→}
+  2341→
+  2342→// ================================================================
+  2343→// MAIN COMPONENT - Master Data with Colored Tabs
+  2344→// ================================================================
+  2345→
+  2346→interface MasterDataProps {
+  2347→  initialTab?: string;
+  2348→}
+  2349→
+  2350→export default function MasterData({ initialTab }: MasterDataProps) {
+  2351→  const [activeTab, setActiveTab] = useState(initialTab || 'village');
+  2352→  const [prevInitialTab, setPrevInitialTab] = useState(initialTab);
+  2353→
+  2354→  // When initialTab changes from parent, update the active tab
+  2355→  if (initialTab && initialTab !== prevInitialTab) {
+  2356→    setActiveTab(initialTab);
+  2357→    setPrevInitialTab(initialTab);
+  2358→  }
+  2359→
+  2360→  const tabs: { value: string; colorKey: TabColorKey; label: string; icon: React.ReactNode }[] = [
+  2361→    { value: 'village', colorKey: 'village', label: 'गाव माहिती', icon: <Landmark className="h-4 w-4" /> },
+  2362→    { value: 'ward', colorKey: 'ward', label: 'वार्ड', icon: <MapPin className="h-4 w-4" /> },
+  2363→    { value: 'owner', colorKey: 'owner', label: 'मालक', icon: <User className="h-4 w-4" /> },
+  2364→    { value: 'property', colorKey: 'property', label: 'मालमत्ता', icon: <Building2 className="h-4 w-4" /> },
+  2365→    { value: 'road', colorKey: 'road', label: 'रस्ते', icon: <Route className="h-4 w-4" /> },
+  2366→    { value: 'drainage', colorKey: 'drainage', label: 'कालवे', icon: <Droplets className="h-4 w-4" /> },
+  2367→    { value: 'waterSupply', colorKey: 'waterSupply', label: 'पाणीपुरवठा', icon: <Droplet className="h-4 w-4" /> },
+  2368→    { value: 'streetLight', colorKey: 'streetLight', label: 'दिवाबत्ती', icon: <Sun className="h-4 w-4" /> },
+  2369→    { value: 'readyReckoner', colorKey: 'readyReckoner', label: 'रेडीरेकनर', icon: <Calculator className="h-4 w-4" /> },
+  2370→    { value: 'disability', colorKey: 'disability', label: 'अपंगत्व', icon: <Accessibility className="h-4 w-4" /> },
+  2371→    { value: 'employee', colorKey: 'employee', label: 'कर्मचारी', icon: <Users className="h-4 w-4" /> },
+  2372→    { value: 'tax', colorKey: 'tax', label: 'कर मास्टर', icon: <Settings className="h-4 w-4" /> },
+  2373→    { value: 'fy', colorKey: 'village', label: 'वित्तीय वर्ष', icon: <CalendarDays className="h-4 w-4" /> },
+  2374→    { value: 'bank', colorKey: 'bank', label: 'बँक खाते', icon: <PiggyBank className="h-4 w-4" /> },
+  2375→    { value: 'budget-head', colorKey: 'tax', label: 'बजेट शिर्ष', icon: <BanknoteIcon className="h-4 w-4" /> },
+  2376→    { value: 'scheme', colorKey: 'owner', label: 'योजना', icon: <FolderOpen className="h-4 w-4" /> },
+  2377→    { value: 'contractor', colorKey: 'employee', label: 'कंत्राटदार', icon: <HardHat className="h-4 w-4" /> },
+  2378→    { value: 'floorInfo', colorKey: 'property', label: 'मजला', icon: <Layers className="h-4 w-4" /> },
+  2379→    { value: 'demandCategory', colorKey: 'tax', label: 'मागणी प्रकार', icon: <Tag className="h-4 w-4" /> },
+  2380→  ];
+  2381→
+  2382→  return (
+  2383→    <div className="space-y-4">
+  2384→      <Tabs value={activeTab} onValueChange={setActiveTab}>
+  2385→        <div className="overflow-x-auto pb-2">
+  2386→          <TabsList className="flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
+  2387→            {tabs.map((tab) => {
+  2388→              const c = tabColors[tab.colorKey];
+  2389→              const isActive = activeTab === tab.value;
+  2390→              return (
+  2391→                <TabsTrigger
+  2392→                  key={tab.value}
+  2393→                  value={tab.value}
+  2394→                  className={`
+  2395→                    flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 rounded-md transition-all
+  2396→                    ${isActive
+  2397→                      ? `bg-gradient-to-r ${c.header} text-white shadow-md`
+  2398→                      : `${c.text} hover:${c.bg}`
+  2399→                    }
+
+[showing lines 1800-2399 of 2434; use offset=2400 with limit to continue reading]

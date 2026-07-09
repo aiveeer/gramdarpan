@@ -694,3 +694,122 @@ model LedgerEntry {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
+
+// ===== नमुना १३ - कर्मचारी वर्ग सूची (Employee Category List) =====
+
+model Namuna13 {
+  id               String   @id @default(cuid())
+  serialNo         Int      @default(0)          // अ.क्र.
+  designation      String                        // पदनाम
+  designationMr    String?                       // पदनाम (मराठी)
+  sanctionedPosts  Int      @default(0)          // मंजुर पदे
+  orderNumber      String?                       // आदेश क्रमांक
+  orderDate        String?                       // आदेश दिनांक
+  employmentType   String   @default("Full-Time") // पूर्णवेळ/अर्धवेळ
+  payScale         String?                       // वेतनश्रेणी
+  employeeName     String?                       // नियुक्त कर्मचारी नाव
+  employeeNameMr   String?                       // नियुक्त कर्मचारी नाव (मराठी)
+  appointmentDate  String?                       // नियुक्ती दिनांक
+  sarpanchSignature Boolean  @default(false)      // सरपंच सही
+  secretarySignature Boolean @default(false)      // सचिव सही
+  wardId           String?                       // वार्ड
+  status           String   @default("Active")   // स्थिती
+  remarks          String?                       // शेरा
+  financialYear    String?                       // वित्तीय वर्ष
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+// ===== नमुना २२ - स्थावर मालमत्ता नोंदवही (Fixed Asset Register) =====
+
+model Namuna22 {
+  id                String   @id @default(cuid())
+  serialNo          Int      @default(0)        // अ.क्र.
+  assetType         String   @default("Building") // "Building", "Dam", "Well", "Other"
+  groupName         String?                     // गट / भुमापन क्रमांक
+  description       String?                     // मालमत्तेचे वर्णन
+  descriptionMr     String?                     // मालमत्तेचे वर्णन (मराठी)
+  acquisitionDate   String?                     // संपादन/खरेदीची तारीख
+  acquisitionOrder  String?                     // संपादन आदेश क्रमांक
+  constructionCost  Float    @default(0)         // उभारणीचा खर्च
+  repairCost        Float    @default(0)         // दुरुस्तीचा खर्च
+  currentValue      Float    @default(0)         // सध्याचे मूल्य
+  location          String?                     // स्थान
+  locationMr        String?                     // स्थान (मराठी)
+  wardId            String?                     // वार्ड
+  status            String   @default("Active")  // स्थिती
+  remarks           String?                     // शेरा
+  financialYear     String?                     // वित्तीय वर्ष
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// ===== नमुना २३ - ताब्यातील रस्त्यांची नोंदवही (Road Register) =====
+
+model Namuna23 {
+  id              String   @id @default(cuid())
+  serialNo        Int      @default(0)          // अ.क्र.
+  roadName        String                        // रस्त्याचे नाव
+  roadNameMr      String?                       // रस्त्याचे नाव (मराठी)
+  roadLength      Float    @default(0)          // लांबी (कि.मी.)
+  roadWidth       Float    @default(0)          // रुंदी (मीटर)
+  roadType        String   @default("Kaccha")   // प्रकार: "Kaccha" खडीचा, "Pucca" डांबरी, "Cement" सिमेंटचा
+  constructionYear String?                      // बांधणीचे वर्ष
+  wardId          String?                       // वार्ड
+  fromLocation    String?                       // कोठून
+  toLocation      String?                       // कोठेपर्यंत
+  status          String   @default("Active")   // स्थिती
+  remarks         String?                       // शेरा
+  financialYear   String?                       // वित्तीय वर्ष
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ===== नमुना २४ - जमिनीची नोंदवही (Land Register) =====
+
+model Namuna24 {
+  id              String   @id @default(cuid())
+  serialNo        Int      @default(0)          // अ.क्र.
+  groupName       String?                       // गट / भुमापन क्रमांक
+  landType        String   @default("Open")     // प्रकार: "Open" मोकळी जागा, "Gairan" गायरान, "Farm" शेतजमीन, "Other"
+  areaHectares    Float    @default(0)          // क्षेत्रफळ (हेक्टर)
+  areaSqMeters    Float    @default(0)          // क्षेत्रफळ (चौ.मी.)
+  acquisitionDate String?                       // संपादन तारीख
+  acquisitionOrder String?                      // संपादन आदेश क्रमांक
+  boundaryEast    String?                       // पूर्वेला
+  boundaryWest    String?                       // पश्चिमेला
+  boundaryNorth   String?                       // उत्तरेला
+  boundarySouth   String?                       // दक्षिणेला
+  currentUse      String?                       // सध्याचा वापर
+  leaseInfo       String?                       // पट्टा माहिती
+  wardId          String?                       // वार्ड
+  status          String   @default("Active")   // स्थिती
+  remarks         String?                       // शेरा
+  financialYear   String?                       // वित्तीय वर्ष
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ===== नमुना ३३ - वृक्ष नोंदवही (Tree Register) =====
+
+model Namuna33 {
+  id              String   @id @default(cuid())
+  serialNo        Int      @default(0)          // अ.क्र.
+  treeType        String                        // झाडाचा प्रकार
+  treeTypeMr      String?                       // झाडाचा प्रकार (मराठी)
+  location        String?                       // स्थान
+  locationMr      String?                       // स्थान (मराठी)
+  roadName        String?                       // रस्त्याचे नाव
+  roadNameMr      String?                       // रस्त्याचे नाव (मराठी)
+  plantYear       String?                       // लावणीचे वर्ष
+  height          Float    @default(0)          // उंची (फूट)
+  girth           Float    @default(0)          // घेर (फूट)
+  condition       String   @default("Healthy")  // स्थिती: "Healthy", "Damaged", "Dead"
+  wardId          String?                       // वार्ड
+  ownership       String   @default("GP")       // मालकी: "GP" ग्रामपंचायत, "Private", "Government"
+  estimatedValue  Float    @default(0)          // अंदाजे मूल्य
+  remarks         String?                       // शेरा
+  financialYear   String?                       // वित्तीय वर्ष
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}

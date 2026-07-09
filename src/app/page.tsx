@@ -417,6 +417,7 @@ export default function Home() {
     } catch { /* ignore */ }
     setUser({ authenticated: false });
     setActiveView('login');
+    setStats(null);
   }, []);
 
   // Handle successful login from child components
@@ -440,21 +441,9 @@ export default function Home() {
   // ─── Render Main Content ─────────────────────────────────────────────────
 
   const renderMainContent = () => {
-    // Auth guard: only dashboard and login accessible without authentication
-    if (!user?.authenticated && activeView !== 'dashboard' && activeView !== 'login') {
-      return (
-        <Card className="max-w-md mx-auto mt-10">
-          <CardHeader>
-            <CardTitle className="text-center">कृपया लॉगिन करा</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center">
-            <p className="text-muted-foreground mb-4">हा विभाग पाहण्यासाठी लॉगिन आवश्यक आहे</p>
-            <Button onClick={() => setActiveView('login')}>
-              <LogIn className="h-4 w-4 mr-2" />लॉगिन करा
-            </Button>
-          </CardContent>
-        </Card>
-      );
+    // Auth guard: if NOT authenticated, only show login form
+    if (!user?.authenticated) {
+      return <LoginForm onLoginSuccess={handleLoginSuccess} onLogout={handleLogout} />;
     }
 
     switch (activeView) {
@@ -498,6 +487,8 @@ export default function Home() {
         return <MasterData initialTab="demandCategory" />;
       case 'master-disability':
         return <MasterData initialTab="disability" />;
+      case 'master-contractor':
+        return <MasterData initialTab="contractor" />;
 
       // Daily Transactions - use DailyTransactions component with initial tab
       case 'txn-receipt':
@@ -551,6 +542,10 @@ export default function Home() {
       case 'reg-grant':
       case 'namuna-10':
         return <AutoRegisters initialTab="grant" />;
+      case 'registers-receipt-payment':
+        return <AutoRegisters initialTab="receipt" />;
+      case 'registers-ledger':
+        return <AutoRegisters initialTab="ledger" />;
 
       // Namuna Reports - use NamunaReports component with initial namuna
       case 'namuna-1':
@@ -585,8 +580,6 @@ export default function Home() {
         return <GlobalSearch />;
 
       // Auth
-      case 'login':
-        return <LoginForm onLoginSuccess={handleLoginSuccess} onLogout={handleLogout} />;
       case 'logs':
         return <AuthLogs />;
 
@@ -733,7 +726,8 @@ export default function Home() {
             <SidebarSeparator />
 
             <SidebarContent className="px-2">
-              {/* Dashboard */}
+              {/* Dashboard - only when authenticated */}
+              {user?.authenticated && (
               <SidebarGroup>
                 <SidebarGroupContent>
                   <SidebarMenu>
@@ -751,6 +745,7 @@ export default function Home() {
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>
+              )}
 
               <SidebarSeparator />
 

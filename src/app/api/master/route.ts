@@ -22,6 +22,12 @@ export async function GET(request: NextRequest) {
       'budget-head': 'budgetHead',
       'scheme': 'schemeInfo',
       'contractor': 'contractorMaster',
+      'namuna8': 'namuna8',
+      'namuna13': 'namuna13',
+      'namuna22': 'namuna22',
+      'namuna23': 'namuna23',
+      'namuna24': 'namuna24',
+      'namuna33': 'namuna33',
     };
     const resolvedTable = tableAlias[table] || table;
 
@@ -62,6 +68,24 @@ export async function GET(request: NextRequest) {
           break;
         case 'contractor':
           where.OR = [{ contractorId: { contains: search } }, { firstName: { contains: search } }, { lastName: { contains: search } }, { firmName: { contains: search } }, { mobileNumber: { contains: search } }];
+          break;
+        case 'namuna8':
+          where.OR = [{ propertyId: { contains: search } }, { financialYear: { contains: search } }];
+          break;
+        case 'namuna13':
+          where.OR = [{ designation: { contains: search } }, { designationMr: { contains: search } }, { employeeName: { contains: search } }, { employeeNameMr: { contains: search } }, { orderNumber: { contains: search } }];
+          break;
+        case 'namuna22':
+          where.OR = [{ assetType: { contains: search } }, { groupName: { contains: search } }, { description: { contains: search } }, { descriptionMr: { contains: search } }, { location: { contains: search } }, { locationMr: { contains: search } }];
+          break;
+        case 'namuna23':
+          where.OR = [{ roadName: { contains: search } }, { roadNameMr: { contains: search } }, { fromLocation: { contains: search } }, { toLocation: { contains: search } }];
+          break;
+        case 'namuna24':
+          where.OR = [{ groupName: { contains: search } }, { landType: { contains: search } }, { currentUse: { contains: search } }, { leaseInfo: { contains: search } }];
+          break;
+        case 'namuna33':
+          where.OR = [{ treeType: { contains: search } }, { treeTypeMr: { contains: search } }, { location: { contains: search } }, { locationMr: { contains: search } }, { roadName: { contains: search } }, { roadNameMr: { contains: search } }];
           break;
       }
     }
@@ -139,6 +163,24 @@ export async function GET(request: NextRequest) {
       case 'contractor':
         data = id ? await db.contractorMaster.findUnique({ where: { id } }) : await db.contractorMaster.findMany({ where, orderBy: { contractorId: 'asc' } });
         break;
+      case 'namuna8':
+        data = id ? await db.namuna8.findUnique({ where: { id } }) : await db.namuna8.findMany({ where, orderBy: { createdAt: 'desc' } });
+        break;
+      case 'namuna13':
+        data = id ? await db.namuna13.findUnique({ where: { id } }) : await db.namuna13.findMany({ where, orderBy: { serialNo: 'asc' } });
+        break;
+      case 'namuna22':
+        data = id ? await db.namuna22.findUnique({ where: { id } }) : await db.namuna22.findMany({ where, orderBy: { serialNo: 'asc' } });
+        break;
+      case 'namuna23':
+        data = id ? await db.namuna23.findUnique({ where: { id } }) : await db.namuna23.findMany({ where, orderBy: { serialNo: 'asc' } });
+        break;
+      case 'namuna24':
+        data = id ? await db.namuna24.findUnique({ where: { id } }) : await db.namuna24.findMany({ where, orderBy: { serialNo: 'asc' } });
+        break;
+      case 'namuna33':
+        data = id ? await db.namuna33.findUnique({ where: { id } }) : await db.namuna33.findMany({ where, orderBy: { serialNo: 'asc' } });
+        break;
       default:
         return NextResponse.json({ error: 'Invalid table' }, { status: 400 });
     }
@@ -164,13 +206,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Table and data required' }, { status: 400 });
     }
 
-    // Map short table names to full names
     const tableAlias: Record<string, string> = {
       'fy': 'financialYear',
       'bank': 'bankAccount',
       'budget-head': 'budgetHead',
       'scheme': 'schemeInfo',
       'contractor': 'contractorMaster',
+      'namuna8': 'namuna8',
+      'namuna13': 'namuna13',
+      'namuna22': 'namuna22',
+      'namuna23': 'namuna23',
+      'namuna24': 'namuna24',
+      'namuna33': 'namuna33',
     };
     const resolvedTable = tableAlias[table] || table;
 
@@ -196,13 +243,18 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Table and ID required' }, { status: 400 });
     }
 
-    // Map short table names to full names
     const tableAlias: Record<string, string> = {
       'fy': 'financialYear',
       'bank': 'bankAccount',
       'budget-head': 'budgetHead',
       'scheme': 'schemeInfo',
       'contractor': 'contractorMaster',
+      'namuna8': 'namuna8',
+      'namuna13': 'namuna13',
+      'namuna22': 'namuna22',
+      'namuna23': 'namuna23',
+      'namuna24': 'namuna24',
+      'namuna33': 'namuna33',
     };
     const resolvedTable = tableAlias[table] || table;
 
@@ -215,13 +267,18 @@ export async function DELETE(request: NextRequest) {
 }
 
 async function handleSeed(table: string) {
-  // Map short table names to full names
   const tableAlias: Record<string, string> = {
     'fy': 'financialYear',
     'bank': 'bankAccount',
     'budget-head': 'budgetHead',
     'scheme': 'schemeInfo',
     'contractor': 'contractorMaster',
+    'namuna8': 'namuna8',
+    'namuna13': 'namuna13',
+    'namuna22': 'namuna22',
+    'namuna23': 'namuna23',
+    'namuna24': 'namuna24',
+    'namuna33': 'namuna33',
   };
   const resolvedTable = tableAlias[table] || table;
 
@@ -432,15 +489,26 @@ async function handleUpsert(table: string, data: Record<string, unknown>) {
     financialYear: [],
     floorInfo: ['floorIndex'],
     demandCategory: [],
+    namuna8: ['totalTax', 'totalArea', 'landRate', 'buildingRate', 'constructionRate', 'depreciationRate', 'usageFactor', 'capitalValue', 'taxRatePercent', 'houseTaxAmt', 'lightTaxAmt', 'healthTaxAmt', 'waterTaxAmt', 'totalTaxAmt', 'appealHouseTax', 'appealLightTax', 'appealHealthTax', 'appealWaterTax', 'appealTotalTax'],
+    namuna13: ['serialNo', 'sanctionedPosts'],
+    namuna22: ['serialNo', 'constructionCost', 'repairCost', 'currentValue'],
+    namuna23: ['serialNo', 'roadLength', 'roadWidth'],
+    namuna24: ['serialNo', 'areaHectares', 'areaSqMeters'],
+    namuna33: ['serialNo', 'height', 'girth', 'estimatedValue'],
   };
   const numericFields = numericFieldsForTable[table] || [];
 
-  // Integer fields (must be converted to Int, not Float)
   const intFieldsForTable: Record<string, string[]> = {
     ward: ['population'],
     employee: [],
     tax: ['order'],
     floorInfo: ['floorIndex'],
+    namuna13: ['serialNo', 'sanctionedPosts'],
+    namuna22: ['serialNo'],
+    namuna23: ['serialNo'],
+    namuna24: ['serialNo'],
+    namuna33: ['serialNo'],
+    namuna8: [],
   };
   // Boolean fields that must not be converted to null when false
   const boolFieldsForTable: Record<string, string[]> = {
@@ -452,6 +520,7 @@ async function handleUpsert(table: string, data: Record<string, unknown>) {
     schemeInfo: ['isActive'],
     contractorMaster: ['isActive'],
     contractor: ['isActive'],
+    namuna13: ['sarpanchSignature', 'secretarySignature'],
   };
   const boolFields = boolFieldsForTable[table] || [];
   const intFields = intFieldsForTable[table] || [];
@@ -501,6 +570,12 @@ async function handleUpsert(table: string, data: Record<string, unknown>) {
       case 'demandCategory': return db.demandCategory.update({ where: { id }, data: cleanData as Parameters<typeof db.demandCategory.update>[0]['data'] });
       case 'contractor': return db.contractorMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.contractorMaster.update>[0]['data'] });
       case 'contractorMaster': return db.contractorMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.contractorMaster.update>[0]['data'] });
+      case 'namuna8': return db.namuna8.update({ where: { id }, data: cleanData as Parameters<typeof db.namuna8.update>[0]['data'] });
+      case 'namuna13': return db.namuna13.update({ where: { id }, data: cleanData as Parameters<typeof db.namuna13.update>[0]['data'] });
+      case 'namuna22': return db.namuna22.update({ where: { id }, data: cleanData as Parameters<typeof db.namuna22.update>[0]['data'] });
+      case 'namuna23': return db.namuna23.update({ where: { id }, data: cleanData as Parameters<typeof db.namuna23.update>[0]['data'] });
+      case 'namuna24': return db.namuna24.update({ where: { id }, data: cleanData as Parameters<typeof db.namuna24.update>[0]['data'] });
+      case 'namuna33': return db.namuna33.update({ where: { id }, data: cleanData as Parameters<typeof db.namuna33.update>[0]['data'] });
     }
   }
 
@@ -526,6 +601,12 @@ async function handleUpsert(table: string, data: Record<string, unknown>) {
     case 'demandCategory': return db.demandCategory.create({ data: cleanData as Parameters<typeof db.demandCategory.create>[0]['data'] });
     case 'contractor': return db.contractorMaster.create({ data: cleanData as Parameters<typeof db.contractorMaster.create>[0]['data'] });
     case 'contractorMaster': return db.contractorMaster.create({ data: cleanData as Parameters<typeof db.contractorMaster.create>[0]['data'] });
+    case 'namuna8': return db.namuna8.create({ data: cleanData as Parameters<typeof db.namuna8.create>[0]['data'] });
+    case 'namuna13': return db.namuna13.create({ data: cleanData as Parameters<typeof db.namuna13.create>[0]['data'] });
+    case 'namuna22': return db.namuna22.create({ data: cleanData as Parameters<typeof db.namuna22.create>[0]['data'] });
+    case 'namuna23': return db.namuna23.create({ data: cleanData as Parameters<typeof db.namuna23.create>[0]['data'] });
+    case 'namuna24': return db.namuna24.create({ data: cleanData as Parameters<typeof db.namuna24.create>[0]['data'] });
+    case 'namuna33': return db.namuna33.create({ data: cleanData as Parameters<typeof db.namuna33.create>[0]['data'] });
     default: throw new Error(`Unknown table: ${table}`);
   }
 }
@@ -552,6 +633,12 @@ async function handleDelete(table: string, id: string) {
     case 'floorInfo': return db.floorInfo.delete({ where: { id } });
     case 'demandCategory': return db.demandCategory.delete({ where: { id } });
     case 'contractor': return db.contractorMaster.delete({ where: { id } });
+    case 'namuna8': return db.namuna8.delete({ where: { id } });
+    case 'namuna13': return db.namuna13.delete({ where: { id } });
+    case 'namuna22': return db.namuna22.delete({ where: { id } });
+    case 'namuna23': return db.namuna23.delete({ where: { id } });
+    case 'namuna24': return db.namuna24.delete({ where: { id } });
+    case 'namuna33': return db.namuna33.delete({ where: { id } });
     default: throw new Error(`Unknown table: ${table}`);
   }
 }

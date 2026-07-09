@@ -224,6 +224,7 @@ export default function ERPDashboard({
       iconBg: 'bg-green-500',
       trend: '+12.5%',
       trendUp: true,
+      view: 'txn-receipt',
     },
     {
       title: 'एकूण खर्च',
@@ -237,6 +238,7 @@ export default function ERPDashboard({
       iconBg: 'bg-red-500',
       trend: '-3.2%',
       trendUp: false,
+      view: 'txn-payment',
     },
     {
       title: 'शिल्लक रक्कम',
@@ -250,6 +252,7 @@ export default function ERPDashboard({
       iconBg: 'bg-teal-500',
       trend: '+8.7%',
       trendUp: true,
+      view: 'registers-receipt-payment',
     },
   ];
 
@@ -267,19 +270,19 @@ export default function ERPDashboard({
     { icon: ClipboardList, label: 'बजेट', labelEn: 'Budget', value: enhanced?.totalBudgetEntries || 0, bg: 'bg-cyan-50', iconBg: 'bg-cyan-600', valueColor: 'text-cyan-800', view: 'txn-budget' },
     { icon: HardHat, label: 'विकासकामे', labelEn: 'Works', value: enhanced?.totalWorkEntries || 0, bg: 'bg-lime-50', iconBg: 'bg-lime-600', valueColor: 'text-lime-800', view: 'txn-work' },
     { icon: IndianRupee, label: 'वेतन', labelEn: 'Salary', value: enhanced?.totalSalaryEntries || 0, bg: 'bg-emerald-50', iconBg: 'bg-emerald-600', valueColor: 'text-emerald-800', view: 'txn-salary' },
-    { icon: Wrench, label: 'ठेकेदार', labelEn: 'Contractors', value: enhanced?.totalContractors || 0, bg: 'bg-amber-50', iconBg: 'bg-amber-600', valueColor: 'text-amber-800', view: 'master-disability' },
+    { icon: Wrench, label: 'ठेकेदार', labelEn: 'Contractors', value: enhanced?.totalContractors || 0, bg: 'bg-amber-50', iconBg: 'bg-amber-600', valueColor: 'text-amber-800', view: 'master-contractor' },
   ];
 
   // ─── 6. Process Flow Steps ───────────────────────────────────────────
 
   const processSteps = [
-    { icon: Database, label: 'मास्टर एंट्री', sublabel: 'Master Entry', bg: 'bg-purple-100 border-purple-300', iconBg: 'bg-purple-500', text: 'text-purple-800' },
-    { icon: ClipboardList, label: 'दैनंदिन एंट्री', sublabel: 'Daily Entry', bg: 'bg-cyan-100 border-cyan-300', iconBg: 'bg-cyan-500', text: 'text-cyan-800' },
-    { icon: BookOpenCheck, label: 'रजिस्टर अपडेट', sublabel: 'Register Update', bg: 'bg-teal-100 border-teal-300', iconBg: 'bg-teal-500', text: 'text-teal-800' },
-    { icon: Landmark, label: 'खाते पोस्टिंग', sublabel: 'Ledger Posting', bg: 'bg-green-100 border-green-300', iconBg: 'bg-green-500', text: 'text-green-800' },
-    { icon: Gauge, label: 'ऑटो गणना', sublabel: 'Auto Calculation', bg: 'bg-amber-100 border-amber-300', iconBg: 'bg-amber-500', text: 'text-amber-800' },
-    { icon: FileBadge, label: 'नमुना निर्मिती', sublabel: 'Namuna Generation', bg: 'bg-orange-100 border-orange-300', iconBg: 'bg-orange-500', text: 'text-orange-800' },
-    { icon: FileDown, label: 'PDF/Excel निर्यात', sublabel: 'Export', bg: 'bg-rose-100 border-rose-300', iconBg: 'bg-rose-500', text: 'text-rose-800' },
+    { icon: Database, label: 'मास्टर एंट्री', sublabel: 'Master Entry', bg: 'bg-purple-100 border-purple-300', iconBg: 'bg-purple-500', text: 'text-purple-800', view: 'master-village' },
+    { icon: ClipboardList, label: 'दैनंदिन एंट्री', sublabel: 'Daily Entry', bg: 'bg-cyan-100 border-cyan-300', iconBg: 'bg-cyan-500', text: 'text-cyan-800', view: 'txn-receipt' },
+    { icon: BookOpenCheck, label: 'रजिस्टर अपडेट', sublabel: 'Register Update', bg: 'bg-teal-100 border-teal-300', iconBg: 'bg-teal-500', text: 'text-teal-800', view: 'registers-receipt-payment' },
+    { icon: Landmark, label: 'खाते पोस्टिंग', sublabel: 'Ledger Posting', bg: 'bg-green-100 border-green-300', iconBg: 'bg-green-500', text: 'text-green-800', view: 'registers-ledger' },
+    { icon: Gauge, label: 'ऑटो गणना', sublabel: 'Auto Calculation', bg: 'bg-amber-100 border-amber-300', iconBg: 'bg-amber-500', text: 'text-amber-800', view: 'namuna-11-15' },
+    { icon: FileBadge, label: 'नमुना निर्मिती', sublabel: 'Namuna Generation', bg: 'bg-orange-100 border-orange-300', iconBg: 'bg-orange-500', text: 'text-orange-800', view: 'namuna-11-15' },
+    { icon: FileDown, label: 'PDF/Excel निर्यात', sublabel: 'Export', bg: 'bg-rose-100 border-rose-300', iconBg: 'bg-rose-500', text: 'text-rose-800', view: 'excel' },
   ];
 
   // ─── 7. Quick Actions ────────────────────────────────────────────────
@@ -372,9 +375,9 @@ export default function ERPDashboard({
       {/* ─── 1. Financial Summary Cards ──────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {financialCards.map((card, i) => (
-          <Card key={i} className="border-0 shadow-lg overflow-hidden">
+          <Card key={i} className="border-0 shadow-lg overflow-hidden cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-200 active:scale-[0.98]" onClick={() => setActiveView(card.view)}>
             <div className={`h-1.5 bg-gradient-to-r ${card.gradient}`} />
-            <CardContent className={`p-5 bg-gradient-to-br ${card.bgGrad}`}>
+            <CardContent className={`p-5 bg-gradient-to-br ${card.bgGrad} relative`}>
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground font-medium">{card.title}</p>
@@ -392,8 +395,11 @@ export default function ERPDashboard({
                     <span className="text-xs text-muted-foreground ml-1">या महिन्यात</span>
                   </div>
                 </div>
-                <div className={`h-12 w-12 rounded-xl ${card.iconBg} flex items-center justify-center shadow-md`}>
-                  <card.icon className="h-6 w-6 text-white" />
+                <div className="flex flex-col items-center gap-1">
+                  <div className={`h-12 w-12 rounded-xl ${card.iconBg} flex items-center justify-center shadow-md`}>
+                    <card.icon className="h-6 w-6 text-white" />
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
                 </div>
               </div>
             </CardContent>
@@ -413,13 +419,14 @@ export default function ERPDashboard({
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-12 gap-3">
             {keyMetrics.map((item, i) => (
-              <button key={i} onClick={() => setActiveView(item.view)} className={`${item.bg} rounded-xl p-3 text-center border border-opacity-50 cursor-pointer hover:shadow-md hover:scale-105 transition-all duration-200`}>
+              <button key={i} onClick={() => setActiveView(item.view)} className={`${item.bg} rounded-xl p-3 text-center border border-opacity-50 cursor-pointer hover:shadow-md hover:scale-105 transition-all duration-200 active:scale-95 group`}>
                 <div className={`h-9 w-9 rounded-lg ${item.iconBg} flex items-center justify-center mx-auto mb-2 shadow-sm`}>
                   <item.icon className="h-5 w-5 text-white" />
                 </div>
                 <div className={`text-2xl font-bold ${item.valueColor}`}>{item.value}</div>
                 <div className="text-xs text-muted-foreground mt-0.5 font-medium">{item.label}</div>
                 <div className="text-[10px] text-muted-foreground/60">{item.labelEn}</div>
+                <ChevronRight className="h-3 w-3 mx-auto mt-1 text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors" />
               </button>
             ))}
           </div>
@@ -714,13 +721,17 @@ export default function ERPDashboard({
             <div className="flex items-center gap-2 min-w-max justify-center">
               {processSteps.map((step, i, arr) => (
                 <React.Fragment key={i}>
-                  <div className={`border-2 rounded-xl p-3 text-center min-w-[110px] ${step.bg}`}>
+                  <button
+                    onClick={() => setActiveView(step.view)}
+                    className={`border-2 rounded-xl p-3 text-center min-w-[110px] cursor-pointer hover:shadow-md hover:scale-105 transition-all duration-200 active:scale-95 ${step.bg}`}
+                  >
                     <div className={`h-8 w-8 rounded-lg ${step.iconBg} flex items-center justify-center mx-auto mb-1.5 shadow-sm`}>
                       <step.icon className="h-4 w-4 text-white" />
                     </div>
                     <span className={`text-xs font-bold whitespace-pre-line leading-tight ${step.text}`}>{step.label}</span>
                     <p className="text-[9px] text-muted-foreground mt-0.5">{step.sublabel}</p>
-                  </div>
+                    <ChevronRight className="h-3 w-3 mx-auto mt-0.5 text-muted-foreground/50" />
+                  </button>
                   {i < arr.length - 1 && (
                     <ChevronRight className="h-5 w-5 text-gray-400 shrink-0" />
                   )}
@@ -759,12 +770,13 @@ export default function ERPDashboard({
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {quickActions.map((item, i) => (
-              <button key={i} onClick={() => setActiveView(item.view)} className={`flex flex-col items-center gap-2 p-4 border-2 rounded-xl transition-all ${item.bg}`}>
+              <button key={i} onClick={() => setActiveView(item.view)} className={`flex flex-col items-center gap-2 p-4 border-2 rounded-xl transition-all hover:scale-105 active:scale-95 cursor-pointer ${item.bg}`}>
                 <div className={`h-10 w-10 rounded-lg ${item.iconBg} flex items-center justify-center shadow-sm`}>
                   <item.icon className="h-5 w-5 text-white" />
                 </div>
                 <span className="text-sm font-bold">{item.label}</span>
                 <span className="text-[10px] text-muted-foreground">{item.sublabel}</span>
+                <ChevronRight className="h-3 w-3 text-muted-foreground/30" />
               </button>
             ))}
           </div>

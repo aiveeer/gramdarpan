@@ -849,3 +849,32 @@ Stage Summary:
 - Header shows login/logout buttons based on auth state
 - ESLint passes cleanly
 
+---
+Task ID: 2-b
+Agent: dashboard-metrics-fixer
+Task: Fix Dashboard metrics clickability and navigation
+
+Work Log:
+- Read erp-dashboard.tsx and page.tsx to analyze the clickability issue
+- Identified that keyMetrics already had onClick handlers but view 'master-disability' for Contractors was wrong (should be 'master-contractor')
+- Identified Financial Summary Cards had NO onClick handlers — just display cards
+- Identified Process Flow Steps had NO onClick handlers — just display divs
+- Identified missing route IDs in page.tsx: 'master-contractor', 'registers-receipt-payment', 'registers-ledger'
+- Fixed keyMetrics: Changed Contractors card view from 'master-disability' to 'master-contractor'
+- Added route cases to page.tsx: 'master-contractor' → MasterData(initialTab="contractor"), 'registers-receipt-payment' → AutoRegisters(initialTab="receipt"), 'registers-ledger' → AutoRegisters(initialTab="ledger")
+- Added view property to financialCards data: Income→'txn-receipt', Expenditure→'txn-payment', Balance→'registers-receipt-payment'
+- Converted Financial Summary Cards from static Cards to clickable Cards with onClick, cursor-pointer, hover:shadow-xl hover:scale-[1.02], active:scale-[0.98], and ChevronRight indicator
+- Added view property to processSteps data: Master Entry→'master-village', Daily Entry→'txn-receipt', Register Update→'registers-receipt-payment', Ledger Posting→'registers-ledger', Auto Calc→'namuna-11-15', Namuna Gen→'namuna-11-15', Export→'excel'
+- Converted Process Flow Steps from divs to buttons with onClick, cursor-pointer, hover:shadow-md hover:scale-105, active:scale-95, and ChevronRight indicator
+- Enhanced keyMetrics buttons with active:scale-95 group class and ChevronRight indicator that brightens on hover
+- Enhanced quickActions buttons with hover:scale-105 active:scale-95 cursor-pointer and ChevronRight indicator
+- Ran bun run lint — passes cleanly
+- Checked dev server log — no errors
+
+Stage Summary:
+- All dashboard cards (Financial Summary, Key Metrics, Process Flow Steps, Quick Actions, Namuna Status) are now clickable and navigate to correct views
+- Fixed Contractors keyMetric view ID mismatch (master-disability → master-contractor)
+- Added 3 new route cases in page.tsx for missing view IDs
+- Added visual feedback: hover scale/shadow effects, active press effect, ChevronRight arrow indicators on all clickable cards
+- ESLint passes cleanly, dev server compiles without errors
+

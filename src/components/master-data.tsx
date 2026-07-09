@@ -40,6 +40,12 @@ const tabColors = {
   employee: { bg: 'bg-indigo-50', header: 'from-indigo-600 to-indigo-700', text: 'text-indigo-800', icon: 'bg-indigo-500', badge: 'bg-indigo-100 text-indigo-800', border: 'border-indigo-200', headerBg: 'bg-indigo-600', headerText: 'text-white', ring: 'ring-indigo-500' },
   tax: { bg: 'bg-rose-50', header: 'from-rose-600 to-rose-700', text: 'text-rose-800', icon: 'bg-rose-500', badge: 'bg-rose-100 text-rose-800', border: 'border-rose-200', headerBg: 'bg-rose-600', headerText: 'text-white', ring: 'ring-rose-500' },
   bank: { bg: 'bg-emerald-50', header: 'from-emerald-600 to-emerald-700', text: 'text-emerald-800', icon: 'bg-emerald-500', badge: 'bg-emerald-100 text-emerald-800', border: 'border-emerald-200', headerBg: 'bg-emerald-600', headerText: 'text-white', ring: 'ring-emerald-500' },
+  namuna8: { bg: 'bg-lime-50', header: 'from-lime-600 to-lime-700', text: 'text-lime-800', icon: 'bg-lime-500', badge: 'bg-lime-100 text-lime-800', border: 'border-lime-200', headerBg: 'bg-lime-600', headerText: 'text-white', ring: 'ring-lime-500' },
+  namuna13: { bg: 'bg-fuchsia-50', header: 'from-fuchsia-600 to-fuchsia-700', text: 'text-fuchsia-800', icon: 'bg-fuchsia-500', badge: 'bg-fuchsia-100 text-fuchsia-800', border: 'border-fuchsia-200', headerBg: 'bg-fuchsia-600', headerText: 'text-white', ring: 'ring-fuchsia-500' },
+  namuna22: { bg: 'bg-stone-50', header: 'from-stone-600 to-stone-700', text: 'text-stone-800', icon: 'bg-stone-500', badge: 'bg-stone-100 text-stone-800', border: 'border-stone-200', headerBg: 'bg-stone-600', headerText: 'text-white', ring: 'ring-stone-500' },
+  namuna23: { bg: 'bg-violet-50', header: 'from-violet-600 to-violet-700', text: 'text-violet-800', icon: 'bg-violet-500', badge: 'bg-violet-100 text-violet-800', border: 'border-violet-200', headerBg: 'bg-violet-600', headerText: 'text-white', ring: 'ring-violet-500' },
+  namuna24: { bg: 'bg-amber-50', header: 'from-amber-700 to-amber-800', text: 'text-amber-900', icon: 'bg-amber-600', badge: 'bg-amber-100 text-amber-800', border: 'border-amber-300', headerBg: 'bg-amber-700', headerText: 'text-white', ring: 'ring-amber-600' },
+  namuna33: { bg: 'bg-green-50', header: 'from-green-700 to-green-800', text: 'text-green-900', icon: 'bg-green-600', badge: 'bg-green-100 text-green-800', border: 'border-green-300', headerBg: 'bg-green-700', headerText: 'text-white', ring: 'ring-green-600' },
 };
 
 type TabColorKey = keyof typeof tabColors;
