@@ -418,13 +418,13 @@ export default function Home() {
   };
 
   // Handle logout from child components (LoginForm)
-  const handleLogout = useCallback(async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-    } catch { /* ignore */ }
+  const handleLogout = useCallback(() => {
+    // Immediately update state so the UI transitions to login page
     setUser({ authenticated: false });
     setActiveView('login');
     setStats(null);
+    // Fire-and-forget the server-side logout
+    fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
   }, []);
 
   // Handle successful login from child components

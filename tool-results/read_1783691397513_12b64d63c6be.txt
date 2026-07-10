@@ -1,0 +1,564 @@
+    30→   529→   529→        return <DailyTransactions initialTab="work" />;
+    31→   530→   530→      case 'txn-salary':
+    32→   531→   531→        return <DailyTransactions initialTab="salary" />;
+    33→   532→   532→
+    34→   533→   533→      // Auto Registers - use AutoRegisters component with initial tab
+    35→   534→   534→      case 'reg-cash-book':
+    36→   535→   535→      case 'namuna-3':
+    37→   536→   536→        return <AutoRegisters initialTab="cash-book" />;
+    38→   537→   537→      case 'reg-bank-book':
+    39→   538→   538→      case 'namuna-4':
+    40→   539→   539→        return <AutoRegisters initialTab="bank-book" />;
+    41→   540→   540→      case 'reg-receipt':
+    42→   541→   541→        return <AutoRegisters initialTab="receipt" />;
+    43→   542→   542→      case 'reg-payment':
+    44→   543→   543→        return <AutoRegisters initialTab="payment" />;
+    45→   544→   544→      case 'reg-demand':
+    46→   545→   545→        return <AutoRegisters initialTab="demand" />;
+    47→   546→   546→      case 'reg-collection':
+    48→   547→   547→        return <AutoRegisters initialTab="collection" />;
+    49→   548→   548→      case 'reg-asset':
+    50→   549→   549→      case 'namuna-5':
+    51→   550→   550→        return <AutoRegisters initialTab="asset" />;
+    52→   551→   551→      case 'reg-stock':
+    53→   552→   552→      case 'namuna-6':
+    54→   553→   553→        return <AutoRegisters initialTab="stock" />;
+    55→   554→   554→      case 'reg-grant':
+    56→   555→   555→      case 'namuna-10':
+    57→   556→   556→        return <AutoRegisters initialTab="grant" />;
+    58→   557→   557→      case 'registers-receipt-payment':
+    59→   558→   558→        return <AutoRegisters initialTab="receipt" />;
+    60→   559→   559→      case 'registers-ledger':
+    61→   560→   560→        return <AutoRegisters initialTab="ledger" />;
+    62→   561→   561→
+    63→   562→   562→      // Namuna Reports - use NamunaReports component with initial namuna
+    64→   563→   563→      case 'namuna-1':
+    65→   564→   564→        return <Namuna1Component />;
+    66→   565→   565→      case 'namuna-2':
+    67→   566→   566→        return <NamunaReports initialNamuna="2" onNavigate={handleNavClick} />;
+    68→   567→   567→      case 'namuna-8':
+    69→   568→   568→        return <Namuna8Component />;
+    70→   569→   569→      case 'namuna-9':
+    71→   570→   570→        return <Namuna9Component />;
+    72→   571→   571→      case 'namuna-9ka':
+    73→   572→   572→        return <Namuna9KaComponent />;
+    74→   573→   573→      case 'namuna-19':
+    75→   574→   574→        return <NamunaReports initialNamuna="19" onNavigate={handleNavClick} />;
+    76→   575→   575→      case 'namuna-21-24':
+    77→   576→   576→        return <NamunaReports initialNamuna="21" onNavigate={handleNavClick} />;
+    78→   577→   577→      case 'namuna-11-15':
+    79→   578→   578→        return <NamunaReports initialNamuna="11" onNavigate={handleNavClick} />;
+    80→   579→   579→      case 'namuna-16-18':
+    81→   580→   580→        return <NamunaReports initialNamuna="16" onNavigate={handleNavClick} />;
+    82→   581→   581→      case 'namuna-7':
+    83→   582→   582→        return <NamunaReports initialNamuna="7" onNavigate={handleNavClick} />;
+    84→   583→   583→      case 'namuna-28-30':
+    85→   584→   584→        return <NamunaReports initialNamuna="28" onNavigate={handleNavClick} />;
+    86→   585→   585→      case 'namuna-25-27':
+    87→   586→   586→        return <NamunaReports initialNamuna="25" onNavigate={handleNavClick} />;
+    88→   587→   587→      case 'namuna-31-33':
+    89→   588→   588→        return <NamunaReports initialNamuna="31" onNavigate={handleNavClick} />;
+    90→   589→   589→
+    91→   590→   590→      // Search
+    92→   591→   591→      case 'search':
+    93→   592→   592→        return <GlobalSearch />;
+    94→   593→   593→
+    95→   594→   594→      // Auth
+    96→   595→   595→      case 'logs':
+    97→   596→   596→        return <AuthLogs />;
+    98→   597→   597→
+    99→   598→   598→      // Excel
+   100→   599→   599→      case 'excel':
+   101→   600→   600→        return <ExcelImportExport />;
+   102→   601→   601→
+   103→   602→   602→      default:
+   104→   603→   603→        return <ERPDashboard stats={stats} user={user} recentLogs={recentLogs} setActiveView={setActiveView} formatTime={formatTime} refreshStats={refreshStats} />;
+   105→   604→   604→    }
+   106→   605→   605→  };
+   107→   606→   606→
+   108→   607→   607→  // ─── Get active label for breadcrumb ─────────────────────────────────────
+   109→   608→   608→
+   110→   609→   609→  const getActiveLabel = () => {
+   111→   610→   610→    if (activeView === 'dashboard') return 'डॅशबोर्ड';
+   112→   611→   611→    if (activeView === 'search') return 'शोधा';
+   113→   612→   612→    if (activeView === 'login') return 'लॉगिन';
+   114→   613→   613→    if (activeView === 'logs') return 'लॉग';
+   115→   614→   614→    if (activeView === 'excel') return 'आयात/निर्यात';
+   116→   615→   615→
+   117→   616→   616→    // Search in all navigation items
+   118→   617→   617→    const allItems = [
+   119→   618→   618→      ...masterEntryItems,
+   120→   619→   619→      ...dailyTransactionItems,
+   121→   620→   620→      ...autoRegisterItems,
+   122→   621→   621→      ...namunaReportSubGroups.flatMap((g) => g.items),
+   123→   622→   622→    ];
+   124→   623→   623→    const found = allItems.find((item) => item.id === activeView);
+   125→   624→   624→    return found ? found.label : 'डॅशबोर्ड';
+   126→   625→   625→  };
+   127→   626→   626→
+   128→   627→   627→  // If not authenticated, show full-screen login page (no sidebar, no header, no features)
+   129→   628→   628→  if (!user?.authenticated) {
+   130→   629→   629→    return (
+   131→   630→   630→      <div className="flex min-h-screen items-center justify-center" style={{ background: 'linear-gradient(135deg, #0d7377 0%, #0a5c5f 30%, #1a5632 100%)' }}>
+   132→   631→   631→        <div className="w-full max-w-md mx-4">
+   133→   632→   632→          {/* Indian Flag Tricolor Bar */}
+   134→   633→   633→          <div className="flex h-1.5 w-full rounded-t-xl overflow-hidden mb-0">
+   135→   634→   634→            <div className="flex-1" style={{ background: '#FF9933' }} />
+   136→   635→   635→            <div className="flex-1 bg-white" />
+   137→   636→   636→            <div className="flex-1" style={{ background: '#138808' }} />
+   138→   637→   637→          </div>
+   139→   638→   638→          {/* Logo and Title */}
+   140→   639→   639→          <div className="bg-white/10 backdrop-blur-sm p-6 text-center border-b border-white/10">
+   141→   640→   640→            <div className="h-16 w-16 rounded-2xl flex items-center justify-center mx-auto shadow-lg mb-3" style={{ background: 'linear-gradient(135deg, #e67e22, #f39c12)' }}>
+   142→   641→   641→              <Landmark className="h-8 w-8 text-white" />
+   143→   642→   642→            </div>
+   144→   643→   643→            <h1 className="text-2xl font-bold text-white mb-1">ग्रामपंचायत लेखा संहिता</h1>
+   145→   644→   644→            <p className="text-sm text-teal-100/80">ERP पोर्टल — महाराष्ट्र ग्रामपंचायत लेखा संहिता २०११</p>
+   146→   645→   645→          </div>
+   147→   646→   646→          {/* Login Form */}
+   148→   647→   647→          <div className="bg-white rounded-b-xl shadow-2xl">
+   149→   648→   648→            <LoginForm onLoginSuccess={handleLoginSuccess} onLogout={handleLogout} />
+   150→   649→   649→          </div>
+   151→   650→   650→          {/* Footer */}
+   152→   651→   651→          <div className="mt-6 text-center">
+   153→   652→   652→            <p className="text-xs text-teal-100/60">© 2024 महाराष्ट्र ग्रामपंचायत लेखा संहिता २०११</p>
+   154→   653→   653→          </div>
+   155→   654→   654→          {/* Indian Flag Tricolor Bar Bottom */}
+   156→   655→   655→          <div className="flex h-1 w-full rounded-b-xl overflow-hidden mt-4">
+   157→   656→   656→            <div className="flex-1" style={{ background: '#FF9933' }} />
+   158→   657→   657→            <div className="flex-1 bg-white" />
+   159→   658→   658→            <div className="flex-1" style={{ background: '#138808' }} />
+   160→   659→   659→          </div>
+   161→   660→   660→        </div>
+   162→   661→   661→      </div>
+   163→   662→   662→    );
+   164→   663→   663→  }
+   165→   664→   664→
+   166→   665→   665→  return (
+   167→   666→   666→    <SidebarProvider>
+   168→   667→   667→      <div className="flex min-h-screen w-full flex-col" style={{ background: 'linear-gradient(180deg, #f0faf5 0%, #f8faf9 30%, #ffffff 100%)' }}>
+   169→   668→   668→        {/* ─── Indian Flag Tricolor Bar ──────────────────────────────── */}
+   170→   669→   669→        <div className="flex h-1.5 w-full shrink-0">
+   171→   670→   670→          <div className="flex-1" style={{ background: '#FF9933' }} />
+   172→   671→   671→          <div className="flex-1 bg-white" />
+   173→   672→   672→          <div className="flex-1" style={{ background: '#138808' }} />
+   174→   673→   673→        </div>
+   175→   674→   674→
+   176→   675→   675→        {/* ─── Header ────────────────────────────────────────────────── */}
+   177→   676→   676→        <header className="sticky top-0 z-50 shadow-lg" style={{ background: 'linear-gradient(135deg, #0d7377 0%, #0a5c5f 50%, #1a5632 100%)' }}>
+   178→   677→   677→          <div className="flex items-center justify-between px-4 py-3">
+   179→   678→   678→            <div className="flex items-center gap-3">
+   180→   679→   679→              <SidebarTrigger className="hover:bg-white/20 text-white" />
+   181→   680→   680→              <div className="hidden sm:block h-8 w-px bg-white/20" />
+   182→   681→   681→              <div className="h-11 w-11 rounded-xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #e67e22, #f39c12)' }}>
+   183→   682→   682→                <Landmark className="h-6 w-6 text-white" />
+   184→   683→   683→              </div>
+   185→   684→   684→              <div>
+   186→   685→   685→                <h1 className="text-lg sm:text-xl font-bold leading-tight text-white">
+   187→   686→   686→                  ग्रामपंचायत लेखा संहिता ERP पोर्टल
+   188→   687→   687→                </h1>
+   189→   688→   688→                <p className="text-xs text-teal-100/80 hidden sm:block">
+   190→   689→   689→                  Maharashtra Gram Panchayat Accounting ERP Portal
+   191→   690→   690→                </p>
+   192→   691→   691→              </div>
+   193→   692→   692→            </div>
+   194→   693→   693→            <div className="flex items-center gap-2 sm:gap-3">
+   195→   694→   694→              {/* Financial Year Selector */}
+   196→   695→   695→              <div className="hidden sm:flex items-center gap-2">
+   197→   696→   696→                <CalendarDays className="h-4 w-4 text-teal-100/70" />
+   198→   697→   697→                <Select value={financialYear} onValueChange={setFinancialYear}>
+   199→   698→   698→                  <SelectTrigger className="w-[140px] h-8 text-xs bg-white/10 border-white/20 text-white">
+   200→   699→   699→                    <SelectValue />
+   201→   700→   700→                  </SelectTrigger>
+   202→   701→   701→                  <SelectContent>
+   203→   702→   702→                    <SelectItem value="2023-24">2023-24</SelectItem>
+   204→   703→   703→                    <SelectItem value="2024-25">2024-25</SelectItem>
+   205→   704→   704→                    <SelectItem value="2025-26">2025-26</SelectItem>
+   206→   705→   705→                  </SelectContent>
+   207→   706→   706→                </Select>
+   208→   707→   707→              </div>
+   209→   708→   708→
+   210→   709→   709→              {/* User Info */}
+   211→   710→   710→              {user?.authenticated && user.user ? (
+   212→   711→   711→                <div className="flex items-center gap-2">
+   213→   712→   712→                  <div className="hidden md:flex items-center gap-2 bg-white/15 backdrop-blur-sm rounded-full px-3 py-1.5">
+   214→   713→   713→                    <div className="h-7 w-7 rounded-full flex items-center justify-center" style={{ background: user.user.role === 'gpo' ? '#27ae60' : '#e67e22' }}>
+   215→   714→   714→                      <Shield className="h-4 w-4 text-white" />
+   216→   715→   715→                    </div>
+   217→   716→   716→                    <span className="text-sm font-medium text-white">{user.user.nameMarathi}</span>
+   218→   717→   717→                    <Badge className={`${user.user.role === 'gpo' ? 'bg-green-500' : 'bg-amber-500'} text-white text-xs border-0`}>
+   219→   718→   718→                      {user.user.role === 'gpo' ? 'GPO' : 'Operator'}
+   220→   719→   719→                    </Badge>
+   221→   720→   720→                  </div>
+   222→   721→   721→                  {user.loginAt && (
+   223→   722→   722→                    <div className="hidden lg:flex items-center gap-1 text-xs text-teal-100/70 bg-white/10 rounded-full px-2.5 py-1">
+   224→   723→   723→                      <Clock className="h-3 w-3" />
+   225→   724→   724→                      <span>{formatTime(user.loginAt)}</span>
+   226→   725→   725→                    </div>
+   227→   726→   726→                  )}
+   228→   727→   727→                  <Button
+   229→   728→   728→                    variant="ghost"
+   230→   729→   729→                    size="sm"
+   231→   730→   730→                    onClick={handleLogout}
+   232→   731→   731→                    className="text-white hover:bg-white/20 h-8 px-2"
+   233→   732→   732→                    title="लॉगआउट"
+   234→   733→   733→                  >
+   235→   734→   734→                    <LogOut className="h-4 w-4" />
+   236→   735→   735→                    <span className="hidden sm:inline ml-1 text-xs">लॉगआउट</span>
+   237→   736→   736→                  </Button>
+   238→   737→   737→                </div>
+   239→   738→   738→              ) : (
+   240→   739→   739→                <Button
+   241→   740→   740→                  variant="ghost"
+   242→   741→   741→                  size="sm"
+   243→   742→   742→                  onClick={() => setActiveView('login')}
+   244→   743→   743→                  className="text-white hover:bg-white/20 h-8 px-2"
+   245→   744→   744→                  title="लॉगिन करा"
+   246→   745→   745→                >
+   247→   746→   746→                  <LogIn className="h-4 w-4" />
+   248→   747→   747→                  <span className="hidden sm:inline ml-1 text-xs">लॉगिन</span>
+   249→   748→   748→                </Button>
+   250→   749→   749→              )}
+   251→   750→   750→
+   252→   751→   751→              {/* Mobile FY selector */}
+   253→   752→   752→              <div className="sm:hidden flex items-center gap-1 bg-white/10 rounded-full px-2 py-1 text-xs text-white">
+   254→   753→   753→                <CalendarDays className="h-3 w-3" />
+   255→   754→   754→                <span>{financialYear}</span>
+   256→   755→   755→              </div>
+   257→   756→   756→            </div>
+   258→   757→   757→          </div>
+   259→   758→   758→        </header>
+   260→   759→   759→
+   261→   760→   760→        {/* ─── Body: Sidebar + Main ──────────────────────────────────── */}
+   262→   761→   761→        <div className="flex flex-1">
+   263→   762→   762→          {/* Sidebar */}
+   264→   763→   763→          <Sidebar collapsible="icon" className="border-r border-gray-200">
+   265→   764→   764→            <SidebarHeader className="p-3">
+   266→   765→   765→              <div className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
+   267→   766→   766→                <div className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #0d7377, #1a5632)' }}>
+   268→   767→   767→                  <Flag className="h-5 w-5 text-white" />
+   269→   768→   768→                </div>
+   270→   769→   769→                <div className="group-data-[collapsible=icon]:hidden">
+   271→   770→   770→                  <p className="text-sm font-bold text-teal-800 leading-tight">GP ERP</p>
+   272→   771→   771→                  <p className="text-[10px] text-muted-foreground">लेखा संहिता</p>
+   273→   772→   772→                </div>
+   274→   773→   773→              </div>
+   275→   774→   774→            </SidebarHeader>
+   276→   775→   775→
+   277→   776→   776→            <SidebarSeparator />
+   278→   777→   777→
+   279→   778→   778→            <SidebarContent className="px-2">
+   280→   779→   779→              {/* Dashboard - only when authenticated */}
+   281→   780→   780→              {user?.authenticated && (
+   282→   781→   781→              <SidebarGroup>
+   283→   782→   782→                <SidebarGroupContent>
+   284→   783→   783→                  <SidebarMenu>
+   285→   784→   784→                    <SidebarMenuItem>
+   286→   785→   785→                      <SidebarMenuButton
+   287→   786→   786→                        isActive={activeView === 'dashboard'}
+   288→   787→   787→                        onClick={() => handleNavClick('dashboard')}
+   289→   788→   788→                        tooltip="डॅशबोर्ड"
+   290→   789→   789→                        className={activeView === 'dashboard' ? 'bg-teal-50 text-teal-800 font-semibold hover:bg-teal-100' : ''}
+   291→   790→   790→                      >
+   292→   791→   791→                        <LayoutDashboard className="h-4 w-4 text-teal-600" />
+   293→   792→   792→                        <span>डॅशबोर्ड</span>
+   294→   793→   793→                      </SidebarMenuButton>
+   295→   794→   794→                    </SidebarMenuItem>
+   296→   795→   795→                  </SidebarMenu>
+   297→   796→   796→                </SidebarGroupContent>
+   298→   797→   797→              </SidebarGroup>
+   299→   798→   798→              )}
+   300→   799→   799→
+   301→   800→   800→              <SidebarSeparator />
+   302→   801→   801→
+   303→   802→   802→              {user?.authenticated && user.user && (<>
+   304→   803→   803→              {/* मास्टर एंट्री (Master Entry) */}
+   305→   804→   804→              <SidebarGroup>
+   306→   805→   805→                <Collapsible open={expandedGroups.masters} onOpenChange={() => toggleGroup('masters')} className="group/collapsible">
+   307→   806→   806→                  <SidebarGroupLabel asChild>
+   308→   807→   807→                    <CollapsibleTrigger className="hover:bg-sidebar-accent rounded-md w-full">
+   309→   808→   808→                      <div className="flex items-center gap-2 w-full">
+   310→   809→   809→                        <Database className="h-4 w-4 text-purple-600" />
+   311→   810→   810→                        <span className="flex-1 text-left">मास्टर एंट्री</span>
+   312→   811→   811→                        <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+   313→   812→   812→                      </div>
+   314→   813→   813→                    </CollapsibleTrigger>
+   315→   814→   814→                  </SidebarGroupLabel>
+   316→   815→   815→                  <CollapsibleContent>
+   317→   816→   816→                    <SidebarGroupContent>
+   318→   817→   817→                      <SidebarMenu>
+   319→   818→   818→                        {masterEntryItems.map((item) => (
+   320→   819→   819→                          <SidebarMenuItem key={item.id}>
+   321→   820→   820→                            <SidebarMenuButton
+   322→   821→   821→                              isActive={activeView === item.id}
+   323→   822→   822→                              onClick={() => handleNavClick(item.id)}
+   324→   823→   823→                              tooltip={item.label}
+   325→   824→   824→                              className={`text-xs h-7 ${activeView === item.id ? 'bg-purple-50 text-purple-800 font-medium' : ''}`}
+   326→   825→   825→                            >
+   327→   826→   826→                              <item.icon className={`h-3.5 w-3.5 ${activeView === item.id ? 'text-purple-600' : 'text-muted-foreground'}`} />
+   328→   827→   827→                              <span>{item.label}</span>
+   329→   828→   828→                            </SidebarMenuButton>
+   330→   829→   829→                          </SidebarMenuItem>
+   331→   830→   830→                        ))}
+   332→   831→   831→                      </SidebarMenu>
+   333→   832→   832→                    </SidebarGroupContent>
+   334→   833→   833→                  </CollapsibleContent>
+   335→   834→   834→                </Collapsible>
+   336→   835→   835→              </SidebarGroup>
+   337→   836→   836→
+   338→   837→   837→              <SidebarSeparator />
+   339→   838→   838→
+   340→   839→   839→              {/* दैनंदिन व्यवहार (Daily Transactions) */}
+   341→   840→   840→              <SidebarGroup>
+   342→   841→   841→                <Collapsible open={expandedGroups.transactions} onOpenChange={() => toggleGroup('transactions')} className="group/collapsible">
+   343→   842→   842→                  <SidebarGroupLabel asChild>
+   344→   843→   843→                    <CollapsibleTrigger className="hover:bg-sidebar-accent rounded-md w-full">
+   345→   844→   844→                      <div className="flex items-center gap-2 w-full">
+   346→   845→   845→                        <Wallet className="h-4 w-4 text-green-600" />
+   347→   846→   846→                        <span className="flex-1 text-left">दैनंदिन व्यवहार</span>
+   348→   847→   847→                        <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+   349→   848→   848→                      </div>
+   350→   849→   849→                    </CollapsibleTrigger>
+   351→   850→   850→                  </SidebarGroupLabel>
+   352→   851→   851→                  <CollapsibleContent>
+   353→   852→   852→                    <SidebarGroupContent>
+   354→   853→   853→                      <SidebarMenu>
+   355→   854→   854→                        {dailyTransactionItems.map((item) => (
+   356→   855→   855→                          <SidebarMenuItem key={item.id}>
+   357→   856→   856→                            <SidebarMenuButton
+   358→   857→   857→                              isActive={activeView === item.id}
+   359→   858→   858→                              onClick={() => handleNavClick(item.id)}
+   360→   859→   859→                              tooltip={item.label}
+   361→   860→   860→                              className={`text-xs h-7 ${activeView === item.id ? 'bg-green-50 text-green-800 font-medium' : ''}`}
+   362→   861→   861→                            >
+   363→   862→   862→                              <item.icon className={`h-3.5 w-3.5 ${activeView === item.id ? (item.color || 'text-green-600') : 'text-muted-foreground'}`} />
+   364→   863→   863→                              <span>{item.label}</span>
+   365→   864→   864→                            </SidebarMenuButton>
+   366→   865→   865→                          </SidebarMenuItem>
+   367→   866→   866→                        ))}
+   368→   867→   867→                      </SidebarMenu>
+   369→   868→   868→                    </SidebarGroupContent>
+   370→   869→   869→                  </CollapsibleContent>
+   371→   870→   870→                </Collapsible>
+   372→   871→   871→              </SidebarGroup>
+   373→   872→   872→
+   374→   873→   873→              <SidebarSeparator />
+   375→   874→   874→
+   376→   875→   875→              {/* ऑटो रजिस्टर (Auto Registers) */}
+   377→   876→   876→              <SidebarGroup>
+   378→   877→   877→                <Collapsible open={expandedGroups.registers} onOpenChange={() => toggleGroup('registers')} className="group/collapsible">
+   379→   878→   878→                  <SidebarGroupLabel asChild>
+   380→   879→   879→                    <CollapsibleTrigger className="hover:bg-sidebar-accent rounded-md w-full">
+   381→   880→   880→                      <div className="flex items-center gap-2 w-full">
+   382→   881→   881→                        <BookOpenCheck className="h-4 w-4 text-amber-600" />
+   383→   882→   882→                        <span className="flex-1 text-left">ऑटो रजिस्टर</span>
+   384→   883→   883→                        <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+   385→   884→   884→                      </div>
+   386→   885→   885→                    </CollapsibleTrigger>
+   387→   886→   886→                  </SidebarGroupLabel>
+   388→   887→   887→                  <CollapsibleContent>
+   389→   888→   888→                    <SidebarGroupContent>
+   390→   889→   889→                      <SidebarMenu>
+   391→   890→   890→                        {autoRegisterItems.map((item) => (
+   392→   891→   891→                          <SidebarMenuItem key={item.id}>
+   393→   892→   892→                            <SidebarMenuButton
+   394→   893→   893→                              isActive={activeView === item.id}
+   395→   894→   894→                              onClick={() => handleNavClick(item.id)}
+   396→   895→   895→                              tooltip={item.label}
+   397→   896→   896→                              className={`text-xs h-7 ${activeView === item.id ? 'bg-amber-50 text-amber-800 font-medium' : ''}`}
+   398→   897→   897→                            >
+   399→   898→   898→                              <item.icon className={`h-3.5 w-3.5 ${activeView === item.id ? (item.color || 'text-amber-600') : 'text-muted-foreground'}`} />
+   400→   899→   899→                              <span>{item.label}</span>
+   401→   900→   900→                            </SidebarMenuButton>
+   402→   901→   901→                          </SidebarMenuItem>
+   403→   902→   902→                        ))}
+   404→   903→   903→                      </SidebarMenu>
+   405→   904→   904→                    </SidebarGroupContent>
+   406→   905→   905→                  </CollapsibleContent>
+   407→   906→   906→                </Collapsible>
+   408→   907→   907→              </SidebarGroup>
+   409→   908→   908→
+   410→   909→   909→              <SidebarSeparator />
+   411→   910→   910→
+   412→   911→   911→              {/* नमुना अहवाल (Namuna Reports 1-33) */}
+   413→   912→   912→              <SidebarGroup>
+   414→   913→   913→                <Collapsible open={expandedGroups.namuna} onOpenChange={() => toggleGroup('namuna')} className="group/collapsible">
+   415→   914→   914→                  <SidebarGroupLabel asChild>
+   416→   915→   915→                    <CollapsibleTrigger className="hover:bg-sidebar-accent rounded-md w-full">
+   417→   916→   916→                      <div className="flex items-center gap-2 w-full">
+   418→   917→   917→                        <ClipboardList className="h-4 w-4 text-emerald-600" />
+   419→   918→   918→                        <span className="flex-1 text-left">नमुना अहवाल (१-३३)</span>
+   420→   919→   919→                        <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+   421→   920→   920→                      </div>
+   422→   921→   921→                    </CollapsibleTrigger>
+   423→   922→   922→                  </SidebarGroupLabel>
+   424→   923→   923→                  <CollapsibleContent>
+   425→   924→   924→                    <SidebarMenu>
+   426→   925→   925→                      {namunaReportSubGroups.map((subGroup, sgIdx) => (
+   427→   926→   926→                        <SidebarMenuItem key={sgIdx}>
+   428→   927→   927→                          <div className="px-2 py-1.5">
+   429→   928→   928→                            <p className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wider">{subGroup.label}</p>
+   430→   929→   929→                          </div>
+   431→   930→   930→                          <SidebarMenuSub>
+   432→   931→   931→                            {subGroup.items.map((item) => (
+   433→   932→   932→                              <SidebarMenuSubItem key={item.id}>
+   434→   933→   933→                                <SidebarMenuSubButton
+   435→   934→   934→                                  isActive={activeView === item.id}
+   436→   935→   935→                                  onClick={() => handleNavClick(item.id)}
+   437→   936→   936→                                  className={activeView === item.id ? 'bg-emerald-50 text-emerald-800 font-medium' : ''}
+   438→   937→   937→                                >
+   439→   938→   938→                                  <item.icon className={`h-3.5 w-3.5 ${activeView === item.id ? (item.color || 'text-emerald-600') : 'text-muted-foreground'}`} />
+   440→   939→   939→                                  <span className="text-xs">{item.label}</span>
+   441→   940→   940→                                </SidebarMenuSubButton>
+   442→   941→   941→                              </SidebarMenuSubItem>
+   443→   942→   942→                            ))}
+   444→   943→   943→                          </SidebarMenuSub>
+   445→   944→   944→                        </SidebarMenuItem>
+   446→   945→   945→                      ))}
+   447→   946→   946→                    </SidebarMenu>
+   448→   947→   947→                  </CollapsibleContent>
+   449→   948→   948→                </Collapsible>
+   450→   949→   949→              </SidebarGroup>
+   451→   950→   950→
+   452→   951→   951→              <SidebarSeparator />
+   453→   952→   952→
+   454→   953→   953→              {/* Bottom nav: Search, Excel */}
+   455→   954→   954→              <SidebarGroup>
+   456→   955→   955→                <SidebarGroupContent>
+   457→   956→   956→                  <SidebarMenu>
+   458→   957→   957→                    <SidebarMenuItem>
+   459→   958→   958→                      <SidebarMenuButton
+   460→   959→   959→                        isActive={activeView === 'search'}
+   461→   960→   960→                        onClick={() => handleNavClick('search')}
+   462→   961→   961→                        tooltip="शोधा"
+   463→   962→   962→                        className={activeView === 'search' ? 'bg-sky-50 text-sky-800 font-semibold' : ''}
+   464→   963→   963→                      >
+   465→   964→   964→                        <Search className="h-4 w-4 text-sky-600" />
+   466→   965→   965→                        <span>शोधा</span>
+   467→   966→   966→                      </SidebarMenuButton>
+   468→   967→   967→                    </SidebarMenuItem>
+   469→   968→   968→                    <SidebarMenuItem>
+   470→   969→   969→                      <SidebarMenuButton
+   471→   970→   970→                        isActive={activeView === 'excel'}
+   472→   971→   971→                        onClick={() => handleNavClick('excel')}
+   473→   972→   972→                        tooltip="आयात/निर्यात"
+   474→   973→   973→                        className={activeView === 'excel' ? 'bg-emerald-50 text-emerald-800 font-semibold' : ''}
+   475→   974→   974→                      >
+   476→   975→   975→                        <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
+   477→   976→   976→                        <span>आयात/निर्यात</span>
+   478→   977→   977→                      </SidebarMenuButton>
+   479→   978→   978→                    </SidebarMenuItem>
+   480→   979→   979→                  </SidebarMenu>
+   481→   980→   980→                </SidebarGroupContent>
+   482→   981→   981→              </SidebarGroup>
+   483→   982→   982→              </>)}
+   484→   983→   983→
+   485→   984→   984→              {/* Auth-related nav: Login/Logout/Logs - always visible */}
+   486→   985→   985→              <SidebarGroup>
+   487→   986→   986→                <SidebarGroupContent>
+   488→   987→   987→                  <SidebarMenu>
+   489→   988→   988→                    {!user?.authenticated ? (
+   490→   989→   989→                      <SidebarMenuItem>
+   491→   990→   990→                        <SidebarMenuButton
+   492→   991→   991→                          isActive={activeView === 'login'}
+   493→   992→   992→                          onClick={() => handleNavClick('login')}
+   494→   993→   993→                          tooltip="लॉगिन करा"
+   495→   994→   994→                          className={activeView === 'login' ? 'bg-orange-50 text-orange-800 font-semibold' : ''}
+   496→   995→   995→                        >
+   497→   996→   996→                          <LogIn className="h-4 w-4 text-orange-600" />
+   498→   997→   997→                          <span>लॉगिन करा</span>
+   499→   998→   998→                        </SidebarMenuButton>
+   500→   999→   999→                      </SidebarMenuItem>
+   501→  1000→  1000→                    ) : (<>
+   502→  1001→  1001→                      <SidebarMenuItem>
+   503→  1002→  1002→                        <SidebarMenuButton
+   504→  1003→  1003→                          isActive={activeView === 'logs'}
+   505→  1004→  1004→                          onClick={() => handleNavClick('logs')}
+   506→  1005→  1005→                          tooltip="लॉग"
+   507→  1006→  1006→                          className={activeView === 'logs' ? 'bg-slate-50 text-slate-800 font-semibold' : ''}
+   508→  1007→  1007→                        >
+   509→  1008→  1008→                          <Activity className="h-4 w-4 text-slate-600" />
+   510→  1009→  1009→                          <span>लॉग</span>
+   511→  1010→  1010→                        </SidebarMenuButton>
+   512→  1011→  1011→                      </SidebarMenuItem>
+   513→  1012→  1012→                      <SidebarMenuItem>
+   514→  1013→  1013→                        <SidebarMenuButton
+   515→  1014→  1014→                          onClick={handleLogout}
+   516→  1015→  1015→                          tooltip="लॉगआउट"
+   517→  1016→  1016→                          className="text-red-700 hover:bg-red-50"
+   518→  1017→  1017→                        >
+   519→  1018→  1018→                          <LogOut className="h-4 w-4 text-red-600" />
+   520→  1019→  1019→                          <span>लॉगआउट</span>
+   521→  1020→  1020→                        </SidebarMenuButton>
+   522→  1021→  1021→                      </SidebarMenuItem>
+   523→  1022→  1022→                    </>)}
+   524→  1023→  1023→                  </SidebarMenu>
+   525→  1024→  1024→                </SidebarGroupContent>
+   526→  1025→  1025→              </SidebarGroup>
+   527→  1026→  1026→            </SidebarContent>
+   528→  1027→  1027→
+   529→  1028→  1028→            <SidebarFooter className="p-3">
+   530→  1029→  1029→              <div className="group-data-[collapsible=icon]:hidden">
+   531→  1030→  1030→                <div className="rounded-lg p-2 text-center" style={{ background: 'linear-gradient(135deg, #f0faf5, #e8f8f0)' }}>
+   532→  1031→  1031→                  <p className="text-[10px] font-medium text-teal-700">महाराष्ट्र ग्रामपंचायत</p>
+   533→  1032→  1032→                  <p className="text-[9px] text-muted-foreground">लेखा संहिता २०११</p>
+   534→  1033→  1033→                </div>
+   535→  1034→  1034→              </div>
+   536→  1035→  1035→            </SidebarFooter>
+   537→  1036→  1036→
+   538→  1037→  1037→            <SidebarRail />
+   539→  1038→  1038→          </Sidebar>
+   540→  1039→  1039→
+   541→  1040→  1040→          {/* Main Content Area */}
+   542→  1041→  1041→          <SidebarInset>
+   543→  1042→  1042→            {/* Breadcrumb / Active View Indicator */}
+   544→  1043→  1043→            <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-sm border-b px-4 py-2">
+   545→  1044→  1044→              <div className="flex items-center gap-2 text-sm">
+   546→  1045→  1045→                <LayoutDashboard className="h-4 w-4 text-teal-600" />
+   547→  1046→  1046→                <button onClick={() => handleNavClick('dashboard')} className="text-muted-foreground hover:text-teal-700 transition-colors">
+   548→  1047→  1047→                  डॅशबोर्ड
+   549→  1048→  1048→                </button>
+   550→  1049→  1049→                {activeView !== 'dashboard' && (
+   551→  1050→  1050→                  <>
+   552→  1051→  1051→                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+   553→  1052→  1052→                    <span className="font-medium text-teal-800">{getActiveLabel()}</span>
+   554→  1053→  1053→                  </>
+   555→  1054→  1054→                )}
+   556→  1055→  1055→                <div className="ml-auto">
+   557→  1056→  1056→                  <Badge variant="outline" className="text-[10px] border-teal-200 text-teal-600">
+   558→  1057→  1057→                    {financialYear}
+   559→  1058→  1058→                  </Badge>
+   560→  1059→  1059→                </div>
+   561→  1060→  1060→              </div>
+   562→  1061→  1061→            </div>
+   563→  1062→  1062→
+   564→  1063→  1063→            {/* Content */}
+   565→  1064→  1064→            <div className="flex-1 p-4 sm:p-6">
+   566→  1065→  1065→              {renderMainContent()}
+   567→  1066→  1066→            </div>
+   568→  1067→  1067→
+   569→  1068→  1068→            {/* Footer */}
+   570→  1069→  1069→            <footer className="mt-auto" style={{ background: 'linear-gradient(135deg, #0d7377, #1a5632)' }}>
+   571→  1070→  1070→              <div className="px-4 py-3">
+   572→  1071→  1071→                <div className="flex flex-col sm:flex-row items-center justify-between text-sm text-teal-100/70 gap-2">
+   573→  1072→  1072→                  <div className="flex items-center gap-2">
+   574→  1073→  1073→                    <Landmark className="h-4 w-4" />
+   575→  1074→  1074→                    <span>ग्रामपंचायत लेखा संहिता ERP पोर्टल &copy; 2024</span>
+   576→  1075→  1075→                  </div>
+   577→  1076→  1076→                  <span className="text-xs">महाराष्ट्र ग्रामपंचायत लेखा संहिता २०११</span>
+   578→  1077→  1077→                </div>
+   579→  1078→  1078→              </div>
+   580→  1079→  1079→              {/* Indian flag tricolor at bottom */}
+   581→  1080→  1080→              <div className="flex h-1 w-full">
+   582→  1081→  1081→                <div className="flex-1" style={{ background: '#FF9933' }} />
+   583→  1082→  1082→                <div className="flex-1 bg-white" />
+   584→  1083→  1083→                <div className="flex-1" style={{ background: '#138808' }} />
+   585→  1084→  1084→              </div>
+   586→  1085→  1085→            </footer>
+   587→  1086→  1086→          </SidebarInset>
+   588→  1087→  1087→        </div>
+   589→  1088→  1088→      </div>
+   590→  1089→  1089→    </SidebarProvider>
+   591→  1090→  1090→  );
+   592→  1091→  1091→}
+   593→  1092→  1092→
