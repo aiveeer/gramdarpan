@@ -1,48 +1,40 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
-import { LogIn, LogOut, User, Shield, Clock } from 'lucide-react';
+import { LogIn, User, Shield, Clock } from 'lucide-react';
 
-interface SessionUser {
-  id: string;
-  username: string;
-  name: string;
-  nameMarathi: string;
-  role: string;
-  isActive: boolean;
-}
-
-interface SessionData {
+interface LoginFormProps {
+  /** Whether the user is currently authenticated (from parent state) */
   authenticated: boolean;
-  user?: SessionUser;
+  /** User info when authenticated */
+  user?: {
+    name: string;
+    nameMarathi: string;
+    role: string;
+    username: string;
+  } | null;
+  /** Login timestamp */
   loginAt?: string | null;
+  /** Callback: parent should load session after login API succeeds */
+  onLoginSuccess: () => Promise<void>;
+  /** Callback: parent should handle logout (clear state + call API) */
+  onLogout: () => Promise<void>;
 }
 
-export default function LoginForm({ onLoginSuccess, onLogout }: { onLoginSuccess?: () => void; onLogout?: () => void }) {
-  const [session, setSession] = useState<SessionData>({ authenticated: false });
+export default function LoginForm({ authenticated, user, loginAt, onLoginSuccess, onLogout }: LoginFormProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [seeding, setSeeding] = useState(false);
 
-  const checkSession = useCallback(async () => {
-    try {
-      const res = await fetch('/api/auth/session');
-      const data = await res.json();
-      setSession(data);
-    } catch {
-      setSession({ authenticated: false });
-    }
-  }, []);
-
+  // Seed default users on mount (only once)
   useEffect(() => {
-    // Seed default users on mount
     const seedUsers = async () => {
       setSeeding(true);
       try {
@@ -58,8 +50,7 @@ export default function LoginForm({ onLoginSuccess, onLogout }: { onLoginSuccess
       }
     };
     seedUsers();
-    checkSession();
-  }, [checkSession]);
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,8 +70,8 @@ export default function LoginForm({ onLoginSuccess, onLogout }: { onLoginSuccess
         toast({ title: 'यशस्वी', description: `${data.nameMarathi || data.name} लॉगिन झाले` });
         setUsername('');
         setPassword('');
-        checkSession();
-        onLoginSuccess?.();
+        // Notify parent to reload session (parent is single source of truth)
+        await onLoginSuccess();
       } else {
         toast({ title: 'लॉगिन अयशस्वी', description: data.error || 'अवैध credentials', variant: 'destructive' });
       }
@@ -93,10 +84,9 @@ export default function LoginForm({ onLoginSuccess, onLogout }: { onLoginSuccess
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      // Delegate to parent (parent will await the API, then clear state)
+      await onLogout();
       toast({ title: 'लॉगआउट', description: 'तुम्ही यशस्वीरित्या लॉगआउट झालात' });
-      setSession({ authenticated: false });
-      onLogout?.();
     } catch {
       toast({ title: 'त्रुटी', description: 'लॉगआउट अयशस्वी', variant: 'destructive' });
     }
@@ -128,7 +118,8 @@ export default function LoginForm({ onLoginSuccess, onLogout }: { onLoginSuccess
     );
   }
 
-  if (session.authenticated && session.user) {
+  // If authenticated, show user info card (this is used in the login page overlay)
+  if (authenticated && user) {
     return (
       <Card>
         <CardHeader className="pb-3">
@@ -141,32 +132,32 @@ export default function LoginForm({ onLoginSuccess, onLogout }: { onLoginSuccess
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-lg">{session.user.nameMarathi || session.user.name}</span>
+                <span className="font-semibold text-lg">{user.nameMarathi || user.name}</span>
                 <Badge
-                  variant={session.user.role === 'gpo' ? 'default' : 'secondary'}
+                  variant={user.role === 'gpo' ? 'default' : 'secondary'}
                   className={
-                    session.user.role === 'gpo'
+                    user.role === 'gpo'
                       ? 'bg-green-600 hover:bg-green-700 text-white'
                       : 'bg-blue-600 hover:bg-blue-700 text-white'
                   }
                 >
                   <Shield className="h-3 w-3 mr-1" />
-                  {session.user.role === 'gpo' ? 'GPO' : 'Operator'}
+                  {user.role === 'gpo' ? 'GPO' : 'Operator'}
                 </Badge>
               </div>
               <div className="text-sm text-muted-foreground">
-                युजरनेम: {session.user.username}
+                युजरनेम: {user.username}
               </div>
             </div>
             <Button variant="destructive" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-1" />
+              <LogIn className="h-4 w-4 mr-1 rotate-180" />
               लॉगआउट
             </Button>
           </div>
 
           <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
             <Clock className="h-4 w-4" />
-            <span>लॉगिन वेळ: {formatTime(session.loginAt)}</span>
+            <span>लॉगिन वेळ: {formatTime(loginAt)}</span>
           </div>
 
           <div className="text-xs text-muted-foreground border-t pt-3">
@@ -180,6 +171,7 @@ export default function LoginForm({ onLoginSuccess, onLogout }: { onLoginSuccess
     );
   }
 
+  // Login form (not authenticated)
   return (
     <Card>
       <CardHeader className="pb-3">

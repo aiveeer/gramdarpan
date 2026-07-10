@@ -1,0 +1,645 @@
+     1→     1→import { db } from '@/lib/db';
+     2→     2→import { NextRequest, NextResponse } from 'next/server';
+     3→     3→
+     4→     4→// GET - fetch any master table data
+     5→     5→export async function GET(request: NextRequest) {
+     6→     6→  try {
+     7→     7→    const { searchParams } = new URL(request.url);
+     8→     8→    const table = searchParams.get('table');
+     9→     9→    const id = searchParams.get('id');
+    10→    10→    const search = searchParams.get('search');
+    11→    11→
+    12→    12→    if (!table) {
+    13→    13→      return NextResponse.json({ error: 'Table name required' }, { status: 400 });
+    14→    14→    }
+    15→    15→
+    16→    16→    const where: Record<string, unknown> = {};
+    17→    17→    if (id) where.id = id;
+    18→    18→    // Map short table names to full names
+    19→    19→    const tableAlias: Record<string, string> = {
+    20→    20→      'fy': 'financialYear',
+    21→    21→      'bank': 'bankAccount',
+    22→    22→      'budget-head': 'budgetHead',
+    23→    23→      'scheme': 'schemeInfo',
+    24→    24→      'contractor': 'contractorMaster',
+    25→    25→      'namuna8': 'namuna8',
+    26→    26→      'namuna13': 'namuna13',
+    27→    27→      'namuna22': 'namuna22',
+    28→    28→      'namuna23': 'namuna23',
+    29→    29→      'namuna24': 'namuna24',
+    30→    30→      'namuna33': 'namuna33',
+    31→    31→    };
+    32→    32→    const resolvedTable = tableAlias[table] || table;
+    33→    33→
+    34→    34→    if (search) {
+    35→    35→      switch (resolvedTable) {
+    36→    36→        case 'ward':
+    37→    37→          where.OR = [{ wardNumber: { contains: search } }, { wardName: { contains: search } }, { wardNameMr: { contains: search } }];
+    38→    38→          break;
+    39→    39→        case 'owner':
+    40→    40→          where.OR = [{ ownerNumber: { contains: search } }, { firstName: { contains: search } }, { lastName: { contains: search } }, { mobileNumber: { contains: search } }, { firstNameMr: { contains: search } }, { lastNameMr: { contains: search } }];
+    41→    41→          break;
+    42→    42→        case 'road':
+    43→    43→          where.OR = [{ roadNumber: { contains: search } }, { roadName: { contains: search } }];
+    44→    44→          break;
+    45→    45→        case 'property':
+    46→    46→          where.OR = [{ propertyNumber: { contains: search } }];
+    47→    47→          break;
+    48→    48→        case 'financialYear':
+    49→    49→          where.OR = [{ year: { contains: search } }];
+    50→    50→          break;
+    51→    51→        case 'bankAccount':
+    52→    52→          where.OR = [{ accountNumber: { contains: search } }, { bankName: { contains: search } }, { branchName: { contains: search } }];
+    53→    53→          break;
+    54→    54→        case 'budgetHead':
+    55→    55→          where.OR = [{ code: { contains: search } }, { name: { contains: search } }, { nameMr: { contains: search } }];
+    56→    56→          break;
+    57→    57→        case 'schemeInfo':
+    58→    58→          where.OR = [{ schemeNumber: { contains: search } }, { schemeName: { contains: search } }, { schemeNameMr: { contains: search } }];
+    59→    59→          break;
+    60→    60→        case 'contractorMaster':
+    61→    61→          where.OR = [{ contractorId: { contains: search } }, { firstName: { contains: search } }, { lastName: { contains: search } }, { firmName: { contains: search } }, { mobileNumber: { contains: search } }];
+    62→    62→          break;
+    63→    63→        case 'floorInfo':
+    64→    64→          where.OR = [{ floorNumber: { contains: search } }, { floorName: { contains: search } }, { floorNameMr: { contains: search } }];
+    65→    65→          break;
+    66→    66→        case 'demandCategory':
+    67→    67→          where.OR = [{ code: { contains: search } }, { name: { contains: search } }, { nameMr: { contains: search } }];
+    68→    68→          break;
+    69→    69→        case 'contractor':
+    70→    70→          where.OR = [{ contractorId: { contains: search } }, { firstName: { contains: search } }, { lastName: { contains: search } }, { firmName: { contains: search } }, { mobileNumber: { contains: search } }];
+    71→    71→          break;
+    72→    72→        case 'namuna8':
+    73→    73→          where.OR = [{ propertyId: { contains: search } }, { financialYear: { contains: search } }];
+    74→    74→          break;
+    75→    75→        case 'namuna13':
+    76→    76→          where.OR = [{ designation: { contains: search } }, { designationMr: { contains: search } }, { employeeName: { contains: search } }, { employeeNameMr: { contains: search } }, { orderNumber: { contains: search } }];
+    77→    77→          break;
+    78→    78→        case 'namuna22':
+    79→    79→          where.OR = [{ assetType: { contains: search } }, { groupName: { contains: search } }, { description: { contains: search } }, { descriptionMr: { contains: search } }, { location: { contains: search } }, { locationMr: { contains: search } }];
+    80→    80→          break;
+    81→    81→        case 'namuna23':
+    82→    82→          where.OR = [{ roadName: { contains: search } }, { roadNameMr: { contains: search } }, { fromLocation: { contains: search } }, { toLocation: { contains: search } }];
+    83→    83→          break;
+    84→    84→        case 'namuna24':
+    85→    85→          where.OR = [{ groupName: { contains: search } }, { landType: { contains: search } }, { currentUse: { contains: search } }, { leaseInfo: { contains: search } }];
+    86→    86→          break;
+    87→    87→        case 'namuna33':
+    88→    88→          where.OR = [{ treeType: { contains: search } }, { treeTypeMr: { contains: search } }, { location: { contains: search } }, { locationMr: { contains: search } }, { roadName: { contains: search } }, { roadNameMr: { contains: search } }];
+    89→    89→          break;
+    90→    90→      }
+    91→    91→    }
+    92→    92→
+    93→    93→    let include: Record<string, unknown> | undefined;
+    94→    94→    if (table === 'property') {
+    95→    95→      include = {
+    96→    96→        ward: true,
+    97→    97→        road: true,
+    98→    98→        owners: { include: { owner: true } },
+    99→    99→        taxRates: { include: { taxMaster: true }, orderBy: { taxMaster: { order: 'asc' } } },
+   100→   100→      };
+   101→   101→    }
+   102→   102→
+   103→   103→    let data;
+   104→   104→    switch (resolvedTable) {
+   105→   105→      case 'village':
+   106→   106→        data = id ? await db.villageInfo.findUnique({ where: { id } }) : await db.villageInfo.findFirst();
+   107→   107→        break;
+   108→   108→      case 'ward':
+   109→   109→        data = id ? await db.wardMaster.findUnique({ where: { id } }) : await db.wardMaster.findMany({ where, orderBy: { wardNumber: 'asc' } });
+   110→   110→        break;
+   111→   111→      case 'owner':
+   112→   112→        data = id ? await db.ownerMaster.findUnique({ where: { id }, include: { properties: { include: { property: true } } } }) : await db.ownerMaster.findMany({ where, orderBy: { createdAt: 'desc' } });
+   113→   113→        break;
+   114→   114→      case 'road':
+   115→   115→        data = id ? await db.roadMaster.findUnique({ where: { id } }) : await db.roadMaster.findMany({ where, orderBy: { roadNumber: 'asc' } });
+   116→   116→        break;
+   117→   117→      case 'drainage':
+   118→   118→        data = id ? await db.drainageMaster.findUnique({ where: { id } }) : await db.drainageMaster.findMany({ where, orderBy: { drainageNumber: 'asc' } });
+   119→   119→        break;
+   120→   120→      case 'waterSupply':
+   121→   121→        data = id ? await db.waterSupplyMaster.findUnique({ where: { id } }) : await db.waterSupplyMaster.findMany({ where, orderBy: { createdAt: 'desc' } });
+   122→   122→        break;
+   123→   123→      case 'streetLight':
+   124→   124→        data = id ? await db.streetLightMaster.findUnique({ where: { id } }) : await db.streetLightMaster.findMany({ where, orderBy: { lightNumber: 'asc' } });
+   125→   125→        break;
+   126→   126→      case 'readyReckoner':
+   127→   127→        data = id ? await db.readyReckonerMaster.findUnique({ where: { id } }) : await db.readyReckonerMaster.findMany({ orderBy: { year: 'desc' } });
+   128→   128→        break;
+   129→   129→      case 'disability':
+   130→   130→        data = id ? await db.disabilityMaster.findUnique({ where: { id } }) : await db.disabilityMaster.findMany();
+   131→   131→        break;
+   132→   132→      case 'employee':
+   133→   133→        data = id ? await db.employeeMaster.findUnique({ where: { id } }) : await db.employeeMaster.findMany({ where, orderBy: { employeeId: 'asc' } });
+   134→   134→        break;
+   135→   135→      case 'tax':
+   136→   136→        data = id ? await db.taxMaster.findUnique({ where: { id } }) : await db.taxMaster.findMany({ orderBy: { order: 'asc' } });
+   137→   137→        break;
+   138→   138→      case 'property':
+   139→   139→        data = id ? await db.propertyMaster.findUnique({ where: { id }, include }) : await db.propertyMaster.findMany({ where, include, orderBy: { createdAt: 'desc' } });
+   140→   140→        break;
+   141→   141→      // New master tables
+   142→   142→      case 'financialYear':
+   143→   143→        data = id ? await db.financialYear.findUnique({ where: { id } }) : await db.financialYear.findMany({ where, orderBy: { year: 'desc' } });
+   144→   144→        break;
+   145→   145→      case 'bankAccount':
+   146→   146→        data = id ? await db.bankAccount.findUnique({ where: { id } }) : await db.bankAccount.findMany({ where, orderBy: { bankName: 'asc' } });
+   147→   147→        break;
+   148→   148→      case 'budgetHead':
+   149→   149→        data = id ? await db.budgetHead.findUnique({ where: { id } }) : await db.budgetHead.findMany({ where, orderBy: { code: 'asc' } });
+   150→   150→        break;
+   151→   151→      case 'schemeInfo':
+   152→   152→        data = id ? await db.schemeInfo.findUnique({ where: { id } }) : await db.schemeInfo.findMany({ where, orderBy: { schemeNumber: 'asc' } });
+   153→   153→        break;
+   154→   154→      case 'contractorMaster':
+   155→   155→        data = id ? await db.contractorMaster.findUnique({ where: { id } }) : await db.contractorMaster.findMany({ where, orderBy: { contractorId: 'asc' } });
+   156→   156→        break;
+   157→   157→      case 'floorInfo':
+   158→   158→        data = id ? await db.floorInfo.findUnique({ where: { id } }) : await db.floorInfo.findMany({ where, orderBy: { floorIndex: 'asc' } });
+   159→   159→        break;
+   160→   160→      case 'demandCategory':
+   161→   161→        data = id ? await db.demandCategory.findUnique({ where: { id } }) : await db.demandCategory.findMany({ where, orderBy: { code: 'asc' } });
+   162→   162→        break;
+   163→   163→      case 'contractor':
+   164→   164→        data = id ? await db.contractorMaster.findUnique({ where: { id } }) : await db.contractorMaster.findMany({ where, orderBy: { contractorId: 'asc' } });
+   165→   165→        break;
+   166→   166→      case 'namuna8':
+   167→   167→        data = id ? await db.namuna8.findUnique({ where: { id } }) : await db.namuna8.findMany({ where, orderBy: { createdAt: 'desc' } });
+   168→   168→        break;
+   169→   169→      case 'namuna13':
+   170→   170→        data = id ? await db.namuna13.findUnique({ where: { id } }) : await db.namuna13.findMany({ where, orderBy: { serialNo: 'asc' } });
+   171→   171→        break;
+   172→   172→      case 'namuna22':
+   173→   173→        data = id ? await db.namuna22.findUnique({ where: { id } }) : await db.namuna22.findMany({ where, orderBy: { serialNo: 'asc' } });
+   174→   174→        break;
+   175→   175→      case 'namuna23':
+   176→   176→        data = id ? await db.namuna23.findUnique({ where: { id } }) : await db.namuna23.findMany({ where, orderBy: { serialNo: 'asc' } });
+   177→   177→        break;
+   178→   178→      case 'namuna24':
+   179→   179→        data = id ? await db.namuna24.findUnique({ where: { id } }) : await db.namuna24.findMany({ where, orderBy: { serialNo: 'asc' } });
+   180→   180→        break;
+   181→   181→      case 'namuna33':
+   182→   182→        data = id ? await db.namuna33.findUnique({ where: { id } }) : await db.namuna33.findMany({ where, orderBy: { serialNo: 'asc' } });
+   183→   183→        break;
+   184→   184→      default:
+   185→   185→        return NextResponse.json({ error: 'Invalid table' }, { status: 400 });
+   186→   186→    }
+   187→   187→
+   188→   188→    return NextResponse.json(data);
+   189→   189→  } catch (error) {
+   190→   190→    console.error('Master GET error:', error);
+   191→   191→    return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 });
+   192→   192→  }
+   193→   193→}
+   194→   194→
+   195→   195→// POST - create or update master data
+   196→   196→export async function POST(request: NextRequest) {
+   197→   197→  try {
+   198→   198→    const body = await request.json();
+   199→   199→    const { table, action, data } = body;
+   200→   200→
+   201→   201→    if (action === 'seed') {
+   202→   202→      return await handleSeed(table);
+   203→   203→    }
+   204→   204→
+   205→   205→    if (!table || !data) {
+   206→   206→      return NextResponse.json({ error: 'Table and data required' }, { status: 400 });
+   207→   207→    }
+   208→   208→
+   209→   209→    const tableAlias: Record<string, string> = {
+   210→   210→      'fy': 'financialYear',
+   211→   211→      'bank': 'bankAccount',
+   212→   212→      'budget-head': 'budgetHead',
+   213→   213→      'scheme': 'schemeInfo',
+   214→   214→      'contractor': 'contractorMaster',
+   215→   215→      'namuna8': 'namuna8',
+   216→   216→      'namuna13': 'namuna13',
+   217→   217→      'namuna22': 'namuna22',
+   218→   218→      'namuna23': 'namuna23',
+   219→   219→      'namuna24': 'namuna24',
+   220→   220→      'namuna33': 'namuna33',
+   221→   221→    };
+   222→   222→    const resolvedTable = tableAlias[table] || table;
+   223→   223→
+   224→   224→    const result = await handleUpsert(resolvedTable, data);
+   225→   225→    return NextResponse.json(result, { status: data.id ? 200 : 201 });
+   226→   226→  } catch (error: unknown) {
+   227→   227→    console.error('Master POST error:', error);
+   228→   228→    if (error && typeof error === 'object' && 'code' in error && (error as { code: string }).code === 'P2002') {
+   229→   229→      return NextResponse.json({ error: 'डुप्लिकेट रेकॉर्ड - हा क्रमांक आधीच अस्तित्वात आहे' }, { status: 400 });
+   230→   230→    }
+   231→   231→    return NextResponse.json({ error: 'Failed to save data' }, { status: 500 });
+   232→   232→  }
+   233→   233→}
+   234→   234→
+   235→   235→// DELETE
+   236→   236→export async function DELETE(request: NextRequest) {
+   237→   237→  try {
+   238→   238→    const { searchParams } = new URL(request.url);
+   239→   239→    const table = searchParams.get('table');
+   240→   240→    const id = searchParams.get('id');
+   241→   241→
+   242→   242→    if (!table || !id) {
+   243→   243→      return NextResponse.json({ error: 'Table and ID required' }, { status: 400 });
+   244→   244→    }
+   245→   245→
+   246→   246→    const tableAlias: Record<string, string> = {
+   247→   247→      'fy': 'financialYear',
+   248→   248→      'bank': 'bankAccount',
+   249→   249→      'budget-head': 'budgetHead',
+   250→   250→      'scheme': 'schemeInfo',
+   251→   251→      'contractor': 'contractorMaster',
+   252→   252→      'namuna8': 'namuna8',
+   253→   253→      'namuna13': 'namuna13',
+   254→   254→      'namuna22': 'namuna22',
+   255→   255→      'namuna23': 'namuna23',
+   256→   256→      'namuna24': 'namuna24',
+   257→   257→      'namuna33': 'namuna33',
+   258→   258→    };
+   259→   259→    const resolvedTable = tableAlias[table] || table;
+   260→   260→
+   261→   261→    await handleDelete(resolvedTable, id);
+   262→   262→    return NextResponse.json({ message: 'Record deleted' });
+   263→   263→  } catch (error) {
+   264→   264→    console.error('Master DELETE error:', error);
+   265→   265→    return NextResponse.json({ error: 'Failed to delete' }, { status: 500 });
+   266→   266→  }
+   267→   267→}
+   268→   268→
+   269→   269→async function handleSeed(table: string) {
+   270→   270→  const tableAlias: Record<string, string> = {
+   271→   271→    'fy': 'financialYear',
+   272→   272→    'bank': 'bankAccount',
+   273→   273→    'budget-head': 'budgetHead',
+   274→   274→    'scheme': 'schemeInfo',
+   275→   275→    'contractor': 'contractorMaster',
+   276→   276→    'namuna8': 'namuna8',
+   277→   277→    'namuna13': 'namuna13',
+   278→   278→    'namuna22': 'namuna22',
+   279→   279→    'namuna23': 'namuna23',
+   280→   280→    'namuna24': 'namuna24',
+   281→   281→    'namuna33': 'namuna33',
+   282→   282→  };
+   283→   283→  const resolvedTable = tableAlias[table] || table;
+   284→   284→
+   285→   285→  switch (resolvedTable) {
+   286→   286→    case 'tax': {
+   287→   287→      const existing = await db.taxMaster.count();
+   288→   288→      if (existing > 0) return NextResponse.json({ message: 'Already seeded', count: existing });
+   289→   289→      const taxes = [
+   290→   290→        { name: 'House Tax', nameMarathi: 'गृहकर', rate: 10, isEnabled: true, order: 1, category: 'general' },
+   291→   291→        { name: 'Water Tax', nameMarathi: 'पाणीकर', rate: 5, isEnabled: true, order: 2, category: 'general' },
+   292→   292→        { name: 'Light Tax', nameMarathi: 'दिवाबती कर', rate: 5, isEnabled: true, order: 3, category: 'general' },
+   293→   293→        { name: 'Health Tax', nameMarathi: 'आरोग्य कर', rate: 3, isEnabled: true, order: 4, category: 'general' },
+   294→   294→        { name: 'Education Tax', nameMarathi: 'शिक्षण कर', rate: 2, isEnabled: true, order: 5, category: 'general' },
+   295→   295→        { name: 'Tree Tax', nameMarathi: 'वृक्ष कर', rate: 1, isEnabled: true, order: 6, category: 'general' },
+   296→   296→        { name: 'Employment Tax', nameMarathi: 'रोजगार कर', rate: 2, isEnabled: true, order: 7, category: 'general' },
+   297→   297→        { name: 'Drainage Tax', nameMarathi: 'नाला कर', rate: 3, isEnabled: true, order: 8, category: 'general' },
+   298→   298→        { name: 'Sanitation Tax', nameMarathi: 'स्वच्छता कर', rate: 3, isEnabled: true, order: 9, category: 'general' },
+   299→   299→        { name: 'Fire Tax', nameMarathi: 'अग्निशामक कर', rate: 1, isEnabled: true, order: 10, category: 'general' },
+   300→   300→        { name: 'Special Tax', nameMarathi: 'विशेष कर', rate: 2, isEnabled: false, order: 11, category: 'general' },
+   301→   301→        { name: 'Penalty', nameMarathi: 'दंड', rate: 0, isEnabled: true, order: 12, category: 'penalty' },
+   302→   302→        { name: 'Interest', nameMarathi: 'व्याज', rate: 0, isEnabled: true, order: 13, category: 'interest' },
+   303→   303→        { name: 'Other Charges', nameMarathi: 'इतर आकारणी', rate: 0, isEnabled: false, order: 14, category: 'other' },
+   304→   304→      ];
+   305→   305→      const created = await db.taxMaster.createMany({ data: taxes });
+   306→   306→      return NextResponse.json({ message: 'Tax masters seeded', count: created.count });
+   307→   307→    }
+   308→   308→    case 'disability': {
+   309→   309→      const existing = await db.disabilityMaster.count();
+   310→   310→      if (existing > 0) return NextResponse.json({ message: 'Already seeded' });
+   311→   311→      const types = [
+   312→   312→        { disabilityType: 'Visual', disabilityTypeMr: 'दृष्टी', percentageRange: '40-100', description: 'दृष्टी दोष' },
+   313→   313→        { disabilityType: 'Hearing', disabilityTypeMr: 'श्रवण', percentageRange: '40-100', description: 'श्रवण दोष' },
+   314→   314→        { disabilityType: 'Locomotor', disabilityTypeMr: 'चलनवलन', percentageRange: '40-100', description: 'चलनवलन दोष' },
+   315→   315→        { disabilityType: 'Mental', disabilityTypeMr: 'मानसिक', percentageRange: '40-100', description: 'मानसिक दोष' },
+   316→   316→        { disabilityType: 'Multiple', disabilityTypeMr: 'बहुदोष', percentageRange: '40-100', description: 'अनेक दोष' },
+   317→   317→      ];
+   318→   318→      await db.disabilityMaster.createMany({ data: types });
+   319→   319→      return NextResponse.json({ message: 'Disability types seeded' });
+   320→   320→    }
+   321→   321→    case 'financialYear': {
+   322→   322→      const existing = await db.financialYear.count();
+   323→   323→      if (existing > 0) return NextResponse.json({ message: 'Already seeded', count: existing });
+   324→   324→      const years = [
+   325→   325→        { year: '2023-24', startDate: '2023-04-01', endDate: '2024-03-31', isActive: false, isLocked: true },
+   326→   326→        { year: '2024-25', startDate: '2024-04-01', endDate: '2025-03-31', isActive: true, isLocked: false },
+   327→   327→        { year: '2025-26', startDate: '2025-04-01', endDate: '2026-03-31', isActive: false, isLocked: false },
+   328→   328→      ];
+   329→   329→      const created = await db.financialYear.createMany({ data: years });
+   330→   330→      return NextResponse.json({ message: 'Financial years seeded', count: created.count });
+   331→   331→    }
+   332→   332→    case 'floorInfo': {
+   333→   333→      const existing = await db.floorInfo.count();
+   334→   334→      if (existing > 0) return NextResponse.json({ message: 'Already seeded', count: existing });
+   335→   335→      const floors = [
+   336→   336→        { floorNumber: '0', floorName: 'Ground Floor', floorNameMr: 'तळमजला', floorIndex: 0 },
+   337→   337→        { floorNumber: '1', floorName: 'First Floor', floorNameMr: 'पहिला मजला', floorIndex: 1 },
+   338→   338→        { floorNumber: '2', floorName: 'Second Floor', floorNameMr: 'दुसरा मजला', floorIndex: 2 },
+   339→   339→        { floorNumber: '3', floorName: 'Third Floor', floorNameMr: 'तिसरा मजला', floorIndex: 3 },
+   340→   340→        { floorNumber: '4', floorName: 'Fourth Floor', floorNameMr: 'चौथा मजला', floorIndex: 4 },
+   341→   341→      ];
+   342→   342→      const created = await db.floorInfo.createMany({ data: floors });
+   343→   343→      return NextResponse.json({ message: 'Floor info seeded', count: created.count });
+   344→   344→    }
+   345→   345→    case 'demandCategory': {
+   346→   346→      const existing = await db.demandCategory.count();
+   347→   347→      if (existing > 0) return NextResponse.json({ message: 'Already seeded', count: existing });
+   348→   348→      const categories = [
+   349→   349→        { code: 'HOUSE_TAX', name: 'House Tax', nameMr: 'गृहकर', description: 'Annual house tax demand' },
+   350→   350→        { code: 'WATER_TAX', name: 'Water Tax', nameMr: 'पाणीकर', description: 'Water supply tax demand' },
+   351→   351→        { code: 'LIGHT_TAX', name: 'Light Tax', nameMr: 'दिवाबती कर', description: 'Street light tax demand' },
+   352→   352→        { code: 'HEALTH_TAX', name: 'Health Tax', nameMr: 'आरोग्य कर', description: 'Health & sanitation tax demand' },
+   353→   353→        { code: 'EDUCATION_TAX', name: 'Education Tax', nameMr: 'शिक्षण कर', description: 'Education cess demand' },
+   354→   354→        { code: 'PENALTY', name: 'Penalty', nameMr: 'दंड', description: 'Late payment penalty' },
+   355→   355→        { code: 'INTEREST', name: 'Interest', nameMr: 'व्याज', description: 'Interest on arrears' },
+   356→   356→        { code: 'WATER_BILL', name: 'Water Bill', nameMr: 'पाणी बिल', description: 'Water consumption bill' },
+   357→   357→        { code: 'OTHER', name: 'Other', nameMr: 'इतर', description: 'Other charges' },
+   358→   358→      ];
+   359→   359→      const created = await db.demandCategory.createMany({ data: categories });
+   360→   360→      return NextResponse.json({ message: 'Demand categories seeded', count: created.count });
+   361→   361→    }
+   362→   362→    case 'budgetHead': {
+   363→   363→      const existing = await db.budgetHead.count();
+   364→   364→      if (existing > 0) return NextResponse.json({ message: 'Already seeded', count: existing });
+   365→   365→      const heads = [
+   366→   366→        { code: '1001', name: 'Property Tax', nameMr: 'मालमत्ता कर', category: 'income', type: 'revenue' },
+   367→   367→        { code: '1002', name: 'Water Tax', nameMr: 'पाणीकर', category: 'income', type: 'revenue' },
+   368→   368→        { code: '1003', name: 'Light Tax', nameMr: 'दिवाबती कर', category: 'income', type: 'revenue' },
+   369→   369→        { code: '1004', name: 'Health Tax', nameMr: 'आरोग्य कर', category: 'income', type: 'revenue' },
+   370→   370→        { code: '1005', name: 'Education Tax', nameMr: 'शिक्षण कर', category: 'income', type: 'revenue' },
+   371→   371→        { code: '1006', name: 'Other Income', nameMr: 'इतर उत्पन्न', category: 'income', type: 'revenue' },
+   372→   372→        { code: '1007', name: 'Grant Income', nameMr: 'अनुदान उत्पन्न', category: 'income', type: 'capital' },
+   373→   373→        { code: '2001', name: 'Salary', nameMr: 'पगार', category: 'expenditure', type: 'revenue' },
+   374→   374→        { code: '2002', name: 'Electricity', nameMr: 'वीज', category: 'expenditure', type: 'revenue' },
+   375→   375→        { code: '2003', name: 'Water Supply', nameMr: 'पाणीपुरवठा', category: 'expenditure', type: 'revenue' },
+   376→   376→        { code: '2004', name: 'Road Maintenance', nameMr: 'रस्ता देखभाल', category: 'expenditure', type: 'revenue' },
+   377→   377→        { code: '2005', name: 'Sanitation', nameMr: 'स्वच्छता', category: 'expenditure', type: 'revenue' },
+   378→   378→        { code: '2006', name: 'Development Works', nameMr: 'विकास कामे', category: 'expenditure', type: 'capital' },
+   379→   379→        { code: '3001', name: 'Buildings', nameMr: 'इमारती', category: 'asset', type: 'capital' },
+   380→   380→        { code: '3002', name: 'Land', nameMr: 'जमीन', category: 'asset', type: 'capital' },
+   381→   381→        { code: '3003', name: 'Vehicles', nameMr: 'वाहने', category: 'asset', type: 'capital' },
+   382→   382→        { code: '4001', name: 'Bank Balance', nameMr: 'बँक शिल्लक', category: 'liability', type: 'revenue' },
+   383→   383→      ];
+   384→   384→      const created = await db.budgetHead.createMany({ data: heads });
+   385→   385→      return NextResponse.json({ message: 'Budget heads seeded', count: created.count });
+   386→   386→    }
+   387→   387→    default:
+   388→   388→      return NextResponse.json({ error: 'No seed for this table' }, { status: 400 });
+   389→   389→  }
+   390→   390→}
+   391→   391→
+   392→   392→async function handleUpsert(table: string, data: Record<string, unknown>) {
+   393→   393→  const isUpdate = !!data.id;
+   394→   394→  const id = data.id as string | undefined;
+   395→   395→
+   396→   396→  // Remove id for create
+   397→   397→  const { id: _id, ...createData } = data;
+   398→   398→
+   399→   399→  // Handle property special case with owners and taxRates
+   400→   400→  if (table === 'property') {
+   401→   401→    const { owners, taxRates, ...propData } = data as Record<string, unknown> & {
+   402→   402→      owners?: { ownerId: string; ownershipType: string }[];
+   403→   403→      taxRates?: { taxMasterId: string; rate: number }[];
+   404→   404→    };
+   405→   405→
+   406→   406→    // Convert numeric strings to numbers
+   407→   407→    const numericFields = ['area', 'builtUpArea', 'lengthEast', 'widthEast', 'lengthWest', 'widthWest', 'lengthSouth', 'widthSouth', 'lengthNorth', 'widthNorth', 'totalLength', 'totalWidth', 'depreciationRate', 'usageFactor', 'taxRate', 'houseTax', 'lightTax', 'healthTax', 'waterTax'];
+   408→   408→    const cleanPropData: Record<string, unknown> = {};
+   409→   409→    for (const [key, value] of Object.entries(propData)) {
+   410→   410→      if (key === 'id') continue;
+   411→   411→      if (numericFields.includes(key)) {
+   412→   412→        cleanPropData[key] = value ? parseFloat(String(value)) : null;
+   413→   413→      } else {
+   414→   414→        cleanPropData[key] = value || null;
+   415→   415→      }
+   416→   416→    }
+   417→   417→
+   418→   418→    if (isUpdate && id) {
+   419→   419→      await db.propertyMaster.update({ where: { id }, data: cleanPropData });
+   420→   420→
+   421→   421→      if (owners && Array.isArray(owners)) {
+   422→   422→        await db.propertyOwner.deleteMany({ where: { propertyId: id } });
+   423→   423→        for (const o of owners) {
+   424→   424→          await db.propertyOwner.create({
+   425→   425→            data: { propertyId: id, ownerId: o.ownerId, ownershipType: o.ownershipType },
+   426→   426→          });
+   427→   427→        }
+   428→   428→      }
+   429→   429→
+   430→   430→      if (taxRates && Array.isArray(taxRates)) {
+   431→   431→        await db.propertyTaxRate.deleteMany({ where: { propertyId: id } });
+   432→   432→        for (const tr of taxRates) {
+   433→   433→          if (tr.rate > 0) {
+   434→   434→            await db.propertyTaxRate.create({
+   435→   435→              data: { propertyId: id, taxMasterId: tr.taxMasterId, rate: tr.rate },
+   436→   436→            });
+   437→   437→          }
+   438→   438→        }
+   439→   439→      }
+   440→   440→
+   441→   441→      return db.propertyMaster.findUnique({
+   442→   442→        where: { id },
+   443→   443→        include: { ward: true, road: true, owners: { include: { owner: true } }, taxRates: { include: { taxMaster: true }, orderBy: { taxMaster: { order: 'asc' } } } },
+   444→   444→      });
+   445→   445→    }
+   446→   446→
+   447→   447→    const property = await db.propertyMaster.create({ data: cleanPropData as Parameters<typeof db.propertyMaster.create>[0]['data'] });
+   448→   448→
+   449→   449→    if (owners && Array.isArray(owners)) {
+   450→   450→      for (const o of owners) {
+   451→   451→        await db.propertyOwner.create({
+   452→   452→          data: { propertyId: property.id, ownerId: o.ownerId, ownershipType: o.ownershipType },
+   453→   453→        });
+   454→   454→      }
+   455→   455→    }
+   456→   456→
+   457→   457→    if (taxRates && Array.isArray(taxRates)) {
+   458→   458→      for (const tr of taxRates) {
+   459→   459→        if (tr.rate > 0) {
+   460→   460→          await db.propertyTaxRate.create({
+   461→   461→            data: { propertyId: property.id, taxMasterId: tr.taxMasterId, rate: tr.rate },
+   462→   462→          });
+   463→   463→        }
+   464→   464→      }
+   465→   465→    }
+   466→   466→
+   467→   467→    return db.propertyMaster.findUnique({
+   468→   468→      where: { id: property.id },
+   469→   469→      include: { ward: true, road: true, owners: { include: { owner: true } }, taxRates: { include: { taxMaster: true }, orderBy: { taxMaster: { order: 'asc' } } } },
+   470→   470→    });
+   471→   471→  }
+   472→   472→
+   473→   473→  // Numeric field conversion for ALL tables
+   474→   474→  const numericFieldsForTable: Record<string, string[]> = {
+   475→   475→    ward: ['population', 'area'],
+   476→   476→    owner: ['disabilityPercentage'],
+   477→   477→    road: ['length', 'width'],
+   478→   478→    drainage: ['length'],
+   479→   479→    waterSupply: ['monthlyRate'],
+   480→   480→    streetLight: ['wattage'],
+   481→   481→    readyReckoner: ['ratePerSqFt'],
+   482→   482→    employee: ['salary'],
+   483→   483→    tax: ['rate', 'order'],
+   484→   484→    village: ['population', 'totalArea'],
+   485→   485→    bankAccount: ['balance'],
+   486→   486→    budgetHead: [],
+   487→   487→    schemeInfo: ['totalAllocation'],
+   488→   488→    contractorMaster: [],
+   489→   489→    financialYear: [],
+   490→   490→    floorInfo: ['floorIndex'],
+   491→   491→    demandCategory: [],
+   492→   492→    namuna8: ['totalTax', 'totalArea', 'landRate', 'buildingRate', 'constructionRate', 'depreciationRate', 'usageFactor', 'capitalValue', 'taxRatePercent', 'houseTaxAmt', 'lightTaxAmt', 'healthTaxAmt', 'waterTaxAmt', 'totalTaxAmt', 'appealHouseTax', 'appealLightTax', 'appealHealthTax', 'appealWaterTax', 'appealTotalTax'],
+   493→   493→    namuna13: ['serialNo', 'sanctionedPosts'],
+   494→   494→    namuna22: ['serialNo', 'constructionCost', 'repairCost', 'currentValue'],
+   495→   495→    namuna23: ['serialNo', 'roadLength', 'roadWidth'],
+   496→   496→    namuna24: ['serialNo', 'areaHectares', 'areaSqMeters'],
+   497→   497→    namuna33: ['serialNo', 'height', 'girth', 'estimatedValue'],
+   498→   498→  };
+   499→   499→  const numericFields = numericFieldsForTable[table] || [];
+   500→   500→
+   501→   501→  const intFieldsForTable: Record<string, string[]> = {
+   502→   502→    ward: ['population'],
+   503→   503→    employee: [],
+   504→   504→    tax: ['order'],
+   505→   505→    floorInfo: ['floorIndex'],
+   506→   506→    namuna13: ['serialNo', 'sanctionedPosts'],
+   507→   507→    namuna22: ['serialNo'],
+   508→   508→    namuna23: ['serialNo'],
+   509→   509→    namuna24: ['serialNo'],
+   510→   510→    namuna33: ['serialNo'],
+   511→   511→    namuna8: [],
+   512→   512→  };
+   513→   513→  // Boolean fields that must not be converted to null when false
+   514→   514→  const boolFieldsForTable: Record<string, string[]> = {
+   515→   515→    owner: ['isDisabled'],
+   516→   516→    employee: ['isActive'],
+   517→   517→    financialYear: ['isActive', 'isLocked'],
+   518→   518→    bankAccount: ['isActive'],
+   519→   519→    budgetHead: ['isActive'],
+   520→   520→    schemeInfo: ['isActive'],
+   521→   521→    contractorMaster: ['isActive'],
+   522→   522→    contractor: ['isActive'],
+   523→   523→    namuna13: ['sarpanchSignature', 'secretarySignature'],
+   524→   524→  };
+   525→   525→  const boolFields = boolFieldsForTable[table] || [];
+   526→   526→  const intFields = intFieldsForTable[table] || [];
+   527→   527→
+   528→   528→  const cleanData: Record<string, unknown> = {};
+   529→   529→  for (const [key, value] of Object.entries(createData)) {
+   530→   530→    if (boolFields.includes(key)) {
+   531→   531→      cleanData[key] = value === true || value === 'true' || value === 1;
+   532→   532→    } else if (intFields.includes(key)) {
+   533→   533→      cleanData[key] = value ? parseInt(String(value)) : null;
+   534→   534→    } else if (numericFields.includes(key)) {
+   535→   535→      cleanData[key] = value ? parseFloat(String(value)) : null;
+   536→   536→    } else {
+   537→   537→      cleanData[key] = (value === null || value === undefined) ? null : value;
+   538→   538→    }
+   539→   539→  }
+   540→   540→
+   541→   541→  // Remove null values for optional fields that Prisma doesn't accept as null on create
+   542→   542→  if (!isUpdate) {
+   543→   543→    for (const [key, value] of Object.entries(cleanData)) {
+   544→   544→      if (value === null || value === undefined || value === '') {
+   545→   545→        delete cleanData[key];
+   546→   546→      }
+   547→   547→    }
+   548→   548→  }
+   549→   549→
+   550→   550→  // Generic upsert for other tables
+   551→   551→  if (isUpdate && id) {
+   552→   552→    switch (table) {
+   553→   553→      case 'ward': return db.wardMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.wardMaster.update>[0]['data'] });
+   554→   554→      case 'owner': return db.ownerMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.ownerMaster.update>[0]['data'] });
+   555→   555→      case 'road': return db.roadMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.roadMaster.update>[0]['data'] });
+   556→   556→      case 'drainage': return db.drainageMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.drainageMaster.update>[0]['data'] });
+   557→   557→      case 'waterSupply': return db.waterSupplyMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.waterSupplyMaster.update>[0]['data'] });
+   558→   558→      case 'streetLight': return db.streetLightMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.streetLightMaster.update>[0]['data'] });
+   559→   559→      case 'readyReckoner': return db.readyReckonerMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.readyReckonerMaster.update>[0]['data'] });
+   560→   560→      case 'disability': return db.disabilityMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.disabilityMaster.update>[0]['data'] });
+   561→   561→      case 'employee': return db.employeeMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.employeeMaster.update>[0]['data'] });
+   562→   562→      case 'tax': return db.taxMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.taxMaster.update>[0]['data'] });
+   563→   563→      case 'village': return db.villageInfo.update({ where: { id }, data: cleanData as Parameters<typeof db.villageInfo.update>[0]['data'] });
+   564→   564→      // New master tables
+   565→   565→      case 'financialYear': return db.financialYear.update({ where: { id }, data: cleanData as Parameters<typeof db.financialYear.update>[0]['data'] });
+   566→   566→      case 'bankAccount': return db.bankAccount.update({ where: { id }, data: cleanData as Parameters<typeof db.bankAccount.update>[0]['data'] });
+   567→   567→      case 'budgetHead': return db.budgetHead.update({ where: { id }, data: cleanData as Parameters<typeof db.budgetHead.update>[0]['data'] });
+   568→   568→      case 'schemeInfo': return db.schemeInfo.update({ where: { id }, data: cleanData as Parameters<typeof db.schemeInfo.update>[0]['data'] });
+   569→   569→      case 'floorInfo': return db.floorInfo.update({ where: { id }, data: cleanData as Parameters<typeof db.floorInfo.update>[0]['data'] });
+   570→   570→      case 'demandCategory': return db.demandCategory.update({ where: { id }, data: cleanData as Parameters<typeof db.demandCategory.update>[0]['data'] });
+   571→   571→      case 'contractor': return db.contractorMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.contractorMaster.update>[0]['data'] });
+   572→   572→      case 'contractorMaster': return db.contractorMaster.update({ where: { id }, data: cleanData as Parameters<typeof db.contractorMaster.update>[0]['data'] });
+   573→   573→      case 'namuna8': return db.namuna8.update({ where: { id }, data: cleanData as Parameters<typeof db.namuna8.update>[0]['data'] });
+   574→   574→      case 'namuna13': return db.namuna13.update({ where: { id }, data: cleanData as Parameters<typeof db.namuna13.update>[0]['data'] });
+   575→   575→      case 'namuna22': return db.namuna22.update({ where: { id }, data: cleanData as Parameters<typeof db.namuna22.update>[0]['data'] });
+   576→   576→      case 'namuna23': return db.namuna23.update({ where: { id }, data: cleanData as Parameters<typeof db.namuna23.update>[0]['data'] });
+   577→   577→      case 'namuna24': return db.namuna24.update({ where: { id }, data: cleanData as Parameters<typeof db.namuna24.update>[0]['data'] });
+   578→   578→      case 'namuna33': return db.namuna33.update({ where: { id }, data: cleanData as Parameters<typeof db.namuna33.update>[0]['data'] });
+   579→   579→    }
+   580→   580→  }
+   581→   581→
+   582→   582→  // Create
+   583→   583→  switch (table) {
+   584→   584→    case 'ward': return db.wardMaster.create({ data: cleanData as Parameters<typeof db.wardMaster.create>[0]['data'] });
+   585→   585→    case 'owner': return db.ownerMaster.create({ data: cleanData as Parameters<typeof db.ownerMaster.create>[0]['data'] });
+   586→   586→    case 'road': return db.roadMaster.create({ data: cleanData as Parameters<typeof db.roadMaster.create>[0]['data'] });
+   587→   587→    case 'drainage': return db.drainageMaster.create({ data: cleanData as Parameters<typeof db.drainageMaster.create>[0]['data'] });
+   588→   588→    case 'waterSupply': return db.waterSupplyMaster.create({ data: cleanData as Parameters<typeof db.waterSupplyMaster.create>[0]['data'] });
+   589→   589→    case 'streetLight': return db.streetLightMaster.create({ data: cleanData as Parameters<typeof db.streetLightMaster.create>[0]['data'] });
+   590→   590→    case 'readyReckoner': return db.readyReckonerMaster.create({ data: cleanData as Parameters<typeof db.readyReckonerMaster.create>[0]['data'] });
+   591→   591→    case 'disability': return db.disabilityMaster.create({ data: cleanData as Parameters<typeof db.disabilityMaster.create>[0]['data'] });
+   592→   592→    case 'employee': return db.employeeMaster.create({ data: cleanData as Parameters<typeof db.employeeMaster.create>[0]['data'] });
+   593→   593→    case 'tax': return db.taxMaster.create({ data: cleanData as Parameters<typeof db.taxMaster.create>[0]['data'] });
+   594→   594→    case 'village': return db.villageInfo.create({ data: cleanData as Parameters<typeof db.villageInfo.create>[0]['data'] });
+   595→   595→    // New master tables
+   596→   596→    case 'financialYear': return db.financialYear.create({ data: cleanData as Parameters<typeof db.financialYear.create>[0]['data'] });
+   597→   597→    case 'bankAccount': return db.bankAccount.create({ data: cleanData as Parameters<typeof db.bankAccount.create>[0]['data'] });
+   598→   598→    case 'budgetHead': return db.budgetHead.create({ data: cleanData as Parameters<typeof db.budgetHead.create>[0]['data'] });
+   599→   599→    case 'schemeInfo': return db.schemeInfo.create({ data: cleanData as Parameters<typeof db.schemeInfo.create>[0]['data'] });
+   600→   600→    case 'floorInfo': return db.floorInfo.create({ data: cleanData as Parameters<typeof db.floorInfo.create>[0]['data'] });
+   601→   601→    case 'demandCategory': return db.demandCategory.create({ data: cleanData as Parameters<typeof db.demandCategory.create>[0]['data'] });
+   602→   602→    case 'contractor': return db.contractorMaster.create({ data: cleanData as Parameters<typeof db.contractorMaster.create>[0]['data'] });
+   603→   603→    case 'contractorMaster': return db.contractorMaster.create({ data: cleanData as Parameters<typeof db.contractorMaster.create>[0]['data'] });
+   604→   604→    case 'namuna8': return db.namuna8.create({ data: cleanData as Parameters<typeof db.namuna8.create>[0]['data'] });
+   605→   605→    case 'namuna13': return db.namuna13.create({ data: cleanData as Parameters<typeof db.namuna13.create>[0]['data'] });
+   606→   606→    case 'namuna22': return db.namuna22.create({ data: cleanData as Parameters<typeof db.namuna22.create>[0]['data'] });
+   607→   607→    case 'namuna23': return db.namuna23.create({ data: cleanData as Parameters<typeof db.namuna23.create>[0]['data'] });
+   608→   608→    case 'namuna24': return db.namuna24.create({ data: cleanData as Parameters<typeof db.namuna24.create>[0]['data'] });
+   609→   609→    case 'namuna33': return db.namuna33.create({ data: cleanData as Parameters<typeof db.namuna33.create>[0]['data'] });
+   610→   610→    default: throw new Error(`Unknown table: ${table}`);
+   611→   611→  }
+   612→   612→}
+   613→   613→
+   614→   614→async function handleDelete(table: string, id: string) {
+   615→   615→  switch (table) {
+   616→   616→    case 'ward': return db.wardMaster.delete({ where: { id } });
+   617→   617→    case 'owner': return db.ownerMaster.delete({ where: { id } });
+   618→   618→    case 'road': return db.roadMaster.delete({ where: { id } });
+   619→   619→    case 'drainage': return db.drainageMaster.delete({ where: { id } });
+   620→   620→    case 'waterSupply': return db.waterSupplyMaster.delete({ where: { id } });
+   621→   621→    case 'streetLight': return db.streetLightMaster.delete({ where: { id } });
+   622→   622→    case 'readyReckoner': return db.readyReckonerMaster.delete({ where: { id } });
+   623→   623→    case 'disability': return db.disabilityMaster.delete({ where: { id } });
+   624→   624→    case 'employee': return db.employeeMaster.delete({ where: { id } });
+   625→   625→    case 'tax': return db.taxMaster.delete({ where: { id } });
+   626→   626→    case 'property': return db.propertyMaster.delete({ where: { id } });
+   627→   627→    case 'village': return db.villageInfo.delete({ where: { id } });
+   628→   628→    // New master tables
+   629→   629→    case 'financialYear': return db.financialYear.delete({ where: { id } });
+   630→   630→    case 'bankAccount': return db.bankAccount.delete({ where: { id } });
+   631→   631→    case 'budgetHead': return db.budgetHead.delete({ where: { id } });
+   632→   632→    case 'schemeInfo': return db.schemeInfo.delete({ where: { id } });
+   633→   633→    case 'floorInfo': return db.floorInfo.delete({ where: { id } });
+   634→   634→    case 'demandCategory': return db.demandCategory.delete({ where: { id } });
+   635→   635→    case 'contractor': return db.contractorMaster.delete({ where: { id } });
+   636→   636→    case 'namuna8': return db.namuna8.delete({ where: { id } });
+   637→   637→    case 'namuna13': return db.namuna13.delete({ where: { id } });
+   638→   638→    case 'namuna22': return db.namuna22.delete({ where: { id } });
+   639→   639→    case 'namuna23': return db.namuna23.delete({ where: { id } });
+   640→   640→    case 'namuna24': return db.namuna24.delete({ where: { id } });
+   641→   641→    case 'namuna33': return db.namuna33.delete({ where: { id } });
+   642→   642→    default: throw new Error(`Unknown table: ${table}`);
+   643→   643→  }
+   644→   644→}
+   645→   645→

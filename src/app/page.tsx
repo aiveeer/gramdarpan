@@ -328,7 +328,7 @@ export default function Home() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [user, setUser] = useState<{
     authenticated: boolean;
-    user?: { name: string; nameMarathi: string; role: string };
+    user?: { id: string; name: string; nameMarathi: string; role: string; username: string };
     loginAt?: string | null;
   } | null>(null);
   const [recentLogs, setRecentLogs] = useState<SessionLog[]>([]);
@@ -417,14 +417,18 @@ export default function Home() {
     }
   };
 
-  // Handle logout from child components (LoginForm)
-  const handleLogout = useCallback(() => {
-    // Immediately update state so the UI transitions to login page
+  // Handle logout from child components (LoginForm) or header
+  const handleLogout = useCallback(async () => {
+    try {
+      // First, await the server-side logout so cookies are cleared
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // ignore server errors
+    }
+    // Then update client state so the UI transitions to login page
     setUser({ authenticated: false });
     setActiveView('login');
     setStats(null);
-    // Fire-and-forget the server-side logout
-    fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
   }, []);
 
   // Handle successful login from child components
@@ -645,7 +649,13 @@ export default function Home() {
           </div>
           {/* Login Form */}
           <div className="bg-white rounded-b-xl shadow-2xl">
-            <LoginForm onLoginSuccess={handleLoginSuccess} onLogout={handleLogout} />
+            <LoginForm
+              authenticated={!!user?.authenticated}
+              user={user?.user ? { name: user.user.name, nameMarathi: user.user.nameMarathi, role: user.user.role, username: user.user.username } : null}
+              loginAt={user?.loginAt}
+              onLoginSuccess={handleLoginSuccess}
+              onLogout={handleLogout}
+            />
           </div>
           {/* Footer */}
           <div className="mt-6 text-center">

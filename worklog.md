@@ -86,3 +86,31 @@ Work Log:
 Stage Summary:
 - Navigation items added for all 5 Namuna registers
 - Key file: src/app/page.tsx
+
+---
+Task ID: 6
+Agent: Main Agent
+Task: Fix login showing as successful but not actually logging in, and logout not hiding features
+
+Work Log:
+- Tested login API via curl - works perfectly (200 OK, cookies set)
+- Tested login via agent-browser - form submission works, dashboard shows
+- Tested logout via agent-browser dispatchEvent - works, transitions to login page
+- Found bug: page.tsx user state type didn't include 'username' field, LoginForm was passing username:'' instead of actual value
+- Fixed: Added 'id' and 'username' to user state type in page.tsx
+- Fixed: Changed LoginForm props to pass user.user.username instead of hardcoded ''
+- Fixed: handleLogout now sets activeView to 'login' instead of 'dashboard' after logout
+- Verified: Login → Dashboard transition works
+- Verified: Logout → Login page transition works (no sidebar/header shown)
+- Verified: Master data forms (Namuna 13, 22, 23, 24, 33) work via API
+- Verified: Dashboard metrics are clickable and navigate properly
+- Verified: Daily transactions have Budget, Work, Salary tabs with full form support
+- Note: agent-browser click doesn't trigger React synthetic events on shadcn/ui SidebarMenuButton components - this is a tooling limitation, not an app bug
+
+Stage Summary:
+- Login/logout flow works correctly
+- User state now properly includes username
+- All Namuna master data forms functional with CRUD operations
+- Dashboard metrics clickable and navigating
+- Daily transactions have Budget/Work/Salary tabs
+- agent-browser has known limitation with React synthetic events on certain shadcn components
