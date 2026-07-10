@@ -114,3 +114,29 @@ Stage Summary:
 - Dashboard metrics clickable and navigating
 - Daily transactions have Budget/Work/Salary tabs
 - agent-browser has known limitation with React synthetic events on certain shadcn components
+
+---
+Task ID: 7
+Agent: Main Agent
+Task: Fix critical login bug (dual session state), rename site to ग्रामदर्पण, fix logout, push to GitHub
+
+Work Log:
+- Root cause of login bug: LoginForm had its own session state that updated after login, but page.tsx's separate `user` state didn't update because `handleLoginSuccess` called `loadSession()` which did a second fetch that could fail silently
+- Fix: Changed LoginForm to pass login response data directly to `onLoginSuccess` callback instead of having parent re-fetch session
+- Fix: `handleLoginSuccess` in page.tsx now directly sets `user` state from login response data (no second API call)
+- Fix: Logout now uses `window.location.reload()` for clean state transition, plus manual `document.cookie` clearing as fallback
+- Renamed site from 'ग्रामपंचायत लेखा संहिता' to 'ग्रामदर्पण (Gramdarpan)' in all locations:
+  - layout.tsx metadata title
+  - page.tsx login page heading
+  - page.tsx header title
+  - page.tsx footer text
+  - erp-dashboard.tsx report header
+- Simplified LoginForm props: removed `authenticated`, `user`, `loginAt` props (now only needs `onLoginSuccess` and `onLogout`)
+- LoginForm now has internal `loginData` state to show brief success message during transition
+- Committed locally; GitHub push requires authentication token not available in environment
+
+Stage Summary:
+- Login bug FIXED: direct state transfer from LoginForm to page.tsx eliminates race condition
+- Logout FIXED: window.location.reload() ensures clean state transition
+- Site renamed to ग्रामदर्पण (Gramdarpan)
+- GitHub push pending: needs user to provide GitHub token or set up remote
