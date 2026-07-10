@@ -4,7 +4,6 @@ import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest) {
   try {
-    // Read cookies using next/headers (for reading)
     const cookieStore = await cookies();
     const userId = cookieStore.get('session_user_id')?.value;
     const sessionId = cookieStore.get('session_id')?.value;
@@ -29,15 +28,20 @@ export async function POST(request: NextRequest) {
       }).catch(() => {});
     }
 
-    // Clear cookies via NextResponse (compatible with Next.js 16)
+    // Clear cookies
     const response = NextResponse.json({ message: 'Logged out' });
-    response.cookies.set('session_user_id', '', { maxAge: 0, path: '/' });
-    response.cookies.set('session_user_role', '', { maxAge: 0, path: '/' });
-    response.cookies.set('session_id', '', { maxAge: 0, path: '/' });
+    response.cookies.set('session_user_id', '', { maxAge: 0, path: '/', secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
+    response.cookies.set('session_user_role', '', { maxAge: 0, path: '/', secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
+    response.cookies.set('session_id', '', { maxAge: 0, path: '/', secure: process.env.NODE_ENV === 'production', sameSite: 'lax' });
 
     return response;
   } catch (error) {
     console.error('Logout error:', error);
-    return NextResponse.json({ error: 'Logout failed' }, { status: 500 });
+    // Still clear cookies even if DB fails
+    const response = NextResponse.json({ message: 'Logged out' });
+    response.cookies.set('session_user_id', '', { maxAge: 0, path: '/' });
+    response.cookies.set('session_user_role', '', { maxAge: 0, path: '/' });
+    response.cookies.set('session_id', '', { maxAge: 0, path: '/' });
+    return response;
   }
 }

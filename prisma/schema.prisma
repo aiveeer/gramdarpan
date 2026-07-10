@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ===== AUTH & USERS =====
@@ -487,7 +488,7 @@ model BankAccount {
   accountType String?
   balance     Float    @default(0)
   openingBalance Float @default(0)
-  financialYear String @default("2024-25")
+  financialYear String   @default("2024-25")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

@@ -140,3 +140,27 @@ Stage Summary:
 - Logout FIXED: window.location.reload() ensures clean state transition
 - Site renamed to ग्रामदर्पण (Gramdarpan)
 - GitHub push pending: needs user to provide GitHub token or set up remote
+
+---
+Task ID: 2
+Agent: main
+Task: Migrate Prisma from SQLite to PostgreSQL for Vercel compatibility
+
+Work Log:
+- Updated prisma/schema.prisma from sqlite to postgresql provider with directUrl support
+- Updated src/lib/db.ts to simplified PrismaClient creation (no more dual provider logic)
+- Updated login route with auto-seed feature (ensures default users exist on Vercel)
+- Updated session route with better error logging
+- Updated logout route with proper cookie settings for HTTPS
+- Simplified vercel-build.sh (no more schema swap hack)
+- Updated .env and .env.example with PostgreSQL connection strings
+- Deleted old schema.pg.prisma and schema.sqlite.prisma (no longer needed)
+- No migrations directory existed (was using db push already)
+- Ran prisma generate successfully
+- Lint passed with zero errors
+
+Stage Summary:
+- Schema migrated to PostgreSQL with directUrl for Neon connection pooling
+- Auto-seed in login API ensures users always exist even on fresh Vercel DB
+- Cookie settings fixed for HTTPS (secure=true in production, sameSite=lax)
+- Build script simplified - no more schema file swapping

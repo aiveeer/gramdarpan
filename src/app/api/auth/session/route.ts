@@ -45,7 +45,8 @@ export async function GET() {
       user,
       loginAt,
     });
-  } catch {
+  } catch (error) {
+    console.error('Session check error:', error);
     return NextResponse.json({ authenticated: false });
   }
 }

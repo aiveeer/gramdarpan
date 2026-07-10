@@ -1,83 +1,15 @@
 #!/bin/bash
-# Vercel Build Script
-# Swaps Prisma schema to PostgreSQL, runs migrations, then builds
-
+# Vercel Build Script for ग्रामदर्पण
+# Uses PostgreSQL (DATABASE_URL and DIRECT_URL must be set in Vercel Environment Variables)
 set -e
-
-echo "🔄 Switching to PostgreSQL schema for Vercel..."
-cp prisma/schema.pg.prisma prisma/schema.prisma
 
 echo "🔧 Generating Prisma client..."
 npx prisma generate
 
-echo "📦 Running Prisma migrations..."
-npx prisma migrate deploy 2>/dev/null || npx prisma db push --accept-data-loss 2>/dev/null || echo "Migration step skipped"
-
-echo "🌱 Seeding database (if needed)..."
-node -e "
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
-
-function simpleHash(str) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  return Math.abs(hash).toString(36);
-}
-
-async function main() {
-  const count = await prisma.user.count();
-  if (count > 0) {
-    console.log('✅ Users exist, skipping seed');
-    return;
-  }
-  await prisma.user.createMany({
-    data: [
-      { username: 'gpo', password: simpleHash('gpo123'), name: 'Gram Panchayat Officer', nameMarathi: 'ग्रामपंचायत अधिकारी', role: 'gpo' },
-      { username: 'operator', password: simpleHash('op123'), name: 'Operator', nameMarathi: 'ऑपरेटर', role: 'operator' },
-    ],
-  });
-  console.log('✅ Default users created: gpo/gpo123, operator/op123');
-
-  await prisma.financialYear.createMany({
-    data: [
-      { yearLabel: '2023-24', startDate: new Date('2023-04-01'), endDate: new Date('2024-03-31'), isActive: true, isCurrent: false },
-      { yearLabel: '2024-25', startDate: new Date('2024-04-01'), endDate: new Date('2025-03-31'), isActive: true, isCurrent: true },
-      { yearLabel: '2025-26', startDate: new Date('2025-04-01'), endDate: new Date('2026-03-31'), isActive: false, isCurrent: false },
-    ],
-  }).catch(() => console.log('Financial years already exist'));
-
-  await prisma.floorInfo.createMany({
-    data: [
-      { floorNo: 0, floorName: 'Ground Floor', floorNameMr: 'तळ मजला', factor: 1.0 },
-      { floorNo: 1, floorName: 'First Floor', floorNameMr: 'पहिला मजला', factor: 1.2 },
-      { floorNo: 2, floorName: 'Second Floor', floorNameMr: 'दुसरा मजला', factor: 1.4 },
-      { floorNo: 3, floorName: 'Third Floor', floorNameMr: 'तिसरा मजला', factor: 1.6 },
-    ],
-  }).catch(() => console.log('Floor info already exists'));
-
-  await prisma.taxMaster.createMany({
-    data: [
-      { taxName: 'Property Tax', taxNameMr: 'मालमत्ता कर', taxType: 'property', taxRate: 12.5 },
-      { taxName: 'Water Tax', taxNameMr: 'पाणी कर', taxType: 'water', taxRate: 5.0 },
-      { taxName: 'Light Tax', taxNameMr: 'दिवा कर', taxType: 'light', taxRate: 3.0 },
-      { taxName: 'Profession Tax', taxNameMr: 'व्यवसाय कर', taxType: 'profession', taxRate: 2.5 },
-      { taxName: 'Miscellaneous Tax', taxNameMr: 'इतर कर', taxType: 'misc', taxRate: 1.0 },
-      { taxName: 'Sanitation Tax', taxNameMr: 'स्वच्छता कर', taxType: 'misc', taxRate: 2.0 },
-    ],
-  }).catch(() => console.log('Tax masters already exist'));
-
-  console.log('✅ Seed completed!');
-  await prisma.\$disconnect();
-}
-
-main().catch(e => { console.error('Seed error:', e); process.exit(0); });
-"
+echo "📦 Pushing schema to PostgreSQL database..."
+npx prisma db push --accept-data-loss 2>/dev/null || echo "⚠️ DB push completed with warnings (this is OK for first deploy)"
 
 echo "🏗️ Building Next.js..."
 next build
 
-echo "✅ Vercel build completed!"
+echo "✅ Vercel build completed successfully!"

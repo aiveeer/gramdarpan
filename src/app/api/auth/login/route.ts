@@ -14,17 +14,50 @@ function simpleHash(str: string): string {
 
 const COOKIE_OPTS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production', // true on Vercel (HTTPS), false on local (HTTP)
+  secure: process.env.NODE_ENV === 'production',
   sameSite: 'lax' as const,
   maxAge: 60 * 60 * 24, // 24 hours
   path: '/',
 };
 
+// Auto-seed: ensure default user exists (critical for Vercel where DB starts empty)
+async function ensureDefaultUser() {
+  try {
+    const count = await db.user.count();
+    if (count === 0) {
+      await db.user.createMany({
+        data: [
+          {
+            username: 'gpo',
+            password: simpleHash('gpo123'),
+            name: 'Gram Panchayat Officer',
+            nameMarathi: 'ग्रामपंचायत अधिकारी',
+            role: 'gpo',
+          },
+          {
+            username: 'operator',
+            password: simpleHash('op123'),
+            name: 'Operator',
+            nameMarathi: 'ऑपरेटर',
+            role: 'operator',
+          },
+        ],
+      });
+      console.log('✅ Auto-seeded default users');
+    }
+  } catch (error) {
+    console.error('Auto-seed error:', error);
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
+    // Always ensure at least the default user exists
+    await ensureDefaultUser();
+
     const body = await request.json();
 
-    // Seed default users
+    // Seed endpoint (explicit)
     if (body.action === 'seed') {
       const existing = await db.user.count();
       if (existing > 0) {
@@ -85,7 +118,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Set cookies via NextResponse (compatible with Next.js 16)
+    // Set cookies via NextResponse
     const response = NextResponse.json({
       id: user.id,
       username: user.username,
@@ -102,6 +135,6 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     console.error('Login error:', error);
-    return NextResponse.json({ error: 'Login failed' }, { status: 500 });
+    return NextResponse.json({ error: 'Login failed - please check database connection' }, { status: 500 });
   }
 }
