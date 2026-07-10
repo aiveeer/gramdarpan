@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ग्रामपंचायत मालमत्ता कर व्यवस्थापन प्रणाली",
-  description: "Gram Panchayat Property Tax Management System - मास्टर डेटा एंट्री, नमुना १-३३ ऑटो फिल, कर आकारणी, मागणी व पावती व्यवस्थापन",
+  title: "ग्रामदर्पण — ग्रामपंचायत लेखा संहिता ERP",
+  description: "ग्रामदर्पण (Gramdarpan) - महाराष्ट्र ग्रामपंचायत लेखा संहिता २०११ ERP पोर्टल - मास्टर डेटा एंट्री, नमुना १-३३ ऑटो फिल, कर आकारणी, मागणी व पावती व्यवस्थापन",
   icons: {
     icon: "/logo.svg",
   },

@@ -341,7 +341,7 @@ export default function ERPDashboard({
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold text-white">ERP डॅशबोर्ड</h1>
-                  <p className="text-sm text-teal-100/80">ग्रामपंचायत लेखा संहिता — सर्वसमावेशक अहवाल</p>
+                  <p className="text-sm text-teal-100/80">ग्रामदर्पण — ग्रामपंचायत लेखा संहिता सर्वसमावेशक अहवाल</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">

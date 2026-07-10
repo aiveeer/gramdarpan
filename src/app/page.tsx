@@ -420,25 +420,43 @@ export default function Home() {
   // Handle logout from child components (LoginForm) or header
   const handleLogout = useCallback(async () => {
     try {
-      // First, await the server-side logout so cookies are cleared
+      // Server-side logout to clear cookies and log the session
       await fetch('/api/auth/logout', { method: 'POST' });
     } catch {
       // ignore server errors
     }
-    // Then update client state so the UI transitions to login page
-    setUser({ authenticated: false });
-    setActiveView('login');
-    setStats(null);
+    // Also manually clear cookies client-side as fallback
+    document.cookie = 'session_user_id=; path=/; max-age=0';
+    document.cookie = 'session_user_role=; path=/; max-age=0';
+    document.cookie = 'session_id=; path=/; max-age=0';
+    // Force a full page reload to ensure clean state transition
+    window.location.reload();
   }, []);
 
-  // Handle successful login from child components
-  const handleLoginSuccess = useCallback(async () => {
-    const sessionData = await loadSession();
-    if (sessionData?.authenticated) {
-      setActiveView('dashboard');
-      refreshStats();
-    }
-  }, [loadSession, refreshStats]);
+  // Handle successful login from child components - directly set user state from login response
+  const handleLoginSuccess = useCallback((loginData: {
+    id: string;
+    username: string;
+    name: string;
+    nameMarathi: string;
+    role: string;
+    sessionId: string;
+  }) => {
+    // Directly set user state from login response data (no second API call needed)
+    setUser({
+      authenticated: true,
+      user: {
+        id: loginData.id,
+        name: loginData.name,
+        nameMarathi: loginData.nameMarathi,
+        role: loginData.role,
+        username: loginData.username,
+      },
+      loginAt: new Date().toISOString(),
+    });
+    setActiveView('dashboard');
+    refreshStats();
+  }, [refreshStats]);
 
   const toggleGroup = (groupId: string) => {
     setExpandedGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }));
@@ -644,22 +662,19 @@ export default function Home() {
             <div className="h-16 w-16 rounded-2xl flex items-center justify-center mx-auto shadow-lg mb-3" style={{ background: 'linear-gradient(135deg, #e67e22, #f39c12)' }}>
               <Landmark className="h-8 w-8 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-white mb-1">ग्रामपंचायत लेखा संहिता</h1>
-            <p className="text-sm text-teal-100/80">ERP पोर्टल — महाराष्ट्र ग्रामपंचायत लेखा संहिता २०११</p>
+            <h1 className="text-2xl font-bold text-white mb-1">ग्रामदर्पण</h1>
+            <p className="text-sm text-teal-100/80">ग्रामपंचायत लेखा संहिता ERP — महाराष्ट्र ग्रामपंचायत लेखा संहिता २०११</p>
           </div>
           {/* Login Form */}
           <div className="bg-white rounded-b-xl shadow-2xl">
             <LoginForm
-              authenticated={!!user?.authenticated}
-              user={user?.user ? { name: user.user.name, nameMarathi: user.user.nameMarathi, role: user.user.role, username: user.user.username } : null}
-              loginAt={user?.loginAt}
               onLoginSuccess={handleLoginSuccess}
               onLogout={handleLogout}
             />
           </div>
           {/* Footer */}
           <div className="mt-6 text-center">
-            <p className="text-xs text-teal-100/60">© 2024 महाराष्ट्र ग्रामपंचायत लेखा संहिता २०११</p>
+            <p className="text-xs text-teal-100/60">© 2024 ग्रामदर्पण — महाराष्ट्र ग्रामपंचायत लेखा संहिता २०११</p>
           </div>
           {/* Indian Flag Tricolor Bar Bottom */}
           <div className="flex h-1 w-full rounded-b-xl overflow-hidden mt-4">
@@ -693,10 +708,10 @@ export default function Home() {
               </div>
               <div>
                 <h1 className="text-lg sm:text-xl font-bold leading-tight text-white">
-                  ग्रामपंचायत लेखा संहिता ERP पोर्टल
+                  ग्रामदर्पण ERP पोर्टल
                 </h1>
                 <p className="text-xs text-teal-100/80 hidden sm:block">
-                  Maharashtra Gram Panchayat Accounting ERP Portal
+                  Gramdarpan — Maharashtra Gram Panchayat Accounting ERP
                 </p>
               </div>
             </div>
@@ -1081,9 +1096,9 @@ export default function Home() {
                 <div className="flex flex-col sm:flex-row items-center justify-between text-sm text-teal-100/70 gap-2">
                   <div className="flex items-center gap-2">
                     <Landmark className="h-4 w-4" />
-                    <span>ग्रामपंचायत लेखा संहिता ERP पोर्टल &copy; 2024</span>
+                    <span>ग्रामदर्पण ERP पोर्टल &copy; 2024</span>
                   </div>
-                  <span className="text-xs">महाराष्ट्र ग्रामपंचायत लेखा संहिता २०११</span>
+                  <span className="text-xs">ग्रामदर्पण — महाराष्ट्र ग्रामपंचायत लेखा संहिता २०११</span>
                 </div>
               </div>
               {/* Indian flag tricolor at bottom */}

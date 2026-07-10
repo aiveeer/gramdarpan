@@ -10,28 +10,31 @@ import { toast } from '@/hooks/use-toast';
 import { LogIn, User, Shield, Clock } from 'lucide-react';
 
 interface LoginFormProps {
-  /** Whether the user is currently authenticated (from parent state) */
-  authenticated: boolean;
-  /** User info when authenticated */
-  user?: {
+  /** Callback: parent should set session state from login response data */
+  onLoginSuccess: (loginData: {
+    id: string;
+    username: string;
     name: string;
     nameMarathi: string;
     role: string;
-    username: string;
-  } | null;
-  /** Login timestamp */
-  loginAt?: string | null;
-  /** Callback: parent should load session after login API succeeds */
-  onLoginSuccess: () => Promise<void>;
+    sessionId: string;
+  }) => void;
   /** Callback: parent should handle logout (clear state + call API) */
   onLogout: () => Promise<void>;
 }
 
-export default function LoginForm({ authenticated, user, loginAt, onLoginSuccess, onLogout }: LoginFormProps) {
+export default function LoginForm({ onLoginSuccess, onLogout }: LoginFormProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [seeding, setSeeding] = useState(false);
+  const [loginData, setLoginData] = useState<{
+    id: string;
+    username: string;
+    name: string;
+    nameMarathi: string;
+    role: string;
+  } | null>(null);
 
   // Seed default users on mount (only once)
   useEffect(() => {
@@ -70,8 +73,9 @@ export default function LoginForm({ authenticated, user, loginAt, onLoginSuccess
         toast({ title: 'यशस्वी', description: `${data.nameMarathi || data.name} लॉगिन झाले` });
         setUsername('');
         setPassword('');
-        // Notify parent to reload session (parent is single source of truth)
-        await onLoginSuccess();
+        // Store login data locally and pass to parent
+        setLoginData({ id: data.id, username: data.username, name: data.name, nameMarathi: data.nameMarathi, role: data.role });
+        onLoginSuccess(data);
       } else {
         toast({ title: 'लॉगिन अयशस्वी', description: data.error || 'अवैध credentials', variant: 'destructive' });
       }
@@ -83,10 +87,9 @@ export default function LoginForm({ authenticated, user, loginAt, onLoginSuccess
   };
 
   const handleLogout = async () => {
+    toast({ title: 'लॉगआउट', description: 'तुम्ही यशस्वीरित्या लॉगआउट झालात' });
     try {
-      // Delegate to parent (parent will await the API, then clear state)
       await onLogout();
-      toast({ title: 'लॉगआउट', description: 'तुम्ही यशस्वीरित्या लॉगआउट झालात' });
     } catch {
       toast({ title: 'त्रुटी', description: 'लॉगआउट अयशस्वी', variant: 'destructive' });
     }
@@ -118,54 +121,15 @@ export default function LoginForm({ authenticated, user, loginAt, onLoginSuccess
     );
   }
 
-  // If authenticated, show user info card (this is used in the login page overlay)
-  if (authenticated && user) {
+  // If login just happened (we have local loginData), show a brief success message
+  // But parent should transition to dashboard immediately, so this is a fallback
+  if (loginData) {
     return (
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <User className="h-5 w-5" />
-            लॉगिन माहिती
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-lg">{user.nameMarathi || user.name}</span>
-                <Badge
-                  variant={user.role === 'gpo' ? 'default' : 'secondary'}
-                  className={
-                    user.role === 'gpo'
-                      ? 'bg-green-600 hover:bg-green-700 text-white'
-                      : 'bg-blue-600 hover:bg-blue-700 text-white'
-                  }
-                >
-                  <Shield className="h-3 w-3 mr-1" />
-                  {user.role === 'gpo' ? 'GPO' : 'Operator'}
-                </Badge>
-              </div>
-              <div className="text-sm text-muted-foreground">
-                युजरनेम: {user.username}
-              </div>
-            </div>
-            <Button variant="destructive" size="sm" onClick={handleLogout}>
-              <LogIn className="h-4 w-4 mr-1 rotate-180" />
-              लॉगआउट
-            </Button>
-          </div>
-
-          <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
-            <Clock className="h-4 w-4" />
-            <span>लॉगिन वेळ: {formatTime(loginAt)}</span>
-          </div>
-
-          <div className="text-xs text-muted-foreground border-t pt-3">
-            <div className="flex flex-col gap-1">
-              <span>GPO: युजरनेम <code className="bg-muted px-1 rounded">gpo</code> / पासवर्ड <code className="bg-muted px-1 rounded">gpo123</code></span>
-              <span>Operator: युजरनेम <code className="bg-muted px-1 rounded">operator</code> / पासवर्ड <code className="bg-muted px-1 rounded">op123</code></span>
-            </div>
-          </div>
+        <CardContent className="p-6 text-center space-y-3">
+          <div className="text-green-600 text-4xl">✓</div>
+          <div className="font-semibold text-lg">{loginData.nameMarathi || loginData.name} लॉगिन झाले</div>
+          <div className="text-sm text-muted-foreground animate-pulse">डॅशबोर्ड लोड होत आहे...</div>
         </CardContent>
       </Card>
     );
