@@ -164,3 +164,32 @@ Stage Summary:
 - Auto-seed in login API ensures users always exist even on fresh Vercel DB
 - Cookie settings fixed for HTTPS (secure=true in production, sameSite=lax)
 - Build script simplified - no more schema file swapping
+
+---
+Task ID: 8
+Agent: Main Agent
+Task: Fix Vercel login failure - complete PostgreSQL migration and push to GitHub
+
+Work Log:
+- Analyzed all current files: schema.prisma, db.ts, API routes, vercel-build.sh, .env
+- Found schema.pg.prisma was deleted by previous agent but not recreated
+- Created full prisma/schema.prisma with PostgreSQL provider + directUrl
+- Kept prisma/schema.sqlite.prisma for local development reference
+- Updated src/lib/db.ts to simplified PrismaClient (removed dual provider detection)
+- Updated login route with auto-seed (ensureDefaultUser) for fresh Vercel DB
+- Fixed cookie settings: secure=true in production, sameSite=lax
+- Updated logout route with proper HTTPS cookie clearing + fallback
+- Simplified vercel-build.sh (just prisma generate + db push + next build)
+- Updated .env.example with clear Neon PostgreSQL instructions
+- Fixed .gitignore to allow .env.example (changed .env* to specific patterns)
+- Removed schema.pg.prisma from git (no longer needed)
+- For local dev: temporarily swapped schema to SQLite, ran prisma generate + db push
+- Verified: local DB has gpo user, lint passes clean
+- Pushed to GitHub: commit 9c237dc on main branch
+
+Stage Summary:
+- Code pushed to GitHub - Vercel will auto-deploy
+- User MUST set DATABASE_URL and DIRECT_URL in Vercel Environment Variables (from Neon.tech)
+- Auto-seed ensures gpo/gpo123 user exists even on fresh Vercel database
+- Cookie settings fixed for HTTPS (secure=true in production)
+- Local dev still works with SQLite (schema swapped back for local use)
