@@ -135,6 +135,11 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     console.error('Login error:', error);
-    return NextResponse.json({ error: 'Login failed - please check database connection' }, { status: 500 });
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({
+      error: 'Login failed - database connection error',
+      details: errorMsg,
+      hint: 'Visit /api/test-db to check database connection, then /api/setup to seed database',
+    }, { status: 500 });
   }
 }
