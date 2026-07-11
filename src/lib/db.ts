@@ -5,11 +5,16 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 function createPrismaClient() {
+  // Vercel + Neon Integration auto-sets these variables:
+  // - POSTGRES_PRISMA_URL (pooled connection for Prisma Client)
+  // - POSTGRES_URL_NON_POOLING (direct connection for Prisma CLI)
+  const databaseUrl = process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL || ''
+
   return new PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
     datasources: {
       db: {
-        url: process.env.DATABASE_URL,
+        url: databaseUrl,
       },
     },
   })

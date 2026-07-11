@@ -1,13 +1,15 @@
 #!/bin/bash
 # Vercel Build Script for ग्रामदर्पण
-# Uses PostgreSQL (DATABASE_URL and DIRECT_URL must be set in Vercel Environment Variables)
+# Uses Neon PostgreSQL variables auto-set by Vercel-Neon Integration
 set -e
 
 echo "🔧 Generating Prisma client..."
 npx prisma generate
 
 echo "📦 Pushing schema to PostgreSQL database..."
-npx prisma db push --accept-data-loss 2>/dev/null || echo "⚠️ DB push completed with warnings (this is OK for first deploy)"
+# Use the direct (non-pooled) URL for schema migrations
+export DATABASE_URL="$POSTGRES_URL_NON_POOLING"
+npx prisma db push --accept-data-loss 2>/dev/null || echo "⚠️ DB push completed with warnings (OK for first deploy)"
 
 echo "🏗️ Building Next.js..."
 next build
