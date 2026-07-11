@@ -5,13 +5,13 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 function createPrismaClient() {
-  // Vercel-Neon Integration auto-sets these:
-  // - DATABASE_URL (unpooled/direct connection)
-  // - DATABASE_URL_POOLED (pooled via pgbouncer — best for serverless)
-  // For local dev: DATABASE_URL points to SQLite
+  // Neon PostgreSQL variables (auto-set by Vercel-Neon Integration):
+  // - POSTGRES_PRISMA_URL = pooled + connect_timeout=15 (best for Prisma Client in serverless)
+  // - POSTGRES_URL_NON_POOLING = direct (best for Prisma CLI / migrations)
+  // - DATABASE_URL = alternative fallback
   const databaseUrl =
-    process.env.DATABASE_URL_POOLED ||
     process.env.POSTGRES_PRISMA_URL ||
+    process.env.DATABASE_URL_POOLED ||
     process.env.DATABASE_URL ||
     ''
 
