@@ -5,10 +5,10 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 function createPrismaClient() {
-  // Try multiple variable names that Neon/Vercel integration might set:
-  // - DATABASE_URL_POOLED (newer Vercel-Neon integration)
-  // - POSTGRES_PRISMA_URL (some Neon integration versions)
-  // - DATABASE_URL (fallback for local dev or older integration)
+  // Vercel-Neon Integration auto-sets these:
+  // - DATABASE_URL (unpooled/direct connection)
+  // - DATABASE_URL_POOLED (pooled via pgbouncer — best for serverless)
+  // For local dev: DATABASE_URL points to SQLite
   const databaseUrl =
     process.env.DATABASE_URL_POOLED ||
     process.env.POSTGRES_PRISMA_URL ||
