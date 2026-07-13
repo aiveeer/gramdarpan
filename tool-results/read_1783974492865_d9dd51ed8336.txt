@@ -1,0 +1,766 @@
+     1→'use client';
+     2→
+     3→import React, { useState, useEffect, useCallback } from 'react';
+     4→import { Card, CardContent } from '@/components/ui/card';
+     5→import { Badge } from '@/components/ui/badge';
+     6→import { Button } from '@/components/ui/button';
+     7→import { Input } from '@/components/ui/input';
+     8→import {
+     9→  Select,
+    10→  SelectContent,
+    11→  SelectItem,
+    12→  SelectTrigger,
+    13→  SelectValue,
+    14→} from '@/components/ui/select';
+    15→import {
+    16→  Table,
+    17→  TableBody,
+    18→  TableCell,
+    19→  TableHead,
+    20→  TableHeader,
+    21→  TableRow,
+    22→} from '@/components/ui/table';
+    23→import { Skeleton } from '@/components/ui/skeleton';
+    24→import {
+    25→  BookCopy,
+    26→  Landmark,
+    27→  Receipt,
+    28→  CreditCard,
+    29→  BookOpen,
+    30→  ListChecks,
+    31→  FolderArchive,
+    32→  PackageCheck,
+    33→  HandCoins,
+    34→  Gauge,
+    35→  CircleDollarSign,
+    36→  IndianRupee,
+    37→  Printer,
+    38→  Download,
+    39→  Search,
+    40→  X,
+    41→  TrendingUp,
+    42→  TrendingDown,
+    43→  Scale,
+    44→  AlertCircle,
+    45→  CheckCircle2,
+    46→  Loader2,
+    47→  RefreshCw,
+    48→  FileText,
+    49→} from 'lucide-react';
+    50→
+    51→// ─── Register Tab Configuration ───────────────────────────────────────
+    52→
+    53→interface RegisterTab {
+    54→  id: string;
+    55→  namuna: string;
+    56→  label: string;
+    57→  labelEn: string;
+    58→  icon: React.ElementType;
+    59→  color: string;
+    60→  gradient: string;
+    61→}
+    62→
+    63→const REGISTER_TABS: RegisterTab[] = [
+    64→  { id: 'cash-book', namuna: '3', label: 'रोकड वही', labelEn: 'Cash Book (नमुना ३)', icon: BookCopy, color: '#27ae60', gradient: 'from-green-600 to-emerald-600' },
+    65→  { id: 'bank-book', namuna: '4', label: 'बँक वही', labelEn: 'Bank Book (नमुना ४)', icon: Landmark, color: '#0d9488', gradient: 'from-teal-600 to-cyan-600' },
+    66→  { id: 'receipt', namuna: '12', label: 'पावती रजिस्टर', labelEn: 'Receipt Register (नमुना १२)', icon: Receipt, color: '#16a34a', gradient: 'from-green-500 to-lime-500' },
+    67→  { id: 'payment', namuna: '13', label: 'पेमेंट रजिस्टर', labelEn: 'Payment Register (नमुना १३)', icon: CreditCard, color: '#dc2626', gradient: 'from-red-500 to-rose-500' },
+    68→  { id: 'demand', namuna: '9', label: 'मागणी रजिस्टर', labelEn: 'Demand Register (नमुना ९)', icon: BookOpen, color: '#d97706', gradient: 'from-amber-500 to-orange-500' },
+    69→  { id: 'collection', namuna: '19', label: 'वसूल रजिस्टर', labelEn: 'Collection Register', icon: ListChecks, color: '#0891b2', gradient: 'from-cyan-500 to-sky-500' },
+    70→  { id: 'asset', namuna: '5', label: 'मालमत्ता रजिस्टर', labelEn: 'Asset Register (नमुना ५)', icon: FolderArchive, color: '#ea580c', gradient: 'from-orange-500 to-amber-500' },
+    71→  { id: 'stock', namuna: '6', label: 'साठा रजिस्टर', labelEn: 'Stock Register (नमुना ६)', icon: PackageCheck, color: '#6366f1', gradient: 'from-indigo-500 to-violet-500' },
+    72→  { id: 'grant', namuna: '7', label: 'अनुदान रजिस्टर', labelEn: 'Grant Register (नमुना ७)', icon: HandCoins, color: '#9333ea', gradient: 'from-purple-500 to-fuchsia-500' },
+    73→  { id: 'ledger', namuna: '14', label: 'खाते खत', labelEn: 'Ledger (नमुना १४)', icon: BookOpen, color: '#7c3aed', gradient: 'from-violet-500 to-purple-500' },
+    74→  { id: 'trial-balance', namuna: '15', label: 'तपासणी पत्र', labelEn: 'Trial Balance (नमुना १५)', icon: Gauge, color: '#d97706', gradient: 'from-amber-500 to-yellow-500' },
+    75→  { id: 'dcb', namuna: '10', label: 'DCB', labelEn: 'Demand Collection Balance', icon: CircleDollarSign, color: '#dc2626', gradient: 'from-red-500 to-pink-500' },
+    76→  { id: 'salary', namuna: '11', label: 'वेतन रजिस्टर', labelEn: 'Salary Register', icon: IndianRupee, color: '#059669', gradient: 'from-emerald-500 to-green-500' },
+    77→];
+    78→
+    79→// ─── Types ────────────────────────────────────────────────────────────
+    80→
+    81→interface ApiResponse {
+    82→  title: string;
+    83→  titleEn: string;
+    84→  headers: string[];
+    85→  rows: Array<Record<string, unknown>>;
+    86→  totals: Record<string, unknown>;
+    87→  meta: {
+    88→    village: { gramPanchayatNameMr?: string; taluka?: string; district?: string } | null;
+    89→    financialYear: string;
+    90→    totalEntries?: number;
+    91→  };
+    92→}
+    93→
+    94→interface AutoRegistersProps {
+    95→  initialTab?: string;
+    96→}
+    97→
+    98→// ─── Currency Formatter ───────────────────────────────────────────────
+    99→
+   100→function formatCurrency(amount: number): string {
+   101→  return new Intl.NumberFormat('mr-IN', {
+   102→    style: 'currency',
+   103→    currency: 'INR',
+   104→    minimumFractionDigits: 0,
+   105→    maximumFractionDigits: 0,
+   106→  }).format(amount);
+   107→}
+   108→
+   109→function formatNumber(val: unknown): string {
+   110→  const num = Number(val) || 0;
+   111→  return num.toLocaleString('mr-IN');
+   112→}
+   113→
+   114→// ─── Detect column type from header label ─────────────────────────────
+   115→
+   116→function detectColumnType(header: string): 'currency' | 'number' | 'percent' | 'badge' | 'text' {
+   117→  if (header.includes('₹') || header.includes('किंमत') || header.includes('रक्कम') || header.includes('मूल्य') || header.includes('कर') || header.includes('मागणी') || header.includes('वसूल') || header.includes('शिल्लक') || header.includes('बक्की') || header.includes('जमा') || header.includes('नामे') || header.includes('ठेव') || header.includes('उधार') || header.includes('वेतन') || header.includes('कपात') || header.includes('घसारा') || header.includes('अंदाज') || header.includes('वास्तव') || header.includes('फरक') || header.includes('भांडवल') || header.includes('थकबाकी') || header.includes('दंड') || header.includes('व्याज') || header.includes('प्राप्ती') || header.includes('अर्ज')) {
+   118→    return 'currency';
+   119→  }
+   120→  if (header.includes('%') || header.includes('दर') || header.includes('वय')) {
+   121→    return 'number';
+   122→  }
+   123→  if (header.includes('प्रकार') || header.includes('स्थिती') || header.includes('शिल्लक प्रकार') || header.includes('श्रेणी')) {
+   124→    return 'badge';
+   125→  }
+   126→  return 'text';
+   127→}
+   128→
+   129→// ─── Main Component ───────────────────────────────────────────────────
+   130→
+   131→export default function AutoRegisters({ initialTab }: AutoRegistersProps) {
+   132→  const [activeTab, setActiveTab] = useState(initialTab || 'cash-book');
+   133→  const [data, setData] = useState<ApiResponse | null>(null);
+   134→  const [loading, setLoading] = useState(false);
+   135→  const [financialYear, setFinancialYear] = useState('2024-25');
+   136→  const [searchTerm, setSearchTerm] = useState('');
+   137→  const [error, setError] = useState<string | null>(null);
+   138→
+   139→  const currentTab = REGISTER_TABS.find(t => t.id === activeTab) || REGISTER_TABS[0];
+   140→
+   141→  // Fetch data from auto-generate API
+   142→  const fetchData = useCallback(async () => {
+   143→    const controller = new AbortController();
+   144→    setLoading(true);
+   145→    setError(null);
+   146→
+   147→    try {
+   148→      const res = await fetch(
+   149→        `/api/auto-generate?namuna=${currentTab.namuna}&financialYear=${financialYear}`,
+   150→        { signal: controller.signal }
+   151→      );
+   152→
+   153→      if (!res.ok) {
+   154→        const errData = await res.json().catch(() => ({}));
+   155→        throw new Error(errData.error || 'डेटा आणण्यात त्रुटी');
+   156→      }
+   157→
+   158→      const result: ApiResponse = await res.json();
+   159→      setData(result);
+   160→    } catch (err) {
+   161→      if (err instanceof DOMException && err.name === 'AbortError') return;
+   162→      setError(err instanceof Error ? err.message : 'डेटा आणण्यात त्रुटी');
+   163→    } finally {
+   164→      setLoading(false);
+   165→    }
+   166→
+   167→    return () => controller.abort();
+   168→  }, [currentTab.namuna, financialYear]);
+   169→
+   170→  useEffect(() => {
+   171→    const cleanup = fetchData();
+   172→    return () => {
+   173→      cleanup.then(fn => fn?.());
+   174→    };
+   175→  }, [fetchData]);
+   176→
+   177→  // Reset search when tab changes
+   178→  useEffect(() => {
+   179→    setSearchTerm('');
+   180→  }, [activeTab]);
+   181→
+   182→  // Filter entries by search term
+   183→  const filteredRows = searchTerm && data?.rows
+   184→    ? data.rows.filter(r => JSON.stringify(r).toLowerCase().includes(searchTerm.toLowerCase()))
+   185→    : data?.rows || [];
+   186→
+   187→  // Column keys derived from rows
+   188→  const columnKeys: string[] = data?.rows?.[0] ? Object.keys(data.rows[0]) : [];
+   189→  const columnTypes: Record<string, string> = {};
+   190→  if (data?.headers) {
+   191→    data.headers.forEach((h, i) => {
+   192→      if (columnKeys[i]) {
+   193→        columnTypes[columnKeys[i]] = detectColumnType(h);
+   194→      }
+   195→    });
+   196→  }
+   197→
+   198→  // ─── Render Cell Value ──────────────────────────────────────────────
+   199→
+   200→  const renderCellValue = (key: string, value: unknown, _idx: number) => {
+   201→    const colType = columnTypes[key] || 'text';
+   202→
+   203→    switch (colType) {
+   204→      case 'currency': {
+   205→        const num = Number(value) || 0;
+   206→        if (num === 0) return <span className="text-muted-foreground">-</span>;
+   207→
+   208→        let colorClass = '';
+   209→        if (key === 'debit' || key === 'deposit' || key === 'debitAmount' || key === 'totalDebit') {
+   210→          colorClass = 'text-green-700 font-medium';
+   211→        } else if (key === 'credit' || key === 'withdrawal' || key === 'creditAmount' || key === 'totalCredit') {
+   212→          colorClass = 'text-red-700 font-medium';
+   213→        } else if (key === 'balance' || key === 'outstanding' || key === 'totalBalance') {
+   214→          colorClass = num >= 0 ? 'text-green-700 font-bold' : 'text-red-700 font-bold';
+   215→        }
+   216→
+   217→        return <span className={colorClass}>{formatCurrency(num)}</span>;
+   218→      }
+   219→
+   220→      case 'number': {
+   221→        const num = Number(value) || 0;
+   222→        if (key === 'depreciationRate') return <span>{num}%</span>;
+   223→        if (key === 'age') return <span>{num} वर्षे</span>;
+   224→        if (key === 'quantity') return <span className="font-medium">{formatNumber(value)}</span>;
+   225→        return <span>{formatNumber(value)}</span>;
+   226→      }
+   227→
+   228→      case 'badge': {
+   229→        const strVal = String(value || '-');
+   230→        let badgeClass = 'bg-gray-100 text-gray-700';
+   231→
+   232→        if (strVal === 'Receipt' || strVal === 'जमा' || strVal === 'Deposit' || strVal === 'ठेव') {
+   233→          badgeClass = 'bg-green-100 text-green-800';
+   234→        } else if (strVal === 'Payment' || strVal === 'नामे' || strVal === 'Withdrawal' || strVal === 'उधार') {
+   235→          badgeClass = 'bg-red-100 text-red-800';
+   236→        } else if (strVal === 'Active' || strVal === 'In Stock' || strVal === 'Debit') {
+   237→          badgeClass = 'bg-green-100 text-green-800';
+   238→        } else if (strVal === 'Low Stock' || strVal === 'Credit' || strVal === 'Disposed') {
+   239→          badgeClass = 'bg-amber-100 text-amber-800';
+   240→        } else if (strVal === 'Issued') {
+   241→          badgeClass = 'bg-blue-100 text-blue-800';
+   242→        } else if (strVal === 'income') {
+   243→          badgeClass = 'bg-green-100 text-green-800';
+   244→        } else if (strVal === 'expenditure') {
+   245→          badgeClass = 'bg-red-100 text-red-800';
+   246→        } else if (strVal === 'प्राप्ती') {
+   247→          badgeClass = 'bg-green-100 text-green-800';
+   248→        } else if (strVal === 'अर्ज') {
+   249→          badgeClass = 'bg-red-100 text-red-800';
+   250→        }
+   251→
+   252→        return <Badge className={`text-[10px] border-0 px-1.5 py-0 ${badgeClass}`}>{strVal}</Badge>;
+   253→      }
+   254→
+   255→      default: {
+   256→        const strVal = String(value || '-');
+   257→        // Truncate long text
+   258→        if (strVal.length > 40) {
+   259→          return <span title={strVal} className="text-xs">{strVal.substring(0, 40)}...</span>;
+   260→        }
+   261→        return <span>{strVal}</span>;
+   262→      }
+   263→    }
+   264→  };
+   265→
+   266→  // ─── Print Handler ──────────────────────────────────────────────────
+   267→
+   268→  const handlePrint = () => {
+   269→    const tableEl = document.getElementById('register-table-container');
+   270→    if (!tableEl) return;
+   271→
+   272→    const printWindow = window.open('', '_blank');
+   273→    if (!printWindow) return;
+   274→
+   275→    const villageName = data?.meta?.village?.gramPanchayatNameMr || 'ग्रामपंचायत';
+   276→
+   277→    printWindow.document.write(`
+   278→      <html><head><title>${currentTab.label} - ${currentTab.labelEn}</title>
+   279→      <style>
+   280→        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;700&display=swap');
+   281→        body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; margin: 20px; font-size: 11px; }
+   282→        h1 { font-size: 16px; text-align: center; margin-bottom: 2px; }
+   283→        h2 { font-size: 12px; text-align: center; color: #666; margin-top: 0; }
+   284→        .village-info { text-align: center; font-size: 11px; margin-bottom: 10px; color: #444; }
+   285→        .flag-bar { display: flex; gap: 0; margin-bottom: 12px; }
+   286→        .flag-bar div { height: 4px; flex: 1; }
+   287→        table { width: 100%; border-collapse: collapse; font-size: 10px; }
+   288→        th, td { border: 1px solid #999; padding: 3px 6px; text-align: left; }
+   289→        th { background: ${currentTab.color}; color: white; font-weight: bold; font-size: 9px; }
+   290→        .total-row { background: #f0f0f0; font-weight: bold; }
+   291→        .summary-box { margin-top: 12px; border: 1px solid #999; padding: 8px; }
+   292→        .summary-box h3 { font-size: 11px; margin: 0 0 5px; }
+   293→        .summary-item { display: inline-block; margin-right: 20px; font-size: 10px; }
+   294→        .signature { margin-top: 40px; display: flex; justify-content: space-between; }
+   295→        .signature div { text-align: center; }
+   296→        @media print { body { margin: 0; } }
+   297→      </style></head><body>
+   298→      <div class="flag-bar"><div style="background:#FF9933"></div><div style="background:white"></div><div style="background:#138808"></div></div>
+   299→      <h1>${currentTab.label} ${currentTab.labelEn ? `(${currentTab.labelEn})` : ''}</h1>
+   300→      <h2>वित्तीय वर्ष: ${financialYear}</h2>
+   301→      <div class="village-info">${villageName}${data?.meta?.village?.taluka ? `, ता. ${data.meta.village.taluka}` : ''}${data?.meta?.village?.district ? `, जि. ${data.meta.village.district}` : ''}</div>
+   302→      ${tableEl.outerHTML}
+   303→      <div class="summary-box">
+   304→        <h3>सारांश</h3>
+   305→        ${data?.totals ? Object.entries(data.totals).map(([k, v]) => `<span class="summary-item"><strong>${k}:</strong> ${typeof v === 'number' ? formatCurrency(v as number) : String(v)}</span>`).join('') : ''}
+   306→      </div>
+   307→      <div class="signature">
+   308→        <div>मालकाची सही</div>
+   309→        <div>ग्रामसेवक सही</div>
+   310→        <div>सरपंच सही व मुद्रा</div>
+   311→        <div>सचिव सही व मुद्रा</div>
+   312→      </div>
+   313→      <div class="flag-bar" style="margin-top:20px"><div style="background:#FF9933"></div><div style="background:white"></div><div style="background:#138808"></div></div>
+   314→      </body></html>
+   315→    `);
+   316→    printWindow.document.close();
+   317→    setTimeout(() => printWindow.print(), 500);
+   318→  };
+   319→
+   320→  // ─── CSV Export Handler ─────────────────────────────────────────────
+   321→
+   322→  const handleExport = () => {
+   323→    if (!data || filteredRows.length === 0) return;
+   324→
+   325→    const headers = data.headers.map(h => `"${h}"`).join(',');
+   326→    const rows = filteredRows.map(row =>
+   327→      columnKeys.map(key => {
+   328→        const val = row[key];
+   329→        const colType = columnTypes[key] || 'text';
+   330→        const text = colType === 'currency'
+   331→          ? String(Number(val) || 0)
+   332→          : String(val || '');
+   333→        return `"${text.replace(/"/g, '""')}"`;
+   334→      }).join(',')
+   335→    );
+   336→
+   337→    const csv = [headers, ...rows].join('\n');
+   338→    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+   339→    const link = document.createElement('a');
+   340→    link.href = URL.createObjectURL(blob);
+   341→    link.download = `${currentTab.id}-register-${financialYear}.csv`;
+   342→    link.click();
+   343→    URL.revokeObjectURL(link.href);
+   344→  };
+   345→
+   346→  // ─── Summary Cards ─────────────────────────────────────────────────
+   347→
+   348→  const renderSummaryCards = () => {
+   349→    if (!data?.totals) return null;
+   350→
+   351→    const cards: Array<{ label: string; value: string; icon: React.ElementType; color: string; subtext?: string }> = [];
+   352→    const t = data.totals;
+   353→
+   354→    switch (activeTab) {
+   355→      case 'cash-book':
+   356→        cards.push(
+   357→          { label: 'एकूण जमा', value: formatCurrency(Number(t.totalDebit) || 0), icon: TrendingUp, color: '#27ae60' },
+   358→          { label: 'एकूण नावे', value: formatCurrency(Number(t.totalCredit) || 0), icon: TrendingDown, color: '#e74c3c' },
+   359→          { label: 'शिल्लक शेष', value: formatCurrency(Number(t.closingBalance) || 0), icon: Scale, color: '#0d7377' },
+   360→        );
+   361→        break;
+   362→      case 'bank-book':
+   363→        cards.push(
+   364→          { label: 'एकूण ठेव', value: formatCurrency(Number(t.totalDeposits) || 0), icon: TrendingUp, color: '#27ae60' },
+   365→          { label: 'एकूण उधार', value: formatCurrency(Number(t.totalWithdrawals) || 0), icon: TrendingDown, color: '#e74c3c' },
+   366→          { label: 'शिल्लक शेष', value: formatCurrency(Number(t.closingBalance) || 0), icon: Scale, color: '#0d9488' },
+   367→        );
+   368→        break;
+   369→      case 'receipt':
+   370→        cards.push(
+   371→          { label: 'एकूण जमा', value: formatCurrency(Number(t.totalCredit) || 0), icon: FileText, color: '#16a34a' },
+   372→          { label: 'एकूण नोंदी', value: String(t.totalEntries || 0), icon: ListChecks, color: '#059669' },
+   373→        );
+   374→        break;
+   375→      case 'payment':
+   376→        cards.push(
+   377→          { label: 'एकूण नावे', value: formatCurrency(Number(t.totalDebit) || 0), icon: FileText, color: '#dc2626' },
+   378→          { label: 'एकूण नोंदी', value: String(t.totalEntries || 0), icon: ListChecks, color: '#e74c3c' },
+   379→        );
+   380→        break;
+   381→      case 'demand':
+   382→        cards.push(
+   383→          { label: 'एकूण मागणी', value: formatCurrency(Number(t.totalDemand) || 0), icon: TrendingUp, color: '#d97706' },
+   384→          { label: 'एकूण वसूल', value: formatCurrency(Number(t.totalPaid) || 0), icon: CheckCircle2, color: '#16a34a' },
+   385→          { label: 'एकूण बक्की', value: formatCurrency(Number(t.totalOutstanding) || 0), icon: AlertCircle, color: '#dc2626' },
+   386→        );
+   387→        break;
+   388→      case 'collection':
+   389→      case 'asset':
+   390→      case 'stock':
+   391→      case 'grant':
+   392→      case 'ledger':
+   393→      case 'trial-balance':
+   394→      case 'dcb':
+   395→      case 'salary':
+   396→        // Generic summary from totals object
+   397→        Object.entries(t).forEach(([key, val]) => {
+   398→          if (typeof val === 'number' && val !== 0 && key !== 'totalEntries' && key !== 'totalAccounts' && key !== 'totalItems' && key !== 'totalAssets' && key !== 'inStockCount' && key !== 'totalDays') {
+   399→            cards.push({
+   400→              label: key.replace(/([A-Z])/g, ' $1').trim(),
+   401→              value: formatCurrency(val),
+   402→              icon: val > 0 ? TrendingUp : TrendingDown,
+   403→              color: val > 0 ? currentTab.color : '#dc2626',
+   404→            });
+   405→          }
+   406→        });
+   407→        // Add count cards
+   408→        if (t.totalEntries) cards.unshift({ label: 'एकूण नोंदी', value: String(t.totalEntries), icon: ListChecks, color: '#0891b2' });
+   409→        if (t.totalAssets) cards.unshift({ label: 'एकूण मालमत्ता', value: String(t.totalAssets), icon: FolderArchive, color: '#ea580c' });
+   410→        if (t.totalItems) cards.unshift({ label: 'एकूण वस्तू', value: String(t.totalItems), icon: PackageCheck, color: '#6366f1' });
+   411→        if (t.inStockCount) cards.push({ label: 'साठ्यात', value: String(t.inStockCount), icon: PackageCheck, color: '#16a34a' });
+   412→        if (t.totalAccounts) cards.push({ label: 'एकूण खाती', value: String(t.totalAccounts), icon: BookOpen, color: '#7c3aed' });
+   413→        if (t.difference !== undefined) {
+   414→          const diff = Number(t.difference);
+   415→          cards.push({
+   416→            label: 'फरक',
+   417→            value: formatCurrency(Math.abs(diff)),
+   418→            icon: Scale,
+   419→            color: diff === 0 ? '#16a34a' : '#d97706',
+   420→            subtext: diff === 0 ? '✓ ताळमेळ बरोबर' : '⚠ ताळमेळ नाही',
+   421→          });
+   422→        }
+   423→        break;
+   424→    }
+   425→
+   426→    if (cards.length === 0) return null;
+   427→
+   428→    return (
+   429→      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+   430→        {cards.slice(0, 6).map((card, idx) => (
+   431→          <Card key={idx} className="border-0 shadow-sm overflow-hidden">
+   432→            <div className="h-1" style={{ background: card.color }} />
+   433→            <CardContent className="p-3 flex items-center gap-3">
+   434→              <div
+   435→                className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0"
+   436→                style={{ background: card.color + '15' }}
+   437→              >
+   438→                <card.icon className="h-5 w-5" style={{ color: card.color }} />
+   439→              </div>
+   440→              <div>
+   441→                <p className="text-xs text-muted-foreground">{card.label}</p>
+   442→                <p className="text-lg font-bold" style={{ color: card.color }}>{card.value}</p>
+   443→                {card.subtext && (
+   444→                  <p className={`text-[10px] ${card.subtext.startsWith('✓') ? 'text-green-600' : 'text-amber-600'}`}>
+   445→                    {card.subtext}
+   446→                  </p>
+   447→                )}
+   448→              </div>
+   449→            </CardContent>
+   450→          </Card>
+   451→        ))}
+   452→      </div>
+   453→    );
+   454→  };
+   455→
+   456→  // ─── Render Table ───────────────────────────────────────────────────
+   457→
+   458→  const renderTable = () => {
+   459→    if (loading) {
+   460→      return (
+   461→        <CardContent className="p-4 space-y-2">
+   462→          <div className="flex items-center gap-2 mb-4">
+   463→            <Loader2 className="h-5 w-5 animate-spin" style={{ color: currentTab.color }} />
+   464→            <span className="text-sm text-muted-foreground">डेटा लोड होत आहे...</span>
+   465→          </div>
+   466→          {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+   467→            <Skeleton key={i} className="h-10 w-full" style={{ opacity: 0.3 + (i * 0.05) }} />
+   468→          ))}
+   469→        </CardContent>
+   470→      );
+   471→    }
+   472→
+   473→    if (error) {
+   474→      return (
+   475→        <CardContent className="p-12 text-center">
+   476→          <div className="h-16 w-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: '#fef2f2' }}>
+   477→            <AlertCircle className="h-8 w-8 text-red-500" />
+   478→          </div>
+   479→          <p className="text-lg font-medium text-red-700">त्रुटी</p>
+   480→          <p className="text-sm text-muted-foreground mt-1">{error}</p>
+   481→          <Button variant="outline" size="sm" className="mt-3" onClick={() => fetchData()}>
+   482→            <RefreshCw className="h-3.5 w-3.5 mr-1" />
+   483→            पुन्हा प्रयत्न करा
+   484→          </Button>
+   485→        </CardContent>
+   486→      );
+   487→    }
+   488→
+   489→    if (!data || filteredRows.length === 0) {
+   490→      return (
+   491→        <CardContent className="p-12 text-center">
+   492→          <div className="h-20 w-20 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: currentTab.color + '10' }}>
+   493→            <currentTab.icon className="h-10 w-10" style={{ color: currentTab.color, opacity: 0.3 }} />
+   494→          </div>
+   495→          <p className="text-lg font-medium text-muted-foreground">कोणतेही डेटा नाहीत</p>
+   496→          <p className="text-sm text-muted-foreground mt-1">वित्तीय वर्ष बदलून पहा किंवा नवीन एंट्री जोडा</p>
+   497→          <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+   498→            <span className="px-2 py-1 rounded-md" style={{ background: currentTab.color + '10' }}>वित्तीय वर्ष: {financialYear}</span>
+   499→          </div>
+   500→        </CardContent>
+   501→      );
+   502→    }
+   503→
+   504→    const headers = data.headers || [];
+   505→    const keys = columnKeys;
+   506→
+   507→    return (
+   508→      <div className="max-h-[500px] overflow-y-auto custom-scrollbar" id="register-table-container">
+   509→        <Table>
+   510→          <TableHeader>
+   511→            <TableRow style={{ background: `linear-gradient(90deg, ${currentTab.color}, ${currentTab.color}cc)` }}>
+   512→              <TableHead className="text-[10px] font-bold text-white w-10 text-center">क्र.</TableHead>
+   513→              {headers.map((header, hIdx) => (
+   514→                <TableHead
+   515→                  key={hIdx}
+   516→                  className={`text-[10px] font-bold text-white ${columnTypes[keys[hIdx]] === 'currency' || columnTypes[keys[hIdx]] === 'number' ? 'text-right' : ''}`}
+   517→                >
+   518→                  {header}
+   519→                </TableHead>
+   520→              ))}
+   521→            </TableRow>
+   522→          </TableHeader>
+   523→          <TableBody>
+   524→            {filteredRows.map((row, idx) => (
+   525→              <TableRow
+   526→                key={idx}
+   527→                className={`hover:bg-gray-50/80 transition-colors ${idx % 2 === 1 ? 'bg-gray-50/30' : ''}`}
+   528→              >
+   529→                <TableCell className="text-xs text-muted-foreground text-center font-mono">{idx + 1}</TableCell>
+   530→                {keys.map((key, kIdx) => (
+   531→                  <TableCell
+   532→                    key={kIdx}
+   533→                    className={`text-sm ${columnTypes[key] === 'currency' || columnTypes[key] === 'number' ? 'text-right' : ''}`}
+   534→                  >
+   535→                    {renderCellValue(key, row[key], kIdx)}
+   536→                  </TableCell>
+   537→                ))}
+   538→              </TableRow>
+   539→            ))}
+   540→
+   541→            {/* Totals Row */}
+   542→            {filteredRows.length > 0 && (
+   543→              <TableRow className="font-bold" style={{ background: currentTab.color + '10' }}>
+   544→                <TableCell className="text-xs text-center font-bold" style={{ color: currentTab.color }}>
+   545→                  {'≡'}
+   546→                </TableCell>
+   547→                {keys.map((key, kIdx) => {
+   548→                  const colType = columnTypes[key] || 'text';
+   549→                  if (colType === 'currency' || colType === 'number') {
+   550→                    const total = filteredRows.reduce((sum, row) => sum + (Number(row[key]) || 0), 0);
+   551→                    return (
+   552→                      <TableCell key={kIdx} className="text-sm text-right font-bold" style={{ color: currentTab.color }}>
+   553→                        {colType === 'currency' ? formatCurrency(total) : formatNumber(total)}
+   554→                      </TableCell>
+   555→                    );
+   556→                  }
+   557→                  if (kIdx === 0) {
+   558→                    return (
+   559→                      <TableCell key={kIdx} className="text-sm font-bold" style={{ color: currentTab.color }}>
+   560→                        एकूण
+   561→                      </TableCell>
+   562→                    );
+   563→                  }
+   564→                  return <TableCell key={kIdx} className="text-sm" />;
+   565→                })}
+   566→              </TableRow>
+   567→            )}
+   568→          </TableBody>
+   569→        </Table>
+   570→      </div>
+   571→    );
+   572→  };
+   573→
+   574→  // ─── Main Render ────────────────────────────────────────────────────
+   575→
+   576→  return (
+   577→    <div className="space-y-4">
+   578→      {/* ── Header Card with Gradient ── */}
+   579→      <Card className="border-0 shadow-lg overflow-hidden">
+   580→        <div className="relative">
+   581→          <div className={`absolute inset-0 bg-gradient-to-r ${currentTab.gradient} opacity-10`} />
+   582→          <div className="h-2" style={{ background: `linear-gradient(90deg, ${currentTab.color}, ${currentTab.color}88)` }} />
+   583→          <CardContent className="p-4 relative">
+   584→            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+   585→              <div className="flex items-center gap-3">
+   586→                <div
+   587→                  className="h-14 w-14 rounded-xl flex items-center justify-center shadow-lg"
+   588→                  style={{ background: `linear-gradient(135deg, ${currentTab.color}, ${currentTab.color}cc)` }}
+   589→                >
+   590→                  <currentTab.icon className="h-7 w-7 text-white" />
+   591→                </div>
+   592→                <div>
+   593→                  <h2 className="text-xl font-bold" style={{ color: currentTab.color }}>
+   594→                    {currentTab.label}
+   595→                  </h2>
+   596→                  <p className="text-sm text-muted-foreground">{currentTab.labelEn}</p>
+   597→                  {data?.meta?.village?.gramPanchayatNameMr && (
+   598→                    <p className="text-xs text-muted-foreground mt-0.5">
+   599→                      {data.meta.village.gramPanchayatNameMr}
+   600→                      {data.meta.village.taluka ? `, ता. ${data.meta.village.taluka}` : ''}
+   601→                      {data.meta.village.district ? `, जि. ${data.meta.village.district}` : ''}
+   602→                    </p>
+   603→                  )}
+   604→                </div>
+   605→              </div>
+   606→              <div className="flex items-center gap-2 flex-wrap">
+   607→                <Badge
+   608→                  className="text-xs border-0 shadow-sm"
+   609→                  style={{ background: currentTab.color + '20', color: currentTab.color }}
+   610→                >
+   611→                  {filteredRows.length} नोंदी
+   612→                </Badge>
+   613→                <Badge variant="outline" className="text-xs" style={{ borderColor: currentTab.color + '40', color: currentTab.color }}>
+   614→                  नमुना {currentTab.namuna}
+   615→                </Badge>
+   616→              </div>
+   617→            </div>
+   618→          </CardContent>
+   619→        </div>
+   620→      </Card>
+   621→
+   622→      {/* ── Tab Navigation (horizontal scrollable) ── */}
+   623→      <div className="relative">
+   624→        <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide">
+   625→          {REGISTER_TABS.map(tab => {
+   626→            const isActive = activeTab === tab.id;
+   627→            return (
+   628→              <button
+   629→                key={tab.id}
+   630→                onClick={() => setActiveTab(tab.id)}
+   631→                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all shrink-0 ${
+   632→                  isActive
+   633→                    ? 'text-white shadow-md scale-105'
+   634→                    : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+   635→                }`}
+   636→                style={isActive ? { background: `linear-gradient(135deg, ${tab.color}, ${tab.color}cc)` } : {}}
+   637→              >
+   638→                <tab.icon className="h-3.5 w-3.5" />
+   639→                <span>{tab.label}</span>
+   640→              </button>
+   641→            );
+   642→          })}
+   643→        </div>
+   644→      </div>
+   645→
+   646→      {/* ── Controls: FY selector, Search, Print/Export ── */}
+   647→      <Card className="border-0 shadow-sm">
+   648→        <CardContent className="p-3">
+   649→          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+   650→            <Select value={financialYear} onValueChange={setFinancialYear}>
+   651→              <SelectTrigger className="w-[140px] h-9 text-sm">
+   652→                <SelectValue />
+   653→              </SelectTrigger>
+   654→              <SelectContent>
+   655→                <SelectItem value="2023-24">2023-24</SelectItem>
+   656→                <SelectItem value="2024-25">2024-25</SelectItem>
+   657→                <SelectItem value="2025-26">2025-26</SelectItem>
+   658→              </SelectContent>
+   659→            </Select>
+   660→            <div className="relative flex-1">
+   661→              <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+   662→              <Input
+   663→                placeholder="शोधा..."
+   664→                value={searchTerm}
+   665→                onChange={e => setSearchTerm(e.target.value)}
+   666→                className="pl-9 h-9 text-sm"
+   667→              />
+   668→              {searchTerm && (
+   669→                <button
+   670→                  onClick={() => setSearchTerm('')}
+   671→                  className="absolute right-2 top-1/2 -translate-y-1/2 hover:bg-gray-100 rounded-full p-0.5"
+   672→                >
+   673→                  <X className="h-3.5 w-3.5 text-gray-400" />
+   674→                </button>
+   675→              )}
+   676→            </div>
+   677→            <div className="flex gap-1.5">
+   678→              <Button
+   679→                variant="outline"
+   680→                size="sm"
+   681→                onClick={handlePrint}
+   682→                className="h-9 text-xs"
+   683→                disabled={!data || filteredRows.length === 0}
+   684→              >
+   685→                <Printer className="h-3.5 w-3.5 mr-1" />
+   686→                प्रिंट
+   687→              </Button>
+   688→              <Button
+   689→                variant="outline"
+   690→                size="sm"
+   691→                onClick={handleExport}
+   692→                className="h-9 text-xs"
+   693→                disabled={!data || filteredRows.length === 0}
+   694→              >
+   695→                <Download className="h-3.5 w-3.5 mr-1" />
+   696→                निर्यात
+   697→              </Button>
+   698→              <Button
+   699→                variant="outline"
+   700→                size="sm"
+   701→                onClick={() => fetchData()}
+   702→                className="h-9 text-xs"
+   703→                disabled={loading}
+   704→              >
+   705→                <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+   706→              </Button>
+   707→            </div>
+   708→          </div>
+   709→        </CardContent>
+   710→      </Card>
+   711→
+   712→      {/* ── Summary Stats Cards ── */}
+   713→      {renderSummaryCards()}
+   714→
+   715→      {/* ── Register Data Table ── */}
+   716→      <Card className="border-0 shadow-sm overflow-hidden">
+   717→        <div className="h-1" style={{ background: `linear-gradient(90deg, ${currentTab.color}, ${currentTab.color}88)` }} />
+   718→        {renderTable()}
+   719→
+   720→        {/* Footer with count */}
+   721→        {filteredRows.length > 0 && (
+   722→          <div
+   723→            className="p-3 border-t flex items-center justify-between"
+   724→            style={{ background: currentTab.color + '08' }}
+   725→          >
+   726→            <span className="text-sm font-medium" style={{ color: currentTab.color }}>
+   727→              एकूण: {filteredRows.length} नोंदी
+   728→            </span>
+   729→            {searchTerm && (
+   730→              <span className="text-xs text-muted-foreground">
+   731→                शोध: &quot;{searchTerm}&quot; — {filteredRows.length} सापडले
+   732→              </span>
+   733→            )}
+   734→          </div>
+   735→        )}
+   736→      </Card>
+   737→
+   738→      {/* ── Custom Scrollbar Styles ── */}
+   739→      <style jsx global>{`
+   740→        .custom-scrollbar::-webkit-scrollbar {
+   741→          width: 6px;
+   742→          height: 6px;
+   743→        }
+   744→        .custom-scrollbar::-webkit-scrollbar-track {
+   745→          background: #f1f5f9;
+   746→          border-radius: 3px;
+   747→        }
+   748→        .custom-scrollbar::-webkit-scrollbar-thumb {
+   749→          background: #cbd5e1;
+   750→          border-radius: 3px;
+   751→        }
+   752→        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+   753→          background: #94a3b8;
+   754→        }
+   755→        .scrollbar-hide::-webkit-scrollbar {
+   756→          display: none;
+   757→        }
+   758→        .scrollbar-hide {
+   759→          -ms-overflow-style: none;
+   760→          scrollbar-width: none;
+   761→        }
+   762→      `}</style>
+   763→    </div>
+   764→  );
+   765→}
+   766→

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import {
   Sidebar,
   SidebarContent,
@@ -126,19 +127,21 @@ import {
   RotateCcw,
 } from 'lucide-react';
 
-import MasterData from '@/components/master-data';
-import Namuna8Component from '@/components/namuna8';
-import Namuna9Component from '@/components/namuna9';
-import Namuna9KaComponent from '@/components/namuna9ka';
-import Namuna1Component from '@/components/namuna1';
 import LoginForm from '@/components/login-form';
-import AuthLogs from '@/components/auth-logs';
-import GlobalSearch from '@/components/global-search';
-import ExcelImportExport from '@/components/excel-import-export';
-import DailyTransactions from '@/components/daily-transactions';
-import AutoRegisters from '@/components/auto-registers';
-import NamunaReports from '@/components/namuna-reports';
-import ERPDashboard from '@/components/erp-dashboard';
+
+// Dynamic imports to reduce initial bundle size and prevent SSR crashes
+const MasterData = dynamic(() => import('@/components/master-data'), { ssr: false });
+const Namuna8Component = dynamic(() => import('@/components/namuna8'), { ssr: false });
+const Namuna9Component = dynamic(() => import('@/components/namuna9'), { ssr: false });
+const Namuna9KaComponent = dynamic(() => import('@/components/namuna9ka'), { ssr: false });
+const Namuna1Component = dynamic(() => import('@/components/namuna1'), { ssr: false });
+const AuthLogs = dynamic(() => import('@/components/auth-logs'), { ssr: false });
+const GlobalSearch = dynamic(() => import('@/components/global-search'), { ssr: false });
+const ExcelImportExport = dynamic(() => import('@/components/excel-import-export'), { ssr: false });
+const DailyTransactions = dynamic(() => import('@/components/daily-transactions'), { ssr: false });
+const AutoRegisters = dynamic(() => import('@/components/auto-registers'), { ssr: false });
+const NamunaReports = dynamic(() => import('@/components/namuna-reports'), { ssr: false });
+const ERPDashboard = dynamic(() => import('@/components/erp-dashboard'), { ssr: false });
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

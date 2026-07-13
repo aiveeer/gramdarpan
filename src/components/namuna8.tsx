@@ -107,6 +107,137 @@ interface VillageInfo {
   secretaryNameMr?: string;
 }
 
+// ===== NORMALIZATION HELPERS =====
+
+// Normalize a raw Prisma PropertyMaster object from /api/master to match PropertyInfo interface
+// The Prisma model uses `propertyNo` but the interface uses `propertyNumber`, etc.
+function normalizeProperty(raw: Record<string, unknown>): PropertyInfo {
+  // Parse boundaries JSON if it's a string
+  let boundaryData: Record<string, unknown> = {};
+  if (typeof raw.boundaries === 'string') {
+    try { boundaryData = JSON.parse(raw.boundaries); } catch { /* ignore */ }
+  }
+
+  // Parse floorInfo JSON if it's a string
+  let totalLength: number | undefined;
+  let totalWidth: number | undefined;
+  if (typeof raw.floorInfo === 'string') {
+    try {
+      const fi = JSON.parse(raw.floorInfo);
+      totalLength = fi.totalLength;
+      totalWidth = fi.totalWidth;
+    } catch { /* ignore */ }
+  }
+
+  const ward = raw.ward as Record<string, unknown> | null | undefined;
+  const road = raw.road as Record<string, unknown> | null | undefined;
+
+  return {
+    id: (raw.id as string) || '',
+    propertyNumber: (raw.propertyNo as string) || (raw.propertyNumber as string) || '',
+    area: raw.area != null ? Number(raw.area) : null,
+    builtUpArea: raw.builtUpArea != null ? Number(raw.builtUpArea) : null,
+    constructionType: (raw.constructionType as string) ?? null,
+    usageType: (raw.usageType as string) ?? (raw.propertyUse as string) ?? null,
+    citySurveyNo: (raw.citySurveyNo as string) ?? null,
+    boundaryEast: (boundaryData.boundaryEast as string) ?? undefined,
+    boundaryWest: (boundaryData.boundaryWest as string) ?? undefined,
+    boundarySouth: (boundaryData.boundarySouth as string) ?? undefined,
+    boundaryNorth: (boundaryData.boundaryNorth as string) ?? undefined,
+    lengthEast: boundaryData.lengthEast != null ? Number(boundaryData.lengthEast) : undefined,
+    widthEast: boundaryData.widthEast != null ? Number(boundaryData.widthEast) : undefined,
+    lengthWest: boundaryData.lengthWest != null ? Number(boundaryData.lengthWest) : undefined,
+    widthWest: boundaryData.widthWest != null ? Number(boundaryData.widthWest) : undefined,
+    lengthSouth: boundaryData.lengthSouth != null ? Number(boundaryData.lengthSouth) : undefined,
+    widthSouth: boundaryData.widthSouth != null ? Number(boundaryData.widthSouth) : undefined,
+    lengthNorth: boundaryData.lengthNorth != null ? Number(boundaryData.lengthNorth) : undefined,
+    widthNorth: boundaryData.widthNorth != null ? Number(boundaryData.widthNorth) : undefined,
+    totalLength,
+    totalWidth,
+    depreciationRate: raw.depreciationRate != null ? Number(raw.depreciationRate) : undefined,
+    usageFactor: raw.usageFactor != null ? Number(raw.usageFactor) : undefined,
+    taxRate: raw.taxRate != null ? Number(raw.taxRate) : undefined,
+    houseTax: raw.houseTax != null ? Number(raw.houseTax) : undefined,
+    lightTax: raw.lightTax != null ? Number(raw.lightTax) : undefined,
+    healthTax: raw.healthTax != null ? Number(raw.healthTax) : undefined,
+    waterTax: raw.waterTax != null ? Number(raw.waterTax) : undefined,
+    constructionDetails: (raw.constructionDetails as string) ?? undefined,
+    yearBuilt: (raw.yearBuilt as string) ?? undefined,
+    ward: ward ? {
+      wardNameMr: (ward.wardNameMr as string) ?? '',
+      wardNumber: (ward.wardNumber as string) ?? (ward.wardNo != null ? String(ward.wardNo) : ''),
+      wardName: (ward.wardName as string) ?? '',
+    } : undefined,
+    road: road ? {
+      roadNameMr: (road.roadNameMr as string) ?? '',
+      roadNumber: (road.roadNo as string) ?? (road.roadNumber as string) ?? '',
+      roadName: (road.roadName as string) ?? '',
+    } : undefined,
+    owners: Array.isArray(raw.owners)
+      ? raw.owners.map((o: Record<string, unknown>) => {
+          const ow = o.owner as Record<string, unknown> | null | undefined;
+          return {
+            owner: {
+              firstName: (ow?.firstName as string) ?? '',
+              lastName: (ow?.lastName as string) ?? '',
+              firstNameMr: (ow?.firstNameMr as string) ?? '',
+              lastNameMr: (ow?.lastNameMr as string) ?? '',
+            },
+            ownershipType: (o.ownershipType as string) ?? 'मालक',
+          };
+        })
+      : [],
+    taxRates: Array.isArray(raw.taxRates)
+      ? raw.taxRates.map((tr: Record<string, unknown>) => {
+          const tm = tr.taxMaster as Record<string, unknown> | null | undefined;
+          return {
+            taxMasterId: (tr.taxMasterId as string) ?? '',
+            rate: tr.rate != null ? Number(tr.rate) : 0,
+            taxMaster: {
+              name: (tm?.name as string) ?? '',
+              nameMarathi: (tm?.nameMarathi as string) ?? '',
+              isEnabled: tm?.isEnabled != null ? Boolean(tm.isEnabled) : true,
+              order: tm?.order != null ? Number(tm.order) : 0,
+              category: '',
+            },
+          };
+        })
+      : [],
+  };
+}
+
+// Normalize a raw Namuna8 record from /api/namuna8 to match Namuna8Record interface
+function normalizeRecord(raw: Record<string, unknown>): Namuna8Record {
+  return {
+    id: (raw.id as string) || '',
+    propertyId: (raw.propertyId as string) || '',
+    financialYear: (raw.financialYear as string) || '',
+    taxDetails: (raw.taxDetails as string) ?? '',
+    totalTax: raw.totalTax != null ? Number(raw.totalTax) : 0,
+    totalArea: raw.totalArea != null ? Number(raw.totalArea) : undefined,
+    landRate: raw.landRate != null ? Number(raw.landRate) : undefined,
+    buildingRate: raw.buildingRate != null ? Number(raw.buildingRate) : undefined,
+    constructionRate: raw.constructionRate != null ? Number(raw.constructionRate) : undefined,
+    depreciationRate: raw.depreciationRate != null ? Number(raw.depreciationRate) : undefined,
+    usageFactor: raw.usageFactor != null ? Number(raw.usageFactor) : undefined,
+    capitalValue: raw.capitalValue != null ? Number(raw.capitalValue) : undefined,
+    taxRatePercent: raw.taxRatePercent != null ? Number(raw.taxRatePercent) : undefined,
+    houseTaxAmt: raw.houseTaxAmt != null ? Number(raw.houseTaxAmt) : undefined,
+    lightTaxAmt: raw.lightTaxAmt != null ? Number(raw.lightTaxAmt) : undefined,
+    healthTaxAmt: raw.healthTaxAmt != null ? Number(raw.healthTaxAmt) : undefined,
+    waterTaxAmt: raw.waterTaxAmt != null ? Number(raw.waterTaxAmt) : undefined,
+    totalTaxAmt: raw.totalTaxAmt != null ? Number(raw.totalTaxAmt) : undefined,
+    constructionDetails: (raw.constructionDetails as string) ?? (raw.constructionDetailsStr as string) ?? undefined,
+    appealHouseTax: raw.appealHouseTax != null ? Number(raw.appealHouseTax) : undefined,
+    appealLightTax: raw.appealLightTax != null ? Number(raw.appealLightTax) : undefined,
+    appealHealthTax: raw.appealHealthTax != null ? Number(raw.appealHealthTax) : undefined,
+    appealWaterTax: raw.appealWaterTax != null ? Number(raw.appealWaterTax) : undefined,
+    appealTotalTax: raw.appealTotalTax != null ? Number(raw.appealTotalTax) : undefined,
+    remarks: (raw.remarks as string) ?? undefined,
+    property: normalizeProperty((raw.property as Record<string, unknown>) || {}),
+  };
+}
+
 // ===== CONSTANTS =====
 
 type ProcessStep = 'select' | 'fetch' | 'calculate' | 'generate';
@@ -160,12 +291,32 @@ export default function Namuna8Component() {
         fetch('/api/master?table=property'),
         fetch('/api/master?table=village'),
       ]);
-      const recData = await recRes.json();
-      setRecords(Array.isArray(recData) ? recData : []);
-      const propData = await propRes.json();
-      setProperties(Array.isArray(propData) ? propData : []);
-      const vd = await villageRes.json();
-      if (vd && !Array.isArray(vd)) setVillageInfo(vd);
+
+      // Safely parse and validate records - always ensure array
+      let normalizedRecords: Namuna8Record[] = [];
+      try {
+        const recData = await recRes.json();
+        if (Array.isArray(recData)) {
+          normalizedRecords = recData.map((r: Record<string, unknown>) => normalizeRecord(r));
+        }
+      } catch { /* ignore parse error, keep empty array */ }
+      setRecords(normalizedRecords);
+
+      // Safely parse and validate properties - always ensure array with normalization
+      let normalizedProps: PropertyInfo[] = [];
+      try {
+        const propData = await propRes.json();
+        if (Array.isArray(propData)) {
+          normalizedProps = propData.map((p: Record<string, unknown>) => normalizeProperty(p));
+        }
+      } catch { /* ignore parse error, keep empty array */ }
+      setProperties(normalizedProps);
+
+      // Safely parse village info
+      try {
+        const vd = await villageRes.json();
+        if (vd && !Array.isArray(vd)) setVillageInfo(vd as VillageInfo);
+      } catch { /* ignore parse error */ }
     } catch {
       toast({ title: 'त्रुटी', description: 'डेटा लोड अयशस्वी', variant: 'destructive' });
     } finally {
@@ -182,7 +333,7 @@ export default function Namuna8Component() {
     try {
       const res = await fetch('/api/namuna8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ propertyId: selectedPropertyId, financialYear }) });
       if (res.ok) { setActiveStep('generate'); toast({ title: 'यशस्वी', description: 'नमुना ८ तयार झाला' }); fetchData(); setTimeout(() => setActiveStep('select'), 2000); }
-      else { const err = await res.json(); toast({ title: 'त्रुटी', description: err.error, variant: 'destructive' }); setActiveStep('fetch'); }
+      else { let errMsg = 'नमुना ८ तयार करण्यात अयशस्वी'; try { const err = await res.json(); errMsg = err.error || errMsg; } catch { /* ignore */ } toast({ title: 'त्रुटी', description: errMsg, variant: 'destructive' }); setActiveStep('fetch'); }
     } catch { toast({ title: 'त्रुटी', description: 'नमुना ८ तयार करण्यात अयशस्वी', variant: 'destructive' }); setActiveStep('fetch'); }
     finally { setGenerating(false); }
   };
@@ -216,6 +367,7 @@ export default function Namuna8Component() {
 
   const parseCD = (s: string | null | undefined): ConstructionDetail[] => { try { return JSON.parse(s || '[]'); } catch { return []; } };
 
+  // records is always an array (initialized as [] and only set via Array.isArray check)
   const filtered = records.filter(r => {
     if (!searchTerm) return true;
     const s = searchTerm.toLowerCase();

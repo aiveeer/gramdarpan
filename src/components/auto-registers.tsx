@@ -179,15 +179,16 @@ export default function AutoRegisters({ initialTab }: AutoRegistersProps) {
     setSearchTerm('');
   }, [activeTab]);
 
-  // Filter entries by search term
-  const filteredRows = searchTerm && data?.rows
-    ? data.rows.filter(r => JSON.stringify(r).toLowerCase().includes(searchTerm.toLowerCase()))
-    : data?.rows || [];
+  // Filter entries by search term - always validate with Array.isArray
+  const rawRows = Array.isArray(data?.rows) ? data.rows : [];
+  const filteredRows = searchTerm
+    ? rawRows.filter(r => JSON.stringify(r).toLowerCase().includes(searchTerm.toLowerCase()))
+    : rawRows;
 
   // Column keys derived from rows
-  const columnKeys: string[] = data?.rows?.[0] ? Object.keys(data.rows[0]) : [];
+  const columnKeys: string[] = Array.isArray(data?.rows) && data.rows.length > 0 ? Object.keys(data.rows[0]) : [];
   const columnTypes: Record<string, string> = {};
-  if (data?.headers) {
+  if (Array.isArray(data?.headers)) {
     data.headers.forEach((h, i) => {
       if (columnKeys[i]) {
         columnTypes[columnKeys[i]] = detectColumnType(h);
@@ -320,9 +321,9 @@ export default function AutoRegisters({ initialTab }: AutoRegistersProps) {
   // ─── CSV Export Handler ─────────────────────────────────────────────
 
   const handleExport = () => {
-    if (!data || filteredRows.length === 0) return;
+    if (!data || !Array.isArray(filteredRows) || filteredRows.length === 0) return;
 
-    const headers = data.headers.map(h => `"${h}"`).join(',');
+    const headers = (Array.isArray(data.headers) ? data.headers : []).map(h => `"${h}"`).join(',');
     const rows = filteredRows.map(row =>
       columnKeys.map(key => {
         const val = row[key];
@@ -349,7 +350,7 @@ export default function AutoRegisters({ initialTab }: AutoRegistersProps) {
     if (!data?.totals) return null;
 
     const cards: Array<{ label: string; value: string; icon: React.ElementType; color: string; subtext?: string }> = [];
-    const t = data.totals;
+    const t = data.totals || {};
 
     switch (activeTab) {
       case 'cash-book':
@@ -393,8 +394,8 @@ export default function AutoRegisters({ initialTab }: AutoRegistersProps) {
       case 'trial-balance':
       case 'dcb':
       case 'salary':
-        // Generic summary from totals object
-        Object.entries(t).forEach(([key, val]) => {
+        // Generic summary from totals object - safely iterate
+        Object.entries(t || {}).forEach(([key, val]) => {
           if (typeof val === 'number' && val !== 0 && key !== 'totalEntries' && key !== 'totalAccounts' && key !== 'totalItems' && key !== 'totalAssets' && key !== 'inStockCount' && key !== 'totalDays') {
             cards.push({
               label: key.replace(/([A-Z])/g, ' $1').trim(),
@@ -501,7 +502,7 @@ export default function AutoRegisters({ initialTab }: AutoRegistersProps) {
       );
     }
 
-    const headers = data.headers || [];
+    const headers = Array.isArray(data.headers) ? data.headers : [];
     const keys = columnKeys;
 
     return (

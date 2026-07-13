@@ -186,7 +186,11 @@ export default function Namuna1Component() {
       const propData = await propRes.json();
       setProperties(Array.isArray(propData) ? propData : []);
       const village = await villageRes.json();
-      setVillageInfo(village);
+      if (village && typeof village === 'object' && !Array.isArray(village)) {
+        setVillageInfo(village);
+      } else {
+        setVillageInfo(null);
+      }
     } catch {
       toast({ title: 'त्रुटी', description: 'डेटा लोड अयशस्वी', variant: 'destructive' });
     } finally {
@@ -215,16 +219,21 @@ export default function Namuna1Component() {
     try {
       const res = await fetch(`/api/namuna9?search=${encodeURIComponent(searchTerm)}`);
       const data = await res.json();
-      setSearchResults(data);
-      if (data.length > 0) {
-        setSelectedPropertyId(data[0].id);
-        toast({
-          title: '✅ शोध यशस्वी',
-          description: `${data.length} मालमत्ता सापडल्या`,
-          className: 'border-cyan-300 bg-cyan-50',
-        });
+      if (Array.isArray(data)) {
+        setSearchResults(data);
+        if (data.length > 0) {
+          setSelectedPropertyId(data[0].id);
+          toast({
+            title: '✅ शोध यशस्वी',
+            description: `${data.length} मालमत्ता सापडल्या`,
+            className: 'border-cyan-300 bg-cyan-50',
+          });
+        } else {
+          toast({ title: 'शोध निकाल', description: 'कोणतीही मालमत्ता सापडली नाही', variant: 'destructive' });
+        }
       } else {
-        toast({ title: 'शोध निकाल', description: 'कोणतीही मालमत्ता सापडली नाही', variant: 'destructive' });
+        setSearchResults([]);
+        toast({ title: 'त्रुटी', description: 'शोध डेटा लोड करताना त्रुटी आली', variant: 'destructive' });
       }
     } catch {
       toast({ title: 'त्रुटी', description: 'शोध अयशस्वी', variant: 'destructive' });

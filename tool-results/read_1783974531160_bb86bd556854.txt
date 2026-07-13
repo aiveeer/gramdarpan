@@ -1,0 +1,1791 @@
+     1→import { NextRequest, NextResponse } from 'next/server';
+     2→import { db } from '@/lib/db';
+     3→
+     4→// Helper: round to 2 decimal places
+     5→const r2 = (n: number) => Math.round(n * 100) / 100;
+     6→
+     7→// Helper: group array by key
+     8→function groupBy<T>(arr: T[], key: keyof T): Record<string, number> {
+     9→  const result: Record<string, number> = {};
+    10→  for (const item of arr) {
+    11→    const k = String(item[key] ?? 'Other');
+    12→    result[k] = (result[k] || 0) + 1;
+    13→  }
+    14→  return result;
+    15→}
+    16→
+    17→// Helper: group and sum
+    18→function groupAndSum<T>(arr: T[], groupKey: keyof T, sumKey: keyof T): { key: string; total: number }[] {
+    19→  const map = new Map<string, number>();
+    20→  for (const item of arr) {
+    21→    const k = String(item[groupKey] ?? 'Unassigned');
+    22→    const v = Number(item[sumKey] ?? 0);
+    23→    map.set(k, (map.get(k) || 0) + v);
+    24→  }
+    25→  return Array.from(map.entries()).map(([key, total]) => ({ key, total: r2(total) }));
+    26→}
+    27→
+    28→export async function GET(request: NextRequest) {
+    29→  const { searchParams } = new URL(request.url);
+    30→  const namuna = searchParams.get('namuna') || '1';
+    31→  const financialYear = searchParams.get('financialYear') || '2024-25';
+    32→
+    33→  try {
+    34→    // Summary endpoint
+    35→    if (namuna === 'all') {
+    36→      return await generateSummary(financialYear);
+    37→    }
+    38→
+    39→    const namunaNum = parseInt(namuna, 10);
+    40→    if (isNaN(namunaNum) || namunaNum < 1 || namunaNum > 33) {
+    41→      return NextResponse.json({ error: 'Invalid namuna number. Must be 1-33 or "all"' }, { status: 400 });
+    42→    }
+    43→
+    44→    let data;
+    45→    switch (namunaNum) {
+    46→      case 1: data = await generateNamuna1(financialYear); break;
+    47→      case 2: data = await generateNamuna2(financialYear); break;
+    48→      case 3: data = await generateNamuna3(financialYear); break;
+    49→      case 4: data = await generateNamuna4(financialYear); break;
+    50→      case 5: data = await generateNamuna5(financialYear); break;
+    51→      case 6: data = await generateNamuna6(financialYear); break;
+    52→      case 7: data = await generateNamuna7(financialYear); break;
+    53→      case 8: data = await generateNamuna8(financialYear); break;
+    54→      case 9: data = await generateNamuna9(financialYear); break;
+    55→      case 10: data = await generateNamuna10(financialYear); break;
+    56→      case 11: data = await generateNamuna11(financialYear); break;
+    57→      case 12: data = await generateNamuna12(financialYear); break;
+    58→      case 13: data = await generateNamuna13(financialYear); break;
+    59→      case 14: data = await generateNamuna14(financialYear); break;
+    60→      case 15: data = await generateNamuna15(financialYear); break;
+    61→      case 16: data = await generateNamuna16(financialYear); break;
+    62→      case 17: data = await generateNamuna17(financialYear); break;
+    63→      case 18: data = await generateNamuna18(financialYear); break;
+    64→      case 19: data = await generateNamuna19(financialYear); break;
+    65→      case 20: data = await generateNamuna20(financialYear); break;
+    66→      case 21: data = await generateNamuna21(financialYear); break;
+    67→      case 22: data = await generateNamuna22(financialYear); break;
+    68→      case 23: data = await generateNamuna23(financialYear); break;
+    69→      case 24: data = await generateNamuna24(financialYear); break;
+    70→      case 25: data = await generateNamuna25(financialYear); break;
+    71→      case 26: data = await generateNamuna26(financialYear); break;
+    72→      case 27: data = await generateNamuna27(financialYear); break;
+    73→      case 28: data = await generateNamuna28(financialYear); break;
+    74→      case 29: data = await generateNamuna29(financialYear); break;
+    75→      case 30: data = await generateNamuna30(financialYear); break;
+    76→      case 31: data = await generateNamuna31(financialYear); break;
+    77→      case 32: data = await generateNamuna32(financialYear); break;
+    78→      case 33: data = await generateNamuna33(financialYear); break;
+    79→      default: data = { error: 'Invalid namuna number' };
+    80→    }
+    81→    return NextResponse.json(data);
+    82→  } catch (error) {
+    83→    console.error('Auto-generate error:', error);
+    84→    return NextResponse.json({ error: String(error) }, { status: 500 });
+    85→  }
+    86→}
+    87→
+    88→// ============================================================
+    89→// NAMUNA 1 - अंदाजपत्रक मालमत्ता पत्र (Budget Assets Sheet)
+    90→// Budget data grouped by income/expenditure heads from BudgetEntry
+    91→// ============================================================
+    92→async function generateNamuna1(fy: string) {
+    93→  const [budgetEntries, village] = await Promise.all([
+    94→    db.budgetEntry.findMany({ where: { financialYear: fy }, orderBy: { budgetHeadCode: 'asc' } }),
+    95→    db.villageInfo.findFirst(),
+    96→  ]);
+    97→
+    98→  const incomeEntries = budgetEntries.filter(b => b.category === 'income');
+    99→  const expenditureEntries = budgetEntries.filter(b => b.category === 'expenditure');
+   100→
+   101→  const rows = budgetEntries.map(b => ({
+   102→    code: b.budgetHeadCode,
+   103→    name: b.budgetHeadName || '',
+   104→    nameMr: b.budgetHeadNameMr || '',
+   105→    category: b.category,
+   106→    type: b.type,
+   107→    originalBudget: b.originalBudget,
+   108→    revisedBudget: b.revisedBudget,
+   109→    actualAmount: b.actualAmount,
+   110→    variance: r2((b.revisedBudget || b.originalBudget) - b.actualAmount),
+   111→  }));
+   112→
+   113→  return {
+   114→    title: 'नमुना १ - अंदाजपत्रक मालमत्ता पत्र',
+   115→    titleEn: 'Namuna 1 - Budget Assets Sheet',
+   116→    headers: ['खाते कोड', 'खाते नाव', 'श्रेणी', 'प्रकार', 'मूळ अंदाज (₹)', 'दुरुस्तीत अंदाज (₹)', 'वास्तव रक्कम (₹)', 'फरक (₹)'],
+   117→    rows,
+   118→    totals: {
+   119→      totalOriginalBudget: r2(budgetEntries.reduce((s, b) => s + b.originalBudget, 0)),
+   120→      totalRevisedBudget: r2(budgetEntries.reduce((s, b) => s + b.revisedBudget, 0)),
+   121→      totalActualAmount: r2(budgetEntries.reduce((s, b) => s + b.actualAmount, 0)),
+   122→      incomeOriginal: r2(incomeEntries.reduce((s, b) => s + b.originalBudget, 0)),
+   123→      expenditureOriginal: r2(expenditureEntries.reduce((s, b) => s + b.originalBudget, 0)),
+   124→    },
+   125→    meta: { village, financialYear: fy, totalEntries: budgetEntries.length },
+   126→  };
+   127→}
+   128→
+   129→// ============================================================
+   130→// NAMUNA 2 - अंदाजपत्रक उत्पन्न व खर्च (Budget Income vs Expenditure)
+   131→// ============================================================
+   132→async function generateNamuna2(fy: string) {
+   133→  const [budgetEntries, village] = await Promise.all([
+   134→    db.budgetEntry.findMany({ where: { financialYear: fy }, orderBy: [{ category: 'asc' }, { budgetHeadCode: 'asc' }] }),
+   135→    db.villageInfo.findFirst(),
+   136→  ]);
+   137→
+   138→  const incomeRows = budgetEntries.filter(b => b.category === 'income').map(b => ({
+   139→    code: b.budgetHeadCode,
+   140→    name: b.budgetHeadName || '',
+   141→    nameMr: b.budgetHeadNameMr || '',
+   142→    type: b.type,
+   143→    budget: b.revisedBudget || b.originalBudget,
+   144→    actual: b.actualAmount,
+   145→    variance: r2((b.revisedBudget || b.originalBudget) - b.actualAmount),
+   146→  }));
+   147→
+   148→  const expenditureRows = budgetEntries.filter(b => b.category === 'expenditure').map(b => ({
+   149→    code: b.budgetHeadCode,
+   150→    name: b.budgetHeadName || '',
+   151→    nameMr: b.budgetHeadNameMr || '',
+   152→    type: b.type,
+   153→    budget: b.revisedBudget || b.originalBudget,
+   154→    actual: b.actualAmount,
+   155→    variance: r2((b.revisedBudget || b.originalBudget) - b.actualAmount),
+   156→  }));
+   157→
+   158→  const totalIncomeBudget = incomeRows.reduce((s, r) => s + r.budget, 0);
+   159→  const totalIncomeActual = incomeRows.reduce((s, r) => s + r.actual, 0);
+   160→  const totalExpenditureBudget = expenditureRows.reduce((s, r) => s + r.budget, 0);
+   161→  const totalExpenditureActual = expenditureRows.reduce((s, r) => s + r.actual, 0);
+   162→
+   163→  return {
+   164→    title: 'नमुना २ - अंदाजपत्रक उत्पन्न व खर्च',
+   165→    titleEn: 'Namuna 2 - Budget Income vs Expenditure',
+   166→    headers: ['खाते कोड', 'खाते नाव', 'प्रकार', 'अंदाज (₹)', 'वास्तव (₹)', 'फरक (₹)'],
+   167→    incomeRows,
+   168→    expenditureRows,
+   169→    totals: {
+   170→      totalIncomeBudget: r2(totalIncomeBudget),
+   171→      totalIncomeActual: r2(totalIncomeActual),
+   172→      totalExpenditureBudget: r2(totalExpenditureBudget),
+   173→      totalExpenditureActual: r2(totalExpenditureActual),
+   174→      surplusBudget: r2(totalIncomeBudget - totalExpenditureBudget),
+   175→      surplusActual: r2(totalIncomeActual - totalExpenditureActual),
+   176→    },
+   177→    meta: { village, financialYear: fy },
+   178→  };
+   179→}
+   180→
+   181→// ============================================================
+   182→// NAMUNA 3 - रोकड वही (Cash Book)
+   183→// All ReceiptEntry + PaymentEntry sorted by date with running balance
+   184→// ============================================================
+   185→async function generateNamuna3(fy: string) {
+   186→  const [receipts, payments, village] = await Promise.all([
+   187→    db.receiptEntry.findMany({ where: { financialYear: fy }, orderBy: { receiptDate: 'asc' } }),
+   188→    db.paymentEntry.findMany({ where: { financialYear: fy }, orderBy: { paymentDate: 'asc' } }),
+   189→    db.villageInfo.findFirst(),
+   190→  ]);
+   191→
+   192→  const allEntries = [
+   193→    ...receipts.map(r => ({
+   194→      date: r.receiptDate,
+   195→      voucher: r.voucherNumber,
+   196→      type: 'Receipt' as const,
+   197→      typeMr: 'जमा',
+   198→      particulars: r.receivedFrom || r.description || '',
+   199→      debit: r.amount,
+   200→      credit: 0,
+   201→      head: r.headOfAccount || '',
+   202→      headMr: r.headOfAccountMr || '',
+   203→      paymentMethod: r.paymentMethod,
+   204→    })),
+   205→    ...payments.map(p => ({
+   206→      date: p.paymentDate,
+   207→      voucher: p.voucherNumber,
+   208→      type: 'Payment' as const,
+   209→      typeMr: 'नामे',
+   210→      particulars: p.paidTo || p.description || '',
+   211→      debit: 0,
+   212→      credit: p.amount,
+   213→      head: p.headOfAccount || '',
+   214→      headMr: p.headOfAccountMr || '',
+   215→      paymentMethod: p.paymentMethod,
+   216→    })),
+   217→  ].sort((a, b) => a.date.localeCompare(b.date));
+   218→
+   219→  let balance = 0;
+   220→  const rows = allEntries.map(e => {
+   221→    balance += e.debit - e.credit;
+   222→    return { ...e, balance: r2(balance) };
+   223→  });
+   224→
+   225→  const totalDebit = allEntries.reduce((s, e) => s + e.debit, 0);
+   226→  const totalCredit = allEntries.reduce((s, e) => s + e.credit, 0);
+   227→
+   228→  return {
+   229→    title: 'नमुना ३ - रोकड वही',
+   230→    titleEn: 'Namuna 3 - Cash Book',
+   231→    headers: ['दिनांक', 'वाउचर क्र.', 'प्रकार', 'विवरण', 'जमा (₹)', 'नामे (₹)', 'शिल्लक (₹)', 'खाते शीर्ष'],
+   232→    rows,
+   233→    totals: {
+   234→      totalDebit: r2(totalDebit),
+   235→      totalCredit: r2(totalCredit),
+   236→      closingBalance: r2(balance),
+   237→      receiptCount: receipts.length,
+   238→      paymentCount: payments.length,
+   239→    },
+   240→    meta: { village, financialYear: fy },
+   241→  };
+   242→}
+   243→
+   244→// ============================================================
+   245→// NAMUNA 4 - बँक वही (Bank Book)
+   246→// ============================================================
+   247→async function generateNamuna4(fy: string) {
+   248→  const [bankReceipts, bankPayments, bankAccounts, village] = await Promise.all([
+   249→    db.receiptEntry.findMany({
+   250→      where: { financialYear: fy, bankAccountId: { not: null } },
+   251→      orderBy: { receiptDate: 'asc' },
+   252→    }),
+   253→    db.paymentEntry.findMany({
+   254→      where: { financialYear: fy, bankAccountId: { not: null } },
+   255→      orderBy: { paymentDate: 'asc' },
+   256→    }),
+   257→    db.bankAccount.findMany({ where: { isActive: true } }),
+   258→    db.villageInfo.findFirst(),
+   259→  ]);
+   260→
+   261→  const bankMap = new Map(bankAccounts.map(b => [b.id, b]));
+   262→
+   263→  const allEntries = [
+   264→    ...bankReceipts.map(r => ({
+   265→      date: r.receiptDate,
+   266→      voucher: r.voucherNumber,
+   267→      type: 'Deposit' as const,
+   268→      typeMr: 'ठेव',
+   269→      particulars: r.receivedFrom || r.description || '',
+   270→      deposit: r.amount,
+   271→      withdrawal: 0,
+   272→      bankName: r.bankAccountId ? bankMap.get(r.bankAccountId)?.bankName || '' : '',
+   273→      accountNumber: r.bankAccountId ? bankMap.get(r.bankAccountId)?.accountNumber || '' : '',
+   274→      chequeNumber: r.chequeNumber || '',
+   275→    })),
+   276→    ...bankPayments.map(p => ({
+   277→      date: p.paymentDate,
+   278→      voucher: p.voucherNumber,
+   279→      type: 'Withdrawal' as const,
+   280→      typeMr: 'उधार',
+   281→      particulars: p.paidTo || p.description || '',
+   282→      deposit: 0,
+   283→      withdrawal: p.amount,
+   284→      bankName: p.bankAccountId ? bankMap.get(p.bankAccountId)?.bankName || '' : '',
+   285→      accountNumber: p.bankAccountId ? bankMap.get(p.bankAccountId)?.accountNumber || '' : '',
+   286→      chequeNumber: p.chequeNumber || '',
+   287→    })),
+   288→  ].sort((a, b) => a.date.localeCompare(b.date));
+   289→
+   290→  let balance = 0;
+   291→  const rows = allEntries.map(e => {
+   292→    balance += e.deposit - e.withdrawal;
+   293→    return { ...e, balance: r2(balance) };
+   294→  });
+   295→
+   296→  const totalDeposits = allEntries.reduce((s, e) => s + e.deposit, 0);
+   297→  const totalWithdrawals = allEntries.reduce((s, e) => s + e.withdrawal, 0);
+   298→
+   299→  return {
+   300→    title: 'नमुना ४ - बँक वही',
+   301→    titleEn: 'Namuna 4 - Bank Book',
+   302→    headers: ['दिनांक', 'वाउचर क्र.', 'प्रकार', 'विवरण', 'ठेव (₹)', 'उधार (₹)', 'शिल्लक (₹)', 'बँक', 'चेक क्र.'],
+   303→    rows,
+   304→    totals: {
+   305→      totalDeposits: r2(totalDeposits),
+   306→      totalWithdrawals: r2(totalWithdrawals),
+   307→      closingBalance: r2(balance),
+   308→      bankCount: bankAccounts.length,
+   309→    },
+   310→    meta: { village, financialYear: fy, bankAccounts },
+   311→  };
+   312→}
+   313→
+   314→// ============================================================
+   315→// NAMUNA 5 - मालमत्ता रजिस्टर (Asset Register)
+   316→// ============================================================
+   317→async function generateNamuna5(fy: string) {
+   318→  const [assets, village] = await Promise.all([
+   319→    db.assetEntry.findMany({ orderBy: { assetNumber: 'asc' } }),
+   320→    db.villageInfo.findFirst(),
+   321→  ]);
+   322→
+   323→  const rows = assets.map(a => {
+   324→    const depRate = a.depreciationRate || 10;
+   325→    const age = a.purchaseDate ? Math.max(0, new Date().getFullYear() - new Date(a.purchaseDate).getFullYear()) : 0;
+   326→    const depreciatedValue = a.purchaseCost * Math.pow(1 - depRate / 100, age);
+   327→    const totalDepreciation = a.purchaseCost - depreciatedValue;
+   328→
+   329→    return {
+   330→      assetNumber: a.assetNumber,
+   331→      assetName: a.assetName,
+   332→      assetNameMr: a.assetNameMr,
+   333→      assetType: a.assetType || 'Other',
+   334→      purchaseDate: a.purchaseDate || '',
+   335→      purchaseCost: a.purchaseCost,
+   336→      depreciationRate: depRate,
+   337→      age,
+   338→      totalDepreciation: r2(totalDepreciation),
+   339→      currentValue: r2(Math.max(depreciatedValue, a.currentValue)),
+   340→      location: a.location || '',
+   341→      status: a.status,
+   342→    };
+   343→  });
+   344→
+   345→  return {
+   346→    title: 'नमुना ५ - मालमत्ता रजिस्टर',
+   347→    titleEn: 'Namuna 5 - Asset Register',
+   348→    headers: ['मालमत्ता क्र.', 'नाव', 'प्रकार', 'खरेदी दिनांक', 'खरेदी किंमत (₹)', 'घसारा दर %', 'वय', 'एकूण घसारा (₹)', 'चलन किंमत (₹)', 'स्थिती'],
+   349→    rows,
+   350→    totals: {
+   351→      totalAssets: assets.length,
+   352→      totalPurchaseCost: r2(rows.reduce((s, r) => s + r.purchaseCost, 0)),
+   353→      totalDepreciation: r2(rows.reduce((s, r) => s + r.totalDepreciation, 0)),
+   354→      totalCurrentValue: r2(rows.reduce((s, r) => s + r.currentValue, 0)),
+   355→      byType: groupBy(assets, 'assetType'),
+   356→      byStatus: groupBy(assets, 'status'),
+   357→    },
+   358→    meta: { village, financialYear: fy },
+   359→  };
+   360→}
+   361→
+   362→// ============================================================
+   363→// NAMUNA 6 - साठा रजिस्टर (Stock Register)
+   364→// ============================================================
+   365→async function generateNamuna6(fy: string) {
+   366→  const [stocks, village] = await Promise.all([
+   367→    db.stockEntry.findMany({ orderBy: { stockNumber: 'asc' } }),
+   368→    db.villageInfo.findFirst(),
+   369→  ]);
+   370→
+   371→  const rows = stocks.map(s => ({
+   372→    stockNumber: s.stockNumber,
+   373→    itemName: s.itemName,
+   374→    itemNameMr: s.itemNameMr,
+   375→    category: s.category || 'Other',
+   376→    quantity: s.quantity,
+   377→    unit: s.unit || '',
+   378→    unitPrice: s.unitPrice,
+   379→    totalValue: s.totalValue,
+   380→    receivedDate: s.receivedDate || '',
+   381→    issuedDate: s.issuedDate || '',
+   382→    issuedTo: s.issuedTo || '',
+   383→    status: s.status,
+   384→  }));
+   385→
+   386→  return {
+   387→    title: 'नमुना ६ - साठा रजिस्टर',
+   388→    titleEn: 'Namuna 6 - Stock Register',
+   389→    headers: ['साठा क्र.', 'वस्तूचे नाव', 'वर्ग', 'प्रमाण', 'एकक', 'एकक किंमत (₹)', 'एकूण मूल्य (₹)', 'प्राप्ती दिनांक', 'जारी दिनांक', 'जारी कोणाला', 'स्थिती'],
+   390→    rows,
+   391→    totals: {
+   392→      totalItems: stocks.length,
+   393→      totalValue: r2(stocks.reduce((s, st) => s + st.totalValue, 0)),
+   394→      totalQuantity: stocks.reduce((s, st) => s + st.quantity, 0),
+   395→      inStockCount: stocks.filter(s => s.status === 'In Stock').length,
+   396→      byCategory: groupBy(stocks, 'category'),
+   397→      byStatus: groupBy(stocks, 'status'),
+   398→    },
+   399→    meta: { village, financialYear: fy },
+   400→  };
+   401→}
+   402→
+   403→// ============================================================
+   404→// NAMUNA 7 - अनुदान नोंदवही (Grant Register)
+   405→// ============================================================
+   406→async function generateNamuna7(fy: string) {
+   407→  const [schemeFunds, schemes, village] = await Promise.all([
+   408→    db.schemeFundEntry.findMany({ where: { financialYear: fy }, orderBy: { entryDate: 'asc' } }),
+   409→    db.schemeInfo.findMany(),
+   410→    db.villageInfo.findFirst(),
+   411→  ]);
+   412→
+   413→  const schemeMap = new Map(schemes.map(s => [s.id, s]));
+   414→
+   415→  const rows = schemeFunds.map(sf => ({
+   416→    voucherNumber: sf.voucherNumber,
+   417→    date: sf.entryDate,
+   418→    schemeName: sf.schemeId ? schemeMap.get(sf.schemeId)?.schemeName || '' : '',
+   419→    schemeNameMr: sf.schemeId ? schemeMap.get(sf.schemeId)?.schemeNameMr || '' : '',
+   420→    entryType: sf.entryType,
+   421→    entryTypeMr: sf.entryType === 'Receipt' ? 'प्राप्ती' : 'अर्ज',
+   422→    amount: sf.amount,
+   423→    description: sf.description || '',
+   424→  }));
+   425→
+   426→  const byScheme = new Map<string, { name: string; nameMr: string; receipts: number; payments: number }>();
+   427→  for (const sf of schemeFunds) {
+   428→    const key = sf.schemeId || 'none';
+   429→    const scheme = sf.schemeId ? schemeMap.get(sf.schemeId) : null;
+   430→    if (!byScheme.has(key)) {
+   431→      byScheme.set(key, { name: scheme?.schemeName || 'Unassigned', nameMr: scheme?.schemeNameMr || '', receipts: 0, payments: 0 });
+   432→    }
+   433→    const entry = byScheme.get(key)!;
+   434→    if (sf.entryType === 'Receipt') entry.receipts += sf.amount;
+   435→    else entry.payments += sf.amount;
+   436→  }
+   437→
+   438→  const totalReceipts = schemeFunds.filter(sf => sf.entryType === 'Receipt').reduce((s, sf) => s + sf.amount, 0);
+   439→  const totalPayments = schemeFunds.filter(sf => sf.entryType === 'Payment').reduce((s, sf) => s + sf.amount, 0);
+   440→
+   441→  return {
+   442→    title: 'नमुना ७ - अनुदान नोंदवही',
+   443→    titleEn: 'Namuna 7 - Grant Register',
+   444→    headers: ['वाउचर क्र.', 'दिनांक', 'योजना', 'प्रकार', 'रक्कम (₹)', 'विवरण'],
+   445→    rows,
+   446→    totals: {
+   447→      totalEntries: schemeFunds.length,
+   448→      totalReceipts: r2(totalReceipts),
+   449→      totalPayments: r2(totalPayments),
+   450→      balance: r2(totalReceipts - totalPayments),
+   451→      byScheme: Array.from(byScheme.entries()).map(([id, v]) => ({ id, ...v, balance: r2(v.receipts - v.payments) })),
+   452→    },
+   453→    meta: { village, financialYear: fy },
+   454→  };
+   455→}
+   456→
+   457→// ============================================================
+   458→// NAMUNA 8 - कर आकारणी (Tax Assessment)
+   459→// ============================================================
+   460→async function generateNamuna8(fy: string) {
+   461→  const [namuna8s, village] = await Promise.all([
+   462→    db.namuna8.findMany({
+   463→      where: { financialYear: fy },
+   464→      include: { property: { include: { ward: true, owners: { include: { owner: true } } } } },
+   465→      orderBy: { createdAt: 'desc' },
+   466→    }),
+   467→    db.villageInfo.findFirst(),
+   468→  ]);
+   469→
+   470→  const rows = namuna8s.map(n => {
+   471→    const primaryOwner = n.property.owners.find(o => o.ownershipType === 'मालक') || n.property.owners[0];
+   472→    return {
+   473→      propertyNumber: n.property.propertyNumber,
+   474→      ownerName: primaryOwner?.owner ? `${primaryOwner.owner.firstNameMr || primaryOwner.owner.firstName} ${primaryOwner.owner.lastNameMr || primaryOwner.owner.lastName}` : '',
+   475→      wardName: n.property.ward?.wardNameMr || n.property.ward?.wardName || '',
+   476→      constructionType: n.property.constructionType || '',
+   477→      usageType: n.property.usageType || '',
+   478→      area: n.property.area || 0,
+   479→      capitalValue: n.capitalValue || 0,
+   480→      houseTax: n.houseTaxAmt || 0,
+   481→      lightTax: n.lightTaxAmt || 0,
+   482→      healthTax: n.healthTaxAmt || 0,
+   483→      waterTax: n.waterTaxAmt || 0,
+   484→      totalTax: n.totalTaxAmt || n.totalTax,
+   485→    };
+   486→  });
+   487→
+   488→  return {
+   489→    title: 'नमुना ८ - कर आकारणी नोंदवही',
+   490→    titleEn: 'Namuna 8 - Tax Assessment Register',
+   491→    headers: ['मालमत्ता क्र.', 'मालक', 'वार्ड', 'बांधकाम', 'वापर', 'क्षेत्रफळ', 'भांडवली मूल्य (₹)', 'गृहकर (₹)', 'दिवाबती (₹)', 'आरोग्य (₹)', 'पाणी (₹)', 'एकूण कर (₹)'],
+   492→    rows,
+   493→    totals: {
+   494→      totalEntries: namuna8s.length,
+   495→      totalTax: r2(namuna8s.reduce((s, n) => s + (n.totalTaxAmt || n.totalTax), 0)),
+   496→      totalHouseTax: r2(namuna8s.reduce((s, n) => s + (n.houseTaxAmt || 0), 0)),
+   497→      totalLightTax: r2(namuna8s.reduce((s, n) => s + (n.lightTaxAmt || 0), 0)),
+   498→      totalHealthTax: r2(namuna8s.reduce((s, n) => s + (n.healthTaxAmt || 0), 0)),
+   499→      totalWaterTax: r2(namuna8s.reduce((s, n) => s + (n.waterTaxAmt || 0), 0)),
+   500→    },
+   501→    meta: { village, financialYear: fy },
+   502→  };
+   503→}
+   504→
+   505→// ============================================================
+   506→// NAMUNA 9 - मागणी नोंदवही (Demand Register)
+   507→// ============================================================
+   508→async function generateNamuna9(fy: string) {
+   509→  const [namuna9s, village] = await Promise.all([
+   510→    db.namuna9.findMany({
+   511→      where: { financialYear: fy },
+   512→      include: { property: { include: { ward: true, owners: { include: { owner: true } } } }, payments: true },
+   513→      orderBy: { createdAt: 'desc' },
+   514→    }),
+   515→    db.villageInfo.findFirst(),
+   516→  ]);
+   517→
+   518→  const rows = namuna9s.map(n => {
+   519→    const primaryOwner = n.property.owners.find(o => o.ownershipType === 'मालक') || n.property.owners[0];
+   520→    const totalPaid = n.payments.reduce((s, p) => s + p.amountPaid, 0);
+   521→    return {
+   522→      propertyNumber: n.property.propertyNumber,
+   523→      ownerName: primaryOwner?.owner ? `${primaryOwner.owner.firstNameMr || primaryOwner.owner.firstName} ${primaryOwner.owner.lastNameMr || primaryOwner.owner.lastName}` : '',
+   524→      wardName: n.property.ward?.wardNameMr || n.property.ward?.wardName || '',
+   525→      currentTax: n.currentTax,
+   526→      previousBalance: n.previousBalance,
+   527→      penalty: n.penalty,
+   528→      interest: n.interest,
+   529→      totalDemand: n.totalDemand,
+   530→      totalPaid: r2(totalPaid),
+   531→      outstanding: r2(n.totalDemand - totalPaid),
+   532→    };
+   533→  });
+   534→
+   535→  return {
+   536→    title: 'नमुना ९ - मागणी नोंदवही',
+   537→    titleEn: 'Namuna 9 - Demand Register',
+   538→    headers: ['मालमत्ता क्र.', 'मालक', 'वार्ड', 'चालू कर (₹)', 'मागील थकबाकी (₹)', 'दंड (₹)', 'व्याज (₹)', 'एकूण मागणी (₹)', 'वसूल (₹)', 'शिल्लक (₹)'],
+   539→    rows,
+   540→    totals: {
+   541→      totalEntries: namuna9s.length,
+   542→      totalDemand: r2(rows.reduce((s, r) => s + r.totalDemand, 0)),
+   543→      totalPaid: r2(rows.reduce((s, r) => s + r.totalPaid, 0)),
+   544→      totalOutstanding: r2(rows.reduce((s, r) => s + r.outstanding, 0)),
+   545→    },
+   546→    meta: { village, financialYear: fy },
+   547→  };
+   548→}
+   549→
+   550→// ============================================================
+   551→// NAMUNA 10 - थकबाकी/DCB (Demand Collection Balance)
+   552→// ============================================================
+   553→async function generateNamuna10(fy: string) {
+   554→  const [demands, village] = await Promise.all([
+   555→    db.namuna9.findMany({
+   556→      where: { financialYear: fy },
+   557→      include: { property: { include: { owners: { include: { owner: true } }, ward: true } }, payments: true },
+   558→    }),
+   559→    db.villageInfo.findFirst(),
+   560→  ]);
+   561→
+   562→  const paymentMap = new Map<string, number>();
+   563→  for (const d of demands) {
+   564→    const totalPaid = d.payments.reduce((s, p) => s + p.amountPaid, 0);
+   565→    paymentMap.set(d.id, totalPaid);
+   566→  }
+   567→
+   568→  const rows = demands.map(d => {
+   569→    const collected = paymentMap.get(d.id) || 0;
+   570→    const balance = d.totalDemand - collected;
+   571→    const primaryOwner = d.property.owners.find(o => o.ownershipType === 'मालक') || d.property.owners[0];
+   572→    return {
+   573→      propertyNumber: d.property.propertyNumber,
+   574→      ownerName: primaryOwner?.owner?.firstNameMr || primaryOwner?.owner?.firstName || '-',
+   575→      wardName: d.property.ward?.wardNameMr || '-',
+   576→      demand: d.totalDemand,
+   577→      collected: r2(collected),
+   578→      balance: r2(balance),
+   579→    };
+   580→  });
+   581→
+   582→  return {
+   583→    title: 'नमुना १० - मागणी, वसूल व शिल्लक',
+   584→    titleEn: 'Namuna 10 - DCB (Demand Collection Balance)',
+   585→    headers: ['मालमत्ता क्र.', 'मालक', 'वार्ड', 'मागणी (₹)', 'वसूल (₹)', 'शिल्लक (₹)'],
+   586→    rows,
+   587→    totals: {
+   588→      totalDemand: r2(rows.reduce((s, r) => s + r.demand, 0)),
+   589→      totalCollected: r2(rows.reduce((s, r) => s + r.collected, 0)),
+   590→      totalBalance: r2(rows.reduce((s, r) => s + r.balance, 0)),
+   591→    },
+   592→    meta: { village, financialYear: fy },
+   593→  };
+   594→}
+   595→
+   596→// ============================================================
+   597→// NAMUNA 11 - दैनंदिन रोकड वही (Daily Cash Summary)
+   598→// ============================================================
+   599→async function generateNamuna11(fy: string) {
+   600→  const [receipts, payments, village] = await Promise.all([
+   601→    db.receiptEntry.findMany({ where: { financialYear: fy }, orderBy: { receiptDate: 'asc' } }),
+   602→    db.paymentEntry.findMany({ where: { financialYear: fy }, orderBy: { paymentDate: 'asc' } }),
+   603→    db.villageInfo.findFirst(),
+   604→  ]);
+   605→
+   606→  const dateMap = new Map<string, { date: string; totalReceipt: number; totalPayment: number; receiptCount: number; paymentCount: number }>();
+   607→
+   608→  for (const r of receipts) {
+   609→    const key = r.receiptDate;
+   610→    if (!dateMap.has(key)) dateMap.set(key, { date: key, totalReceipt: 0, totalPayment: 0, receiptCount: 0, paymentCount: 0 });
+   611→    const entry = dateMap.get(key)!;
+   612→    entry.totalReceipt += r.amount;
+   613→    entry.receiptCount++;
+   614→  }
+   615→
+   616→  for (const p of payments) {
+   617→    const key = p.paymentDate;
+   618→    if (!dateMap.has(key)) dateMap.set(key, { date: key, totalReceipt: 0, totalPayment: 0, receiptCount: 0, paymentCount: 0 });
+   619→    const entry = dateMap.get(key)!;
+   620→    entry.totalPayment += p.amount;
+   621→    entry.paymentCount++;
+   622→  }
+   623→
+   624→  const sortedRows = Array.from(dateMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+   625→
+   626→  let runningBalance = 0;
+   627→  const rows = sortedRows.map(r => {
+   628→    runningBalance += r.totalReceipt - r.totalPayment;
+   629→    return { ...r, totalReceipt: r2(r.totalReceipt), totalPayment: r2(r.totalPayment), balance: r2(runningBalance) };
+   630→  });
+   631→
+   632→  return {
+   633→    title: 'नमुना ११ - दैनंदिन रोकड वही',
+   634→    titleEn: 'Namuna 11 - Daily Cash Summary',
+   635→    headers: ['दिनांक', 'एकूण प्राप्ती (₹)', 'प्राप्ती एंट्री', 'एकूण अर्ज (₹)', 'अर्ज एंट्री', 'शिल्लक (₹)'],
+   636→    rows,
+   637→    totals: {
+   638→      totalReceipts: r2(receipts.reduce((s, r) => s + r.amount, 0)),
+   639→      totalPayments: r2(payments.reduce((s, p) => s + p.amount, 0)),
+   640→      closingBalance: r2(runningBalance),
+   641→      totalDays: rows.length,
+   642→    },
+   643→    meta: { village, financialYear: fy },
+   644→  };
+   645→}
+   646→
+   647→// ============================================================
+   648→// NAMUNA 12 - जमा खाते रजिस्टर (Credit Account Register)
+   649→// ============================================================
+   650→async function generateNamuna12(fy: string) {
+   651→  const [ledgerEntries, receipts, village] = await Promise.all([
+   652→    db.ledgerEntry.findMany({ where: { financialYear: fy, creditAmount: { gt: 0 } }, orderBy: { entryDate: 'asc' } }),
+   653→    db.receiptEntry.findMany({ where: { financialYear: fy }, orderBy: { receiptDate: 'asc' } }),
+   654→    db.villageInfo.findFirst(),
+   655→  ]);
+   656→
+   657→  let rows;
+   658→  if (ledgerEntries.length > 0) {
+   659→    rows = ledgerEntries.map(le => ({
+   660→      date: le.entryDate,
+   661→      voucher: le.voucherNumber,
+   662→      voucherType: le.voucherType,
+   663→      accountCode: le.accountCode,
+   664→      accountName: le.accountName || le.accountNameMr || le.accountCode,
+   665→      creditAmount: le.creditAmount,
+   666→      description: le.description || '',
+   667→    }));
+   668→  } else {
+   669→    rows = receipts.map(r => ({
+   670→      date: r.receiptDate,
+   671→      voucher: r.voucherNumber,
+   672→      voucherType: 'Receipt',
+   673→      accountCode: r.headOfAccount || '',
+   674→      accountName: r.headOfAccountMr || r.headOfAccount || '',
+   675→      creditAmount: r.amount,
+   676→      description: r.receivedFrom || r.description || '',
+   677→    }));
+   678→  }
+   679→
+   680→  return {
+   681→    title: 'नमुना १२ - जमा खाते रजिस्टर',
+   682→    titleEn: 'Namuna 12 - Credit Account Register',
+   683→    headers: ['दिनांक', 'वाउचर क्र.', 'वाउचर प्रकार', 'खाते कोड', 'खाते नाव', 'जमा रक्कम (₹)', 'विवरण'],
+   684→    rows,
+   685→    totals: {
+   686→      totalCredit: r2(rows.reduce((s, r) => s + r.creditAmount, 0)),
+   687→      totalEntries: rows.length,
+   688→      source: ledgerEntries.length > 0 ? 'ledger' : 'receipts',
+   689→    },
+   690→    meta: { village, financialYear: fy },
+   691→  };
+   692→}
+   693→
+   694→// ============================================================
+   695→// NAMUNA 13 - नामे खाते रजिस्टर (Debit Account Register)
+   696→// ============================================================
+   697→async function generateNamuna13(fy: string) {
+   698→  const [ledgerEntries, payments, village] = await Promise.all([
+   699→    db.ledgerEntry.findMany({ where: { financialYear: fy, debitAmount: { gt: 0 } }, orderBy: { entryDate: 'asc' } }),
+   700→    db.paymentEntry.findMany({ where: { financialYear: fy }, orderBy: { paymentDate: 'asc' } }),
+   701→    db.villageInfo.findFirst(),
+   702→  ]);
+   703→
+   704→  let rows;
+   705→  if (ledgerEntries.length > 0) {
+   706→    rows = ledgerEntries.map(le => ({
+   707→      date: le.entryDate,
+   708→      voucher: le.voucherNumber,
+   709→      voucherType: le.voucherType,
+   710→      accountCode: le.accountCode,
+   711→      accountName: le.accountName || le.accountNameMr || le.accountCode,
+   712→      debitAmount: le.debitAmount,
+   713→      description: le.description || '',
+   714→    }));
+   715→  } else {
+   716→    rows = payments.map(p => ({
+   717→      date: p.paymentDate,
+   718→      voucher: p.voucherNumber,
+   719→      voucherType: 'Payment',
+   720→      accountCode: p.headOfAccount || '',
+   721→      accountName: p.headOfAccountMr || p.headOfAccount || '',
+   722→      debitAmount: p.amount,
+   723→      description: p.paidTo || p.description || '',
+   724→    }));
+   725→  }
+   726→
+   727→  return {
+   728→    title: 'नमुना १३ - नामे खाते रजिस्टर',
+   729→    titleEn: 'Namuna 13 - Debit Account Register',
+   730→    headers: ['दिनांक', 'वाउचर क्र.', 'वाउचर प्रकार', 'खाते कोड', 'खाते नाव', 'नामे रक्कम (₹)', 'विवरण'],
+   731→    rows,
+   732→    totals: {
+   733→      totalDebit: r2(rows.reduce((s, r) => s + r.debitAmount, 0)),
+   734→      totalEntries: rows.length,
+   735→      source: ledgerEntries.length > 0 ? 'ledger' : 'payments',
+   736→    },
+   737→    meta: { village, financialYear: fy },
+   738→  };
+   739→}
+   740→
+   741→// ============================================================
+   742→// NAMUNA 14 - खाते खत (Ledger)
+   743→// ============================================================
+   744→async function generateNamuna14(fy: string) {
+   745→  const [ledgerEntries, receipts, payments, journals, village] = await Promise.all([
+   746→    db.ledgerEntry.findMany({ where: { financialYear: fy }, orderBy: [{ accountCode: 'asc' }, { entryDate: 'asc' }] }),
+   747→    db.receiptEntry.findMany({ where: { financialYear: fy }, orderBy: { receiptDate: 'asc' } }),
+   748→    db.paymentEntry.findMany({ where: { financialYear: fy }, orderBy: { paymentDate: 'asc' } }),
+   749→    db.journalEntry.findMany({ where: { financialYear: fy }, orderBy: { entryDate: 'asc' } }),
+   750→    db.villageInfo.findFirst(),
+   751→  ]);
+   752→
+   753→  let rows;
+   754→  if (ledgerEntries.length > 0) {
+   755→    rows = ledgerEntries.map(le => ({
+   756→      date: le.entryDate,
+   757→      voucher: le.voucherNumber,
+   758→      voucherType: le.voucherType,
+   759→      accountCode: le.accountCode,
+   760→      accountName: le.accountName || le.accountNameMr || le.accountCode,
+   761→      debitAmount: le.debitAmount,
+   762→      creditAmount: le.creditAmount,
+   763→      balance: le.balance,
+   764→      description: le.description || '',
+   765→    }));
+   766→  } else {
+   767→    const combinedEntries = [
+   768→      ...receipts.map(r => ({
+   769→        date: r.receiptDate, voucher: r.voucherNumber, voucherType: 'Receipt' as const,
+   770→        accountCode: r.headOfAccount || 'Income', accountName: r.headOfAccountMr || r.headOfAccount || 'Income',
+   771→        debitAmount: 0, creditAmount: r.amount, description: r.receivedFrom || r.description || '',
+   772→      })),
+   773→      ...payments.map(p => ({
+   774→        date: p.paymentDate, voucher: p.voucherNumber, voucherType: 'Payment' as const,
+   775→        accountCode: p.headOfAccount || 'Expenditure', accountName: p.headOfAccountMr || p.headOfAccount || 'Expenditure',
+   776→        debitAmount: p.amount, creditAmount: 0, description: p.paidTo || p.description || '',
+   777→      })),
+   778→      ...journals.map(j => ({
+   779→        date: j.entryDate, voucher: j.voucherNumber, voucherType: 'Journal' as const,
+   780→        accountCode: j.debitAccount || 'Journal', accountName: j.description || 'Journal Entry',
+   781→        debitAmount: j.amount, creditAmount: 0, description: j.description || '',
+   782→      })),
+   783→    ].sort((a, b) => a.accountCode.localeCompare(b.accountCode) || a.date.localeCompare(b.date));
+   784→    rows = combinedEntries.map(e => ({ ...e, balance: r2(e.debitAmount - e.creditAmount) }));
+   785→  }
+   786→
+   787→  const accountGroups = new Map<string, { code: string; name: string; totalDebit: number; totalCredit: number }>();
+   788→  for (const row of rows) {
+   789→    const key = row.accountCode;
+   790→    if (!accountGroups.has(key)) accountGroups.set(key, { code: key, name: row.accountName, totalDebit: 0, totalCredit: 0 });
+   791→    const g = accountGroups.get(key)!;
+   792→    g.totalDebit += row.debitAmount;
+   793→    g.totalCredit += row.creditAmount;
+   794→  }
+   795→
+   796→  return {
+   797→    title: 'नमुना १४ - खाते खत',
+   798→    titleEn: 'Namuna 14 - Ledger',
+   799→    headers: ['दिनांक', 'वाउचर क्र.', 'प्रकार', 'खाते कोड', 'खाते नाव', 'नामे (₹)', 'जमा (₹)', 'शिल्लक (₹)', 'विवरण'],
+   800→    rows,
+   801→    accountGroups: Array.from(accountGroups.values()).map(g => ({
+   802→      ...g, totalDebit: r2(g.totalDebit), totalCredit: r2(g.totalCredit), netBalance: r2(g.totalDebit - g.totalCredit),
+   803→    })),
+   804→    totals: {
+   805→      totalDebit: r2(rows.reduce((s, r) => s + r.debitAmount, 0)),
+   806→      totalCredit: r2(rows.reduce((s, r) => s + r.creditAmount, 0)),
+   807→      totalAccounts: accountGroups.size,
+   808→      source: ledgerEntries.length > 0 ? 'ledger' : 'transactions',
+   809→    },
+   810→    meta: { village, financialYear: fy },
+   811→  };
+   812→}
+   813→
+   814→// ============================================================
+   815→// NAMUNA 15 - तपासणी पत्र (Trial Balance)
+   816→// ============================================================
+   817→async function generateNamuna15(fy: string) {
+   818→  const [ledgerEntries, receipts, payments, journals, village] = await Promise.all([
+   819→    db.ledgerEntry.findMany({ where: { financialYear: fy } }),
+   820→    db.receiptEntry.findMany({ where: { financialYear: fy } }),
+   821→    db.paymentEntry.findMany({ where: { financialYear: fy } }),
+   822→    db.journalEntry.findMany({ where: { financialYear: fy } }),
+   823→    db.villageInfo.findFirst(),
+   824→  ]);
+   825→
+   826→  const accountMap = new Map<string, { code: string; name: string; totalDebit: number; totalCredit: number }>();
+   827→
+   828→  if (ledgerEntries.length > 0) {
+   829→    for (const entry of ledgerEntries) {
+   830→      const key = entry.accountCode;
+   831→      if (!accountMap.has(key)) accountMap.set(key, { code: entry.accountCode, name: entry.accountName || entry.accountNameMr || entry.accountCode, totalDebit: 0, totalCredit: 0 });
+   832→      const acc = accountMap.get(key)!;
+   833→      acc.totalDebit += entry.debitAmount;
+   834→      acc.totalCredit += entry.creditAmount;
+   835→    }
+   836→  } else {
+   837→    for (const r of receipts) {
+   838→      const key = r.headOfAccount || 'Income';
+   839→      if (!accountMap.has(key)) accountMap.set(key, { code: key, name: r.headOfAccountMr || key, totalDebit: 0, totalCredit: 0 });
+   840→      accountMap.get(key)!.totalCredit += r.amount;
+   841→    }
+   842→    for (const p of payments) {
+   843→      const key = p.headOfAccount || 'Expenditure';
+   844→      if (!accountMap.has(key)) accountMap.set(key, { code: key, name: p.headOfAccountMr || key, totalDebit: 0, totalCredit: 0 });
+   845→      accountMap.get(key)!.totalDebit += p.amount;
+   846→    }
+   847→    for (const j of journals) {
+   848→      const debitKey = j.debitAccount || 'Journal Debit';
+   849→      const creditKey = j.creditAccount || 'Journal Credit';
+   850→      if (!accountMap.has(debitKey)) accountMap.set(debitKey, { code: debitKey, name: debitKey, totalDebit: 0, totalCredit: 0 });
+   851→      if (!accountMap.has(creditKey)) accountMap.set(creditKey, { code: creditKey, name: creditKey, totalDebit: 0, totalCredit: 0 });
+   852→      accountMap.get(debitKey)!.totalDebit += j.amount;
+   853→      accountMap.get(creditKey)!.totalCredit += j.amount;
+   854→    }
+   855→  }
+   856→
+   857→  const rows = Array.from(accountMap.values()).map(r => ({
+   858→    ...r, totalDebit: r2(r.totalDebit), totalCredit: r2(r.totalCredit),
+   859→    balance: r2(r.totalDebit - r.totalCredit),
+   860→    balanceType: r.totalDebit > r.totalCredit ? 'Debit' : 'Credit',
+   861→  }));
+   862→
+   863→  return {
+   864→    title: 'नमुना १५ - तपासणी पत्र',
+   865→    titleEn: 'Namuna 15 - Trial Balance',
+   866→    headers: ['खाते कोड', 'खाते नाव', 'जमा (₹)', 'नामे (₹)', 'शिल्लक (₹)', 'शिल्लक प्रकार'],
+   867→    rows,
+   868→    totals: {
+   869→      totalDebit: r2(rows.reduce((s, r) => s + r.totalDebit, 0)),
+   870→      totalCredit: r2(rows.reduce((s, r) => s + r.totalCredit, 0)),
+   871→      difference: r2(rows.reduce((s, r) => s + r.totalDebit, 0) - rows.reduce((s, r) => s + r.totalCredit, 0)),
+   872→      totalAccounts: rows.length,
+   873→      source: ledgerEntries.length > 0 ? 'ledger' : 'transactions',
+   874→    },
+   875→    meta: { village, financialYear: fy },
+   876→  };
+   877→}
+   878→
+   879→// ============================================================
+   880→// NAMUNA 16 - मालमत्ता वही (Asset Verification)
+   881→// ============================================================
+   882→async function generateNamuna16(fy: string) {
+   883→  const [assets, village] = await Promise.all([
+   884→    db.assetEntry.findMany({ orderBy: { assetNumber: 'asc' } }),
+   885→    db.villageInfo.findFirst(),
+   886→  ]);
+   887→
+   888→  const rows = assets.map(a => ({
+   889→    assetNumber: a.assetNumber,
+   890→    assetName: a.assetName,
+   891→    assetNameMr: a.assetNameMr,
+   892→    assetType: a.assetType || 'Other',
+   893→    purchaseDate: a.purchaseDate || '',
+   894→    purchaseCost: a.purchaseCost,
+   895→    currentValue: a.currentValue,
+   896→    depreciation: r2(a.purchaseCost - a.currentValue),
+   897→    location: a.location || a.locationMr || '',
+   898→    status: a.status,
+   899→    verified: a.status === 'Active',
+   900→  }));
+   901→
+   902→  return {
+   903→    title: 'नमुना १६ - मालमत्ता वही',
+   904→    titleEn: 'Namuna 16 - Asset Verification Register',
+   905→    headers: ['क्र.', 'नाव', 'प्रकार', 'खरेदी दिनांक', 'खरेदी किंमत (₹)', 'चलन किंमत (₹)', 'घसारा (₹)', 'स्थान', 'स्थिती', 'पडताळणी'],
+   906→    rows,
+   907→    totals: {
+   908→      totalAssets: assets.length,
+   909→      totalPurchaseCost: r2(assets.reduce((s, a) => s + a.purchaseCost, 0)),
+   910→      totalCurrentValue: r2(assets.reduce((s, a) => s + a.currentValue, 0)),
+   911→      totalDepreciation: r2(assets.reduce((s, a) => s + (a.purchaseCost - a.currentValue), 0)),
+   912→      activeCount: assets.filter(a => a.status === 'Active').length,
+   913→    },
+   914→    meta: { village, financialYear: fy },
+   915→  };
+   916→}
+   917→
+   918→// ============================================================
+   919→// NAMUNA 17 - देताणी वही (Liabilities Register)
+   920→// ============================================================
+   921→async function generateNamuna17(fy: string) {
+   922→  const [budgetEntries, payments, village] = await Promise.all([
+   923→    db.budgetEntry.findMany({ where: { financialYear: fy, category: 'expenditure' }, orderBy: { budgetHeadCode: 'asc' } }),
+   924→    db.paymentEntry.findMany({ where: { financialYear: fy }, orderBy: { paymentDate: 'asc' } }),
+   925→    db.villageInfo.findFirst(),
+   926→  ]);
+   927→
+   928→  const budgetRows = budgetEntries.map(b => ({
+   929→    code: b.budgetHeadCode,
+   930→    name: b.budgetHeadName || '',
+   931→    nameMr: b.budgetHeadNameMr || '',
+   932→    type: b.type,
+   933→    budget: b.revisedBudget || b.originalBudget,
+   934→    actual: b.actualAmount,
+   935→    pending: r2((b.revisedBudget || b.originalBudget) - b.actualAmount),
+   936→  }));
+   937→
+   938→  const paymentRows = budgetEntries.length === 0 ? payments.map(p => ({
+   939→    code: p.headOfAccount || 'EXP',
+   940→    name: p.headOfAccountMr || p.headOfAccount || 'Expenditure',
+   941→    nameMr: p.headOfAccountMr || '',
+   942→    type: 'revenue',
+   943→    budget: 0,
+   944→    actual: p.amount,
+   945→    pending: 0,
+   946→  })) : [];
+   947→
+   948→  const allRows = [...budgetRows, ...paymentRows];
+   949→
+   950→  return {
+   951→    title: 'नमुना १७ - देताणी वही',
+   952→    titleEn: 'Namuna 17 - Liabilities Register',
+   953→    headers: ['खाते कोड', 'खाते नाव', 'प्रकार', 'अंदाज (₹)', 'वास्तव (₹)', 'बक्की (₹)'],
+   954→    rows: allRows,
+   955→    totals: {
+   956→      totalBudget: r2(allRows.reduce((s, r) => s + r.budget, 0)),
+   957→      totalActual: r2(allRows.reduce((s, r) => s + r.actual, 0)),
+   958→      totalPending: r2(allRows.reduce((s, r) => s + r.pending, 0)),
+   959→      totalLiabilities: r2(allRows.reduce((s, r) => s + r.actual, 0)),
+   960→    },
+   961→    meta: { village, financialYear: fy },
+   962→  };
+   963→}
+   964→
+   965→// ============================================================
+   966→// NAMUNA 18 - आढावा मालमत्ता (Asset Verification Report)
+   967→// ============================================================
+   968→async function generateNamuna18(fy: string) {
+   969→  const [assets, village] = await Promise.all([
+   970→    db.assetEntry.findMany({ orderBy: { assetType: 'asc' } }),
+   971→    db.villageInfo.findFirst(),
+   972→  ]);
+   973→
+   974→  const typeGroups = new Map<string, typeof assets>();
+   975→  for (const a of assets) {
+   976→    const key = a.assetType || 'Other';
+   977→    if (!typeGroups.has(key)) typeGroups.set(key, []);
+   978→    typeGroups.get(key)!.push(a);
+   979→  }
+   980→
+   981→  const rows = Array.from(typeGroups.entries()).map(([type, items]) => ({
+   982→    assetType: type,
+   983→    count: items.length,
+   984→    totalPurchaseCost: r2(items.reduce((s, a) => s + a.purchaseCost, 0)),
+   985→    totalCurrentValue: r2(items.reduce((s, a) => s + a.currentValue, 0)),
+   986→    totalDepreciation: r2(items.reduce((s, a) => s + (a.purchaseCost - a.currentValue), 0)),
+   987→    activeCount: items.filter(a => a.status === 'Active').length,
+   988→    disposedCount: items.filter(a => a.status === 'Disposed').length,
+   989→  }));
+   990→
+   991→  return {
+   992→    title: 'नमुना १८ - आढावा मालमत्ता',
+   993→    titleEn: 'Namuna 18 - Asset Verification Report',
+   994→    headers: ['मालमत्ता प्रकार', 'संख्या', 'एकूण खरेदी (₹)', 'एकूण चलन (₹)', 'एकूण घसारा (₹)', 'सक्रिय', 'विल्हेवाट'],
+   995→    rows,
+   996→    totals: {
+   997→      totalAssets: assets.length,
+   998→      totalPurchaseCost: r2(assets.reduce((s, a) => s + a.purchaseCost, 0)),
+   999→      totalCurrentValue: r2(assets.reduce((s, a) => s + a.currentValue, 0)),
+  1000→      totalDepreciation: r2(assets.reduce((s, a) => s + (a.purchaseCost - a.currentValue), 0)),
+  1001→    },
+  1002→    meta: { village, financialYear: fy },
+  1003→  };
+  1004→}
+  1005→
+  1006→// ============================================================
+  1007→// NAMUNA 19 - कर वसूल वही (Tax Collection Register)
+  1008→// ============================================================
+  1009→async function generateNamuna19(fy: string) {
+  1010→  const [collections, village] = await Promise.all([
+  1011→    db.collectionEntry.findMany({ where: { financialYear: fy }, orderBy: { collectionDate: 'asc' } }),
+  1012→    db.villageInfo.findFirst(),
+  1013→  ]);
+  1014→
+  1015→  const rows = collections.map(c => ({
+  1016→    collectionNumber: c.collectionNumber,
+  1017→    date: c.collectionDate,
+  1018→    collectionType: c.collectionType || 'Other',
+  1019→    amount: c.amount,
+  1020→    paymentMethod: c.paymentMethod,
+  1021→    receiptNumber: c.receiptNumber || '',
+  1022→    description: c.description || '',
+  1023→  }));
+  1024→
+  1025→  const byType = new Map<string, { type: string; count: number; total: number }>();
+  1026→  for (const c of collections) {
+  1027→    const key = c.collectionType || 'Other';
+  1028→    if (!byType.has(key)) byType.set(key, { type: key, count: 0, total: 0 });
+  1029→    byType.get(key)!.count++;
+  1030→    byType.get(key)!.total += c.amount;
+  1031→  }
+  1032→
+  1033→  return {
+  1034→    title: 'नमुना १९ - कर वसूल वही',
+  1035→    titleEn: 'Namuna 19 - Tax Collection Register',
+  1036→    headers: ['वसूल क्र.', 'दिनांक', 'वसूल प्रकार', 'रक्कम (₹)', 'अर्ज पद्धत', 'पावती क्र.', 'विवरण'],
+  1037→    rows,
+  1038→    totals: {
+  1039→      totalEntries: collections.length,
+  1040→      totalCollected: r2(collections.reduce((s, c) => s + c.amount, 0)),
+  1041→      byType: Array.from(byType.values()).map(v => ({ ...v, total: r2(v.total) })),
+  1042→    },
+  1043→    meta: { village, financialYear: fy },
+  1044→  };
+  1045→}
+  1046→
+  1047→// ============================================================
+  1048→// NAMUNA 20 - पाणीपट्टी वसूल वही (Water Tax Collection)
+  1049→// ============================================================
+  1050→async function generateNamuna20(fy: string) {
+  1051→  const [waterBills, village] = await Promise.all([
+  1052→    db.waterBillEntry.findMany({ where: { financialYear: fy }, orderBy: { billDate: 'asc' } }),
+  1053→    db.villageInfo.findFirst(),
+  1054→  ]);
+  1055→
+  1056→  const rows = waterBills.map(w => ({
+  1057→    billNumber: w.billNumber,
+  1058→    billDate: w.billDate,
+  1059→    amount: w.amount,
+  1060→    penalty: w.penalty,
+  1061→    totalAmount: w.totalAmount,
+  1062→    paidAmount: w.paidAmount,
+  1063→    paidDate: w.paidDate || '',
+  1064→    status: w.status,
+  1065→    balance: r2(w.totalAmount - w.paidAmount),
+  1066→  }));
+  1067→
+  1068→  return {
+  1069→    title: 'नमुना २० - पाणीपट्टी वसूल वही',
+  1070→    titleEn: 'Namuna 20 - Water Tax Collection Register',
+  1071→    headers: ['बिल क्र.', 'बिल दिनांक', 'रक्कम (₹)', 'दंड (₹)', 'एकूण (₹)', 'भरलेले (₹)', 'भरल्याचा दिनांक', 'स्थिती', 'बक्की (₹)'],
+  1072→    rows,
+  1073→    totals: {
+  1074→      totalBills: waterBills.length,
+  1075→      totalAmount: r2(waterBills.reduce((s, w) => s + w.totalAmount, 0)),
+  1076→      totalPaid: r2(waterBills.reduce((s, w) => s + w.paidAmount, 0)),
+  1077→      totalBalance: r2(waterBills.reduce((s, w) => s + (w.totalAmount - w.paidAmount), 0)),
+  1078→      pendingCount: waterBills.filter(w => w.status === 'Pending').length,
+  1079→    },
+  1080→    meta: { village, financialYear: fy },
+  1081→  };
+  1082→}
+  1083→
+  1084→// ============================================================
+  1085→// NAMUNA 21 - वसूल तपासणी (Collection Verification)
+  1086→// ============================================================
+  1087→async function generateNamuna21(fy: string) {
+  1088→  const [collections, namuna9s, village] = await Promise.all([
+  1089→    db.collectionEntry.findMany({ where: { financialYear: fy } }),
+  1090→    db.namuna9.findMany({ where: { financialYear: fy }, include: { payments: true } }),
+  1091→    db.villageInfo.findFirst(),
+  1092→  ]);
+  1093→
+  1094→  const totalCollection = collections.reduce((s, c) => s + c.amount, 0);
+  1095→  const totalPayments = namuna9s.reduce((s, n) => s + n.payments.reduce((ps, p) => ps + p.amountPaid, 0), 0);
+  1096→
+  1097→  const rows = [
+  1098→    { source: 'CollectionEntry', sourceMr: 'वसूल एंट्री', count: collections.length, total: r2(totalCollection) },
+  1099→    { source: 'Payment (Namuna9)', sourceMr: 'पावती (नमुना ९)', count: namuna9s.reduce((s, n) => s + n.payments.length, 0), total: r2(totalPayments) },
+  1100→    { source: 'Difference', sourceMr: 'फरक', count: 0, total: r2(totalCollection - totalPayments) },
+  1101→  ];
+  1102→
+  1103→  return {
+  1104→    title: 'नमुना २१ - वसूल तपासणी',
+  1105→    titleEn: 'Namuna 21 - Collection Verification Report',
+  1106→    headers: ['स्रोत', 'एंट्री संख्या', 'एकूण रक्कम (₹)'],
+  1107→    rows,
+  1108→    totals: {
+  1109→      totalCollection: r2(totalCollection),
+  1110→      totalPayments: r2(totalPayments),
+  1111→      difference: r2(totalCollection - totalPayments),
+  1112→      isBalanced: Math.abs(totalCollection - totalPayments) < 0.01,
+  1113→    },
+  1114→    meta: { village, financialYear: fy },
+  1115→  };
+  1116→}
+  1117→
+  1118→// ============================================================
+  1119→// NAMUNA 22 - देणेदार यादी (Debtors List)
+  1120→// ============================================================
+  1121→async function generateNamuna22(fy: string) {
+  1122→  const [namuna9s, village] = await Promise.all([
+  1123→    db.namuna9.findMany({
+  1124→      where: { financialYear: fy },
+  1125→      include: { property: { include: { owners: { include: { owner: true } }, ward: true } }, payments: true },
+  1126→    }),
+  1127→    db.villageInfo.findFirst(),
+  1128→  ]);
+  1129→
+  1130→  const rows = namuna9s
+  1131→    .map(n => {
+  1132→      const totalPaid = n.payments.reduce((s, p) => s + p.amountPaid, 0);
+  1133→      const balance = n.totalDemand - totalPaid;
+  1134→      const primaryOwner = n.property.owners.find(o => o.ownershipType === 'मालक') || n.property.owners[0];
+  1135→      return {
+  1136→        propertyNumber: n.property.propertyNumber,
+  1137→        ownerName: primaryOwner?.owner ? `${primaryOwner.owner.firstNameMr || primaryOwner.owner.firstName} ${primaryOwner.owner.lastNameMr || primaryOwner.owner.lastName}` : '',
+  1138→        mobileNumber: primaryOwner?.owner?.mobileNumber || '',
+  1139→        wardName: n.property.ward?.wardNameMr || n.property.ward?.wardName || '',
+  1140→        totalDemand: n.totalDemand,
+  1141→        totalPaid: r2(totalPaid),
+  1142→        outstanding: r2(balance),
+  1143→      };
+  1144→    })
+  1145→    .filter(r => r.outstanding > 0)
+  1146→    .sort((a, b) => b.outstanding - a.outstanding);
+  1147→
+  1148→  return {
+  1149→    title: 'नमुना २२ - देणेदार यादी',
+  1150→    titleEn: 'Namuna 22 - Debtors List',
+  1151→    headers: ['मालमत्ता क्र.', 'मालक', 'मोबाईल', 'वार्ड', 'एकूण मागणी (₹)', 'वसूल (₹)', 'बक्की (₹)'],
+  1152→    rows,
+  1153→    totals: {
+  1154→      totalDebtors: rows.length,
+  1155→      totalOutstanding: r2(rows.reduce((s, r) => s + r.outstanding, 0)),
+  1156→      totalDemand: r2(rows.reduce((s, r) => s + r.totalDemand, 0)),
+  1157→      totalPaid: r2(rows.reduce((s, r) => s + r.totalPaid, 0)),
+  1158→    },
+  1159→    meta: { village, financialYear: fy },
+  1160→  };
+  1161→}
+  1162→
+  1163→// ============================================================
+  1164→// NAMUNA 23 - फाळवणार यादी (Creditors List)
+  1165→// ============================================================
+  1166→async function generateNamuna23(fy: string) {
+  1167→  const [payments, village] = await Promise.all([
+  1168→    db.paymentEntry.findMany({ where: { financialYear: fy }, orderBy: { paymentDate: 'asc' } }),
+  1169→    db.villageInfo.findFirst(),
+  1170→  ]);
+  1171→
+  1172→  const creditorMap = new Map<string, { name: string; totalAmount: number; count: number; lastPayment: string }>();
+  1173→  for (const p of payments) {
+  1174→    const key = p.paidTo || 'Unknown';
+  1175→    if (!creditorMap.has(key)) creditorMap.set(key, { name: key, totalAmount: 0, count: 0, lastPayment: '' });
+  1176→    const entry = creditorMap.get(key)!;
+  1177→    entry.totalAmount += p.amount;
+  1178→    entry.count++;
+  1179→    if (p.paymentDate > entry.lastPayment) entry.lastPayment = p.paymentDate;
+  1180→  }
+  1181→
+  1182→  const rows = Array.from(creditorMap.entries())
+  1183→    .map(([id, v]) => ({ id, ...v, totalAmount: r2(v.totalAmount) }))
+  1184→    .sort((a, b) => b.totalAmount - a.totalAmount);
+  1185→
+  1186→  return {
+  1187→    title: 'नमुना २३ - फाळवणार यादी',
+  1188→    titleEn: 'Namuna 23 - Creditors List',
+  1189→    headers: ['क्रमांक', 'फाळवणाराचे नाव', 'एकूण रक्कम (₹)', 'अर्ज संख्या', 'शेवटचा अर्ज दिनांक'],
+  1190→    rows,
+  1191→    totals: {
+  1192→      totalCreditors: rows.length,
+  1193→      totalAmount: r2(rows.reduce((s, r) => s + r.totalAmount, 0)),
+  1194→      totalPayments: payments.length,
+  1195→    },
+  1196→    meta: { village, financialYear: fy },
+  1197→  };
+  1198→}
+  1199→
+  1200→// ============================================================
+  1201→// NAMUNA 24 - वसूल अहवाल (Collection Summary)
+  1202→// ============================================================
+  1203→async function generateNamuna24(fy: string) {
+  1204→  const [collections, namuna9s, namuna8s, waterBills, village] = await Promise.all([
+  1205→    db.collectionEntry.findMany({ where: { financialYear: fy } }),
+  1206→    db.namuna9.findMany({ where: { financialYear: fy }, include: { payments: true } }),
+  1207→    db.namuna8.findMany({ where: { financialYear: fy } }),
+  1208→    db.waterBillEntry.findMany({ where: { financialYear: fy } }),
+  1209→    db.villageInfo.findFirst(),
+  1210→  ]);
+  1211→
+  1212→  const totalTaxAssessed = namuna8s.reduce((s, n) => s + (n.totalTaxAmt || n.totalTax), 0);
+  1213→  const totalDemand = namuna9s.reduce((s, n) => s + n.totalDemand, 0);
+  1214→  const totalTaxPaid = namuna9s.reduce((s, n) => s + n.payments.reduce((ps, p) => ps + p.amountPaid, 0), 0);
+  1215→  const totalCollection = collections.reduce((s, c) => s + c.amount, 0);
+  1216→  const totalWaterBilled = waterBills.reduce((s, w) => s + w.totalAmount, 0);
+  1217→  const totalWaterPaid = waterBills.reduce((s, w) => s + w.paidAmount, 0);
+  1218→
+  1219→  const rows = [
+  1220→    { category: 'कर आकारणी', categoryEn: 'Tax Assessment', assessed: r2(totalTaxAssessed), collected: r2(totalTaxPaid), outstanding: r2(totalTaxAssessed - totalTaxPaid), efficiency: totalTaxAssessed > 0 ? r2((totalTaxPaid / totalTaxAssessed) * 100) : 0 },
+  1221→    { category: 'मागणी नोंद', categoryEn: 'Demand Register', assessed: r2(totalDemand), collected: r2(totalTaxPaid), outstanding: r2(totalDemand - totalTaxPaid), efficiency: totalDemand > 0 ? r2((totalTaxPaid / totalDemand) * 100) : 0 },
+  1222→    { category: 'वसूल एंट्री', categoryEn: 'Collection Entry', assessed: r2(totalCollection), collected: r2(totalCollection), outstanding: 0, efficiency: 100 },
+  1223→    { category: 'पाणीपट्टी', categoryEn: 'Water Tax', assessed: r2(totalWaterBilled), collected: r2(totalWaterPaid), outstanding: r2(totalWaterBilled - totalWaterPaid), efficiency: totalWaterBilled > 0 ? r2((totalWaterPaid / totalWaterBilled) * 100) : 0 },
+  1224→  ];
+  1225→
+  1226→  return {
+  1227→    title: 'नमुना २४ - वसूल अहवाल',
+  1228→    titleEn: 'Namuna 24 - Collection Summary Report',
+  1229→    headers: ['श्रेणी', 'आकारणी (₹)', 'वसूल (₹)', 'बक्की (₹)', 'वसूल क्षमता %'],
+  1230→    rows,
+  1231→    totals: {
+  1232→      totalAssessed: r2(totalTaxAssessed + totalWaterBilled),
+  1233→      totalCollected: r2(totalTaxPaid + totalWaterPaid),
+  1234→      totalOutstanding: r2((totalTaxAssessed - totalTaxPaid) + (totalWaterBilled - totalWaterPaid)),
+  1235→      overallEfficiency: (totalTaxAssessed + totalWaterBilled) > 0 ? r2(((totalTaxPaid + totalWaterPaid) / (totalTaxAssessed + totalWaterBilled)) * 100) : 0,
+  1236→    },
+  1237→    meta: { village, financialYear: fy },
+  1238→  };
+  1239→}
+  1240→
+  1241→// ============================================================
+  1242→// NAMUNA 25 - हिशेब तपासणी (Audit Report)
+  1243→// ============================================================
+  1244→async function generateNamuna25(fy: string) {
+  1245→  const [receipts, payments, journals, assets, stocks, namuna8s, namuna9s, collections, village] = await Promise.all([
+  1246→    db.receiptEntry.findMany({ where: { financialYear: fy } }),
+  1247→    db.paymentEntry.findMany({ where: { financialYear: fy } }),
+  1248→    db.journalEntry.findMany({ where: { financialYear: fy } }),
+  1249→    db.assetEntry.findMany(),
+  1250→    db.stockEntry.findMany(),
+  1251→    db.namuna8.findMany({ where: { financialYear: fy } }),
+  1252→    db.namuna9.findMany({ where: { financialYear: fy }, include: { payments: true } }),
+  1253→    db.collectionEntry.findMany({ where: { financialYear: fy } }),
+  1254→    db.villageInfo.findFirst(),
+  1255→  ]);
+  1256→
+  1257→  const totalIncome = receipts.reduce((s, r) => s + r.amount, 0);
+  1258→  const totalExpenditure = payments.reduce((s, p) => s + p.amount, 0);
+  1259→  const totalDemand = namuna9s.reduce((s, n) => s + n.totalDemand, 0);
+  1260→  const totalPaid = namuna9s.reduce((s, n) => s + n.payments.reduce((ps, p) => ps + p.amountPaid, 0), 0);
+  1261→
+  1262→  const rows = [
+  1263→    { item: 'एकूण प्राप्ती', itemEn: 'Total Receipts', count: receipts.length, amount: r2(totalIncome) },
+  1264→    { item: 'एकूण अर्ज', itemEn: 'Total Payments', count: payments.length, amount: r2(totalExpenditure) },
+  1265→    { item: 'जर्नल एंट्री', itemEn: 'Journal Entries', count: journals.length, amount: r2(journals.reduce((s, j) => s + j.amount, 0)) },
+  1266→    { item: 'कर आकारणी', itemEn: 'Tax Assessment', count: namuna8s.length, amount: r2(namuna8s.reduce((s, n) => s + (n.totalTaxAmt || n.totalTax), 0)) },
+  1267→    { item: 'मागणी नोंद', itemEn: 'Demand Register', count: namuna9s.length, amount: r2(totalDemand) },
+  1268→    { item: 'कर वसूल', itemEn: 'Tax Collection', count: namuna9s.reduce((s, n) => s + n.payments.length, 0), amount: r2(totalPaid) },
+  1269→    { item: 'वसूल एंट्री', itemEn: 'Collection Entries', count: collections.length, amount: r2(collections.reduce((s, c) => s + c.amount, 0)) },
+  1270→    { item: 'मालमत्ता', itemEn: 'Assets', count: assets.length, amount: r2(assets.reduce((s, a) => s + a.currentValue, 0)) },
+  1271→    { item: 'साठा', itemEn: 'Stock', count: stocks.length, amount: r2(stocks.reduce((s, st) => s + st.totalValue, 0)) },
+  1272→  ];
+  1273→
+  1274→  const unpostedReceipts = receipts.filter(r => !r.isPosted).length;
+  1275→  const unpostedPayments = payments.filter(p => !p.isPosted).length;
+  1276→  const unpostedJournals = journals.filter(j => !j.isPosted).length;
+  1277→
+  1278→  return {
+  1279→    title: 'नमुना २५ - हिशेब तपासणी',
+  1280→    titleEn: 'Namuna 25 - Audit Report',
+  1281→    headers: ['मद', 'एंट्री संख्या', 'रक्कम (₹)'],
+  1282→    rows,
+  1283→    totals: {
+  1284→      surplus: r2(totalIncome - totalExpenditure),
+  1285→      collectionEfficiency: totalDemand > 0 ? r2((totalPaid / totalDemand) * 100) : 0,
+  1286→      unpostedEntries: unpostedReceipts + unpostedPayments + unpostedJournals,
+  1287→      auditStatus: (unpostedReceipts + unpostedPayments + unpostedJournals) > 0 ? 'Incomplete' : 'Complete',
+  1288→    },
+  1289→    meta: { village, financialYear: fy },
+  1290→  };
+  1291→}
+  1292→
+  1293→// ============================================================
+  1294→// NAMUNA 26 - चौकशी अहवाल (Inquiry Summary)
+  1295→// ============================================================
+  1296→async function generateNamuna26(fy: string) {
+  1297→  const [receipts, payments, namuna8s, namuna9s, village] = await Promise.all([
+  1298→    db.receiptEntry.findMany({ where: { financialYear: fy } }),
+  1299→    db.paymentEntry.findMany({ where: { financialYear: fy } }),
+  1300→    db.namuna8.findMany({ where: { financialYear: fy } }),
+  1301→    db.namuna9.findMany({ where: { financialYear: fy }, include: { payments: true, property: { include: { owners: { include: { owner: true } } } } } }),
+  1302→    db.villageInfo.findFirst(),
+  1303→  ]);
+  1304→
+  1305→  const totalIncome = receipts.reduce((s, r) => s + r.amount, 0);
+  1306→  const totalExpenditure = payments.reduce((s, p) => s + p.amount, 0);
+  1307→  const totalDemand = namuna9s.reduce((s, n) => s + n.totalDemand, 0);
+  1308→  const totalPaid = namuna9s.reduce((s, n) => s + n.payments.reduce((ps, p) => ps + p.amountPaid, 0), 0);
+  1309→
+  1310→  const rows = [
+  1311→    { inquiry: 'एकूण प्राप्ती', value: r2(totalIncome), count: receipts.length },
+  1312→    { inquiry: 'एकूण अर्ज', value: r2(totalExpenditure), count: payments.length },
+  1313→    { inquiry: 'नफा/तोटा', value: r2(totalIncome - totalExpenditure), count: 0 },
+  1314→    { inquiry: 'कर आकारणी', value: r2(namuna8s.reduce((s, n) => s + (n.totalTaxAmt || n.totalTax), 0)), count: namuna8s.length },
+  1315→    { inquiry: 'एकूण मागणी', value: r2(totalDemand), count: namuna9s.length },
+  1316→    { inquiry: 'एकूण वसूल', value: r2(totalPaid), count: namuna9s.reduce((s, n) => s + n.payments.length, 0) },
+  1317→    { inquiry: 'शिल्लक बक्की', value: r2(totalDemand - totalPaid), count: 0 },
+  1318→    { inquiry: 'वसूल क्षमता %', value: totalDemand > 0 ? r2((totalPaid / totalDemand) * 100) : 0, count: 0 },
+  1319→  ];
+  1320→
+  1321→  return {
+  1322→    title: 'नमुना २६ - चौकशी अहवाल',
+  1323→    titleEn: 'Namuna 26 - Inquiry Summary',
+  1324→    headers: ['चौकशी बाब', 'रक्कम (₹)', 'संख्या'],
+  1325→    rows,
+  1326→    totals: { totalIncome: r2(totalIncome), totalExpenditure: r2(totalExpenditure), surplus: r2(totalIncome - totalExpenditure) },
+  1327→    meta: { village, financialYear: fy },
+  1328→  };
+  1329→}
+  1330→
+  1331→// ============================================================
+  1332→// NAMUNA 27 - शेरा नोंद (Remarks/Observations)
+  1333→// ============================================================
+  1334→async function generateNamuna27(fy: string) {
+  1335→  const [receipts, payments, namuna8s, namuna9s, village] = await Promise.all([
+  1336→    db.receiptEntry.findMany({ where: { financialYear: fy } }),
+  1337→    db.paymentEntry.findMany({ where: { financialYear: fy } }),
+  1338→    db.namuna8.findMany({ where: { financialYear: fy } }),
+  1339→    db.namuna9.findMany({ where: { financialYear: fy }, include: { payments: true } }),
+  1340→    db.villageInfo.findFirst(),
+  1341→  ]);
+  1342→
+  1343→  const remarks: { remark: string; remarkEn: string; severity: string; details: string }[] = [];
+  1344→
+  1345→  const unpostedReceipts = receipts.filter(r => !r.isPosted).length;
+  1346→  const unpostedPayments = payments.filter(p => !p.isPosted).length;
+  1347→
+  1348→  if (unpostedReceipts > 0) remarks.push({ remark: 'अपोस्ट केलेल्या प्राप्ती', remarkEn: 'Unposted Receipts', severity: 'Warning', details: `${unpostedReceipts} receipts not posted` });
+  1349→  if (unpostedPayments > 0) remarks.push({ remark: 'अपोस्ट केलेल्या अर्ज', remarkEn: 'Unposted Payments', severity: 'Warning', details: `${unpostedPayments} payments not posted` });
+  1350→
+  1351→  const totalDemand = namuna9s.reduce((s, n) => s + n.totalDemand, 0);
+  1352→  const totalPaid = namuna9s.reduce((s, n) => s + n.payments.reduce((ps, p) => ps + p.amountPaid, 0), 0);
+  1353→  const efficiency = totalDemand > 0 ? (totalPaid / totalDemand) * 100 : 0;
+  1354→
+  1355→  if (efficiency < 50 && totalDemand > 0) remarks.push({ remark: 'कमी वसूल क्षमता', remarkEn: 'Low Collection Efficiency', severity: 'Critical', details: `${r2(efficiency)}%, below 50%` });
+  1356→  else if (efficiency < 80 && totalDemand > 0) remarks.push({ remark: 'मध्यम वसूल क्षमता', remarkEn: 'Moderate Collection Efficiency', severity: 'Warning', details: `${r2(efficiency)}%, below 80%` });
+  1357→
+  1358→  if (namuna8s.length === 0) remarks.push({ remark: 'कर आकारणी नाही', remarkEn: 'No Tax Assessment', severity: 'Critical', details: 'No Namuna 8 entries' });
+  1359→  if (namuna9s.length === 0) remarks.push({ remark: 'मागणी नोंद नाही', remarkEn: 'No Demand Register', severity: 'Critical', details: 'No Namuna 9 entries' });
+  1360→
+  1361→  if (remarks.length === 0) remarks.push({ remark: 'सर्व ठीक आहे', remarkEn: 'All Clear', severity: 'Info', details: 'No issues found' });
+  1362→
+  1363→  return {
+  1364→    title: 'नमुना २७ - शेरा नोंद',
+  1365→    titleEn: 'Namuna 27 - Remarks/Observations',
+  1366→    headers: ['शेरा', 'शेरा (English)', 'गंभीरता', 'तपशील'],
+  1367→    rows: remarks,
+  1368→    totals: {
+  1369→      totalRemarks: remarks.length,
+  1370→      criticalCount: remarks.filter(r => r.severity === 'Critical').length,
+  1371→      warningCount: remarks.filter(r => r.severity === 'Warning').length,
+  1372→      infoCount: remarks.filter(r => r.severity === 'Info').length,
+  1373→    },
+  1374→    meta: { village, financialYear: fy },
+  1375→  };
+  1376→}
+  1377→
+  1378→// ============================================================
+  1379→// NAMUNA 28 - योजना निधी वही (Scheme Fund Register)
+  1380→// ============================================================
+  1381→async function generateNamuna28(fy: string) {
+  1382→  const [schemeFunds, schemes, village] = await Promise.all([
+  1383→    db.schemeFundEntry.findMany({ where: { financialYear: fy }, orderBy: { entryDate: 'asc' } }),
+  1384→    db.schemeInfo.findMany({ where: { isActive: true } }),
+  1385→    db.villageInfo.findFirst(),
+  1386→  ]);
+  1387→
+  1388→  const schemeMap = new Map(schemes.map(s => [s.id, s]));
+  1389→
+  1390→  const rows = schemeFunds.map(sf => ({
+  1391→    voucherNumber: sf.voucherNumber,
+  1392→    date: sf.entryDate,
+  1393→    schemeName: sf.schemeId ? schemeMap.get(sf.schemeId)?.schemeName || '' : '',
+  1394→    schemeNameMr: sf.schemeId ? schemeMap.get(sf.schemeId)?.schemeNameMr || '' : '',
+  1395→    schemeType: sf.schemeId ? schemeMap.get(sf.schemeId)?.schemeType || '' : '',
+  1396→    entryType: sf.entryType,
+  1397→    entryTypeMr: sf.entryType === 'Receipt' ? 'प्राप्ती' : 'अर्ज',
+  1398→    amount: sf.amount,
+  1399→    description: sf.description || '',
+  1400→  }));
+  1401→
+  1402→  const schemeSummary = new Map<string, { name: string; nameMr: string; type: string; allocation: number; receipts: number; payments: number; balance: number }>();
+  1403→  for (const s of schemes) {
+  1404→    schemeSummary.set(s.id, { name: s.schemeName, nameMr: s.schemeNameMr || '', type: s.schemeType || '', allocation: s.totalAllocation, receipts: 0, payments: 0, balance: 0 });
+  1405→  }
+  1406→  for (const sf of schemeFunds) {
+  1407→    const key = sf.schemeId || 'none';
+  1408→    if (!schemeSummary.has(key)) schemeSummary.set(key, { name: 'Unassigned', nameMr: '', type: '', allocation: 0, receipts: 0, payments: 0, balance: 0 });
+  1409→    const entry = schemeSummary.get(key)!;
+  1410→    if (sf.entryType === 'Receipt') entry.receipts += sf.amount;
+  1411→    else entry.payments += sf.amount;
+  1412→    entry.balance = r2(entry.receipts - entry.payments);
+  1413→  }
+  1414→
+  1415→  const totalReceipts = schemeFunds.filter(sf => sf.entryType === 'Receipt').reduce((s, sf) => s + sf.amount, 0);
+  1416→  const totalPayments = schemeFunds.filter(sf => sf.entryType === 'Payment').reduce((s, sf) => s + sf.amount, 0);
+  1417→
+  1418→  return {
+  1419→    title: 'नमुना २८ - योजना निधी वही',
+  1420→    titleEn: 'Namuna 28 - Scheme Fund Register',
+  1421→    headers: ['वाउचर क्र.', 'दिनांक', 'योजना', 'प्रकार', 'रक्कम (₹)', 'विवरण'],
+  1422→    rows,
+  1423→    schemeSummary: Array.from(schemeSummary.entries()).map(([id, v]) => ({ id, ...v })),
+  1424→    totals: {
+  1425→      totalEntries: schemeFunds.length,
+  1426→      totalReceipts: r2(totalReceipts),
+  1427→      totalPayments: r2(totalPayments),
+  1428→      balance: r2(totalReceipts - totalPayments),
+  1429→      totalSchemes: schemes.length,
+  1430→    },
+  1431→    meta: { village, financialYear: fy },
+  1432→  };
+  1433→}
+  1434→
+  1435→// ============================================================
+  1436→// NAMUNA 29 - योजना कामे वही (Scheme Works Register)
+  1437→// ============================================================
+  1438→async function generateNamuna29(fy: string) {
+  1439→  const [works, schemes, contractors, village] = await Promise.all([
+  1440→    db.workEntry.findMany({ where: { financialYear: fy }, orderBy: { workNumber: 'asc' } }),
+  1441→    db.schemeInfo.findMany(),
+  1442→    db.contractorMaster.findMany(),
+  1443→    db.villageInfo.findFirst(),
+  1444→  ]);
+  1445→
+  1446→  const schemeMap = new Map(schemes.map(s => [s.id, s]));
+  1447→  const contractorMap = new Map(contractors.map(c => [c.id, c]));
+  1448→
+  1449→  const rows = works.map(w => ({
+  1450→    workNumber: w.workNumber,
+  1451→    workName: w.workName,
+  1452→    workNameMr: w.workNameMr,
+  1453→    schemeName: w.schemeId ? schemeMap.get(w.schemeId)?.schemeName || '' : '',
+  1454→    contractorName: w.contractorId ? (contractorMap.get(w.contractorId)?.firmName || `${contractorMap.get(w.contractorId)?.firstName || ''} ${contractorMap.get(w.contractorId)?.lastName || ''}`) : '',
+  1455→    workType: w.workType || '',
+  1456→    sanctionDate: w.sanctionDate || '',
+  1457→    sanctionAmount: w.sanctionAmount,
+  1458→    progressPercent: w.progressPercent,
+  1459→    totalExpenditure: w.totalExpenditure,
+  1460→    status: w.status,
+  1461→  }));
+  1462→
+  1463→  return {
+  1464→    title: 'नमुना २९ - योजना कामे वही',
+  1465→    titleEn: 'Namuna 29 - Scheme Works Register',
+  1466→    headers: ['काम क्र.', 'कामाचे नाव', 'योजना', 'कंत्राटदार', 'काम प्रकार', 'स्वीकृती दिनांक', 'स्वीकृत रक्कम (₹)', 'प्रगती %', 'एकूण खर्च (₹)', 'स्थिती'],
+  1467→    rows,
+  1468→    totals: {
+  1469→      totalWorks: works.length,
+  1470→      totalSanctionAmount: r2(works.reduce((s, w) => s + w.sanctionAmount, 0)),
+  1471→      totalExpenditure: r2(works.reduce((s, w) => s + w.totalExpenditure, 0)),
+  1472→      avgProgress: works.length > 0 ? r2(works.reduce((s, w) => s + w.progressPercent, 0) / works.length) : 0,
+  1473→      byStatus: groupBy(works, 'status'),
+  1474→    },
+  1475→    meta: { village, financialYear: fy },
+  1476→  };
+  1477→}
+  1478→
+  1479→// ============================================================
+  1480→// NAMUNA 30 - योजना अहवाल (Scheme Completion Report)
+  1481→// ============================================================
+  1482→async function generateNamuna30(fy: string) {
+  1483→  const [works, schemes, village] = await Promise.all([
+  1484→    db.workEntry.findMany({ where: { financialYear: fy } }),
+  1485→    db.schemeInfo.findMany(),
+  1486→    db.villageInfo.findFirst(),
+  1487→  ]);
+  1488→
+  1489→  const schemeMap = new Map(schemes.map(s => [s.id, s]));
+  1490→
+  1491→  const byScheme = new Map<string, { schemeName: string; works: typeof works; totalSanction: number; totalExpenditure: number; completedCount: number }>();
+  1492→  for (const w of works) {
+  1493→    const key = w.schemeId || 'none';
+  1494→    const scheme = w.schemeId ? schemeMap.get(w.schemeId) : null;
+  1495→    if (!byScheme.has(key)) byScheme.set(key, { schemeName: scheme?.schemeName || 'Unassigned', works: [], totalSanction: 0, totalExpenditure: 0, completedCount: 0 });
+  1496→    const entry = byScheme.get(key)!;
+  1497→    entry.works.push(w);
+  1498→    entry.totalSanction += w.sanctionAmount;
+  1499→    entry.totalExpenditure += w.totalExpenditure;
+  1500→    if (w.status === 'Completed') entry.completedCount++;
+  1501→  }
+  1502→
+  1503→  const rows = Array.from(byScheme.entries()).map(([id, v]) => ({
+  1504→    id,
+  1505→    schemeName: v.schemeName,
+  1506→    totalWorks: v.works.length,
+  1507→    completedWorks: v.completedCount,
+  1508→    totalSanction: r2(v.totalSanction),
+  1509→    totalExpenditure: r2(v.totalExpenditure),
+  1510→    completionRate: v.works.length > 0 ? r2((v.completedCount / v.works.length) * 100) : 0,
+  1511→    utilizationRate: v.totalSanction > 0 ? r2((v.totalExpenditure / v.totalSanction) * 100) : 0,
+  1512→  }));
+  1513→
+  1514→  return {
+  1515→    title: 'नमुना ३० - योजना अहवाल',
+  1516→    titleEn: 'Namuna 30 - Scheme Completion Report',
+  1517→    headers: ['योजना', 'एकूण कामे', 'पूर्ण कामे', 'स्वीकृत रक्कम (₹)', 'एकूण खर्च (₹)', 'पूर्णता दर %', 'वापर दर %'],
+  1518→    rows,
+  1519→    totals: {
+  1520→      totalSchemes: rows.length,
+  1521→      totalWorks: works.length,
+  1522→      totalCompleted: works.filter(w => w.status === 'Completed').length,
+  1523→      totalSanction: r2(works.reduce((s, w) => s + w.sanctionAmount, 0)),
+  1524→      totalExpenditure: r2(works.reduce((s, w) => s + w.totalExpenditure, 0)),
+  1525→    },
+  1526→    meta: { village, financialYear: fy },
+  1527→  };
+  1528→}
+  1529→
+  1530→// ============================================================
+  1531→// NAMUNA 31 - उत्पन्न व खर्च खाते (Income & Expenditure Account)
+  1532→// ============================================================
+  1533→async function generateNamuna31(fy: string) {
+  1534→  const [receipts, payments, journals, ledgerEntries, village] = await Promise.all([
+  1535→    db.receiptEntry.findMany({ where: { financialYear: fy } }),
+  1536→    db.paymentEntry.findMany({ where: { financialYear: fy } }),
+  1537→    db.journalEntry.findMany({ where: { financialYear: fy } }),
+  1538→    db.ledgerEntry.findMany({ where: { financialYear: fy } }),
+  1539→    db.villageInfo.findFirst(),
+  1540→  ]);
+  1541→
+  1542→  let incomeByHead: { key: string; total: number }[];
+  1543→  let expenditureByHead: { key: string; total: number }[];
+  1544→
+  1545→  if (ledgerEntries.length > 0) {
+  1546→    const incomeMap = new Map<string, number>();
+  1547→    const expenditureMap = new Map<string, number>();
+  1548→    for (const le of ledgerEntries) {
+  1549→      if (le.creditAmount > 0) incomeMap.set(le.accountName || le.accountCode, (incomeMap.get(le.accountName || le.accountCode) || 0) + le.creditAmount);
+  1550→      if (le.debitAmount > 0) expenditureMap.set(le.accountName || le.accountCode, (expenditureMap.get(le.accountName || le.accountCode) || 0) + le.debitAmount);
+  1551→    }
+  1552→    incomeByHead = Array.from(incomeMap.entries()).map(([key, total]) => ({ key, total: r2(total) }));
+  1553→    expenditureByHead = Array.from(expenditureMap.entries()).map(([key, total]) => ({ key, total: r2(total) }));
+  1554→  } else {
+  1555→    incomeByHead = groupAndSum(receipts, 'headOfAccount', 'amount');
+  1556→    expenditureByHead = groupAndSum(payments, 'headOfAccount', 'amount');
+  1557→  }
+  1558→
+  1559→  const totalIncome = r2(incomeByHead.reduce((s, i) => s + i.total, 0));
+  1560→  const totalExpenditure = r2(expenditureByHead.reduce((s, e) => s + e.total, 0));
+  1561→
+  1562→  return {
+  1563→    title: 'नमुना ३१ - उत्पन्न व खर्च खाते',
+  1564→    titleEn: 'Namuna 31 - Income & Expenditure Account',
+  1565→    incomeHeaders: ['उत्पन्न शीर्ष', 'रक्कम (₹)'],
+  1566→    expenditureHeaders: ['खर्च शीर्ष', 'रक्कम (₹)'],
+  1567→    incomeRows: incomeByHead,
+  1568→    expenditureRows: expenditureByHead,
+  1569→    totals: {
+  1570→      totalIncome,
+  1571→      totalExpenditure,
+  1572→      surplus: r2(totalIncome - totalExpenditure),
+  1573→      deficit: totalExpenditure > totalIncome ? r2(totalExpenditure - totalIncome) : 0,
+  1574→    },
+  1575→    meta: { village, financialYear: fy, source: ledgerEntries.length > 0 ? 'ledger' : 'transactions' },
+  1576→  };
+  1577→}
+  1578→
+  1579→// ============================================================
+  1580→// NAMUNA 32 - मालमत्ता व देणेदारीपत्र (Balance Sheet)
+  1581→// ============================================================
+  1582→async function generateNamuna32(fy: string) {
+  1583→  const [receipts, payments, assets, bankAccounts, schemeFunds, village] = await Promise.all([
+  1584→    db.receiptEntry.findMany({ where: { financialYear: fy } }),
+  1585→    db.paymentEntry.findMany({ where: { financialYear: fy } }),
+  1586→    db.assetEntry.findMany(),
+  1587→    db.bankAccount.findMany({ where: { isActive: true } }),
+  1588→    db.schemeFundEntry.findMany({ where: { financialYear: fy } }),
+  1589→    db.villageInfo.findFirst(),
+  1590→  ]);
+  1591→
+  1592→  const totalIncome = receipts.reduce((s, r) => s + r.amount, 0);
+  1593→  const totalExpenditure = payments.reduce((s, p) => s + p.amount, 0);
+  1594→  const totalAssetValue = assets.reduce((s, a) => s + a.currentValue, 0);
+  1595→  const totalDepreciation = assets.reduce((s, a) => s + (a.purchaseCost - a.currentValue), 0);
+  1596→  const totalBankBalance = bankAccounts.reduce((s, b) => s + b.balance, 0);
+  1597→  const cashBalance = r2(totalIncome - totalExpenditure);
+  1598→  const schemeBalance = schemeFunds.filter(sf => sf.entryType === 'Receipt').reduce((s, sf) => s + sf.amount, 0) - schemeFunds.filter(sf => sf.entryType === 'Payment').reduce((s, sf) => s + sf.amount, 0);
+  1599→  const surplus = r2(totalIncome - totalExpenditure);
+  1600→
+  1601→  const assetRows = [
+  1602→    { category: 'स्थावर मालमत्ता', categoryEn: 'Fixed Assets', amount: r2(totalAssetValue) },
+  1603→    { category: 'घसारा', categoryEn: 'Depreciation', amount: r2(-totalDepreciation) },
+  1604→    { category: 'बँक शिल्लक', categoryEn: 'Bank Balance', amount: r2(totalBankBalance) },
+  1605→    { category: 'रोकड शिल्लक', categoryEn: 'Cash Balance', amount: cashBalance },
+  1606→  ];
+  1607→
+  1608→  const liabilityRows = [
+  1609→    { category: 'योजना निधी शिल्लक', categoryEn: 'Scheme Fund Balance', amount: r2(schemeBalance) },
+  1610→    { category: 'नफा / गाठ', categoryEn: 'Surplus / Reserve', amount: surplus },
+  1611→  ];
+  1612→
+  1613→  const totalAssets = r2(totalAssetValue + totalBankBalance + cashBalance);
+  1614→  const totalLiabilities = r2(schemeBalance + surplus);
+  1615→
+  1616→  return {
+  1617→    title: 'नमुना ३२ - मालमत्ता व देणेदारीपत्र',
+  1618→    titleEn: 'Namuna 32 - Balance Sheet',
+  1619→    assetHeaders: ['मालमत्ता', 'रक्कम (₹)'],
+  1620→    liabilityHeaders: ['देणेदारी', 'रक्कम (₹)'],
+  1621→    assetRows,
+  1622→    liabilityRows,
+  1623→    totals: { totalAssets, totalLiabilities, difference: r2(totalAssets - totalLiabilities), isBalanced: Math.abs(totalAssets - totalLiabilities) < 0.01 },
+  1624→    meta: { village, financialYear: fy },
+  1625→  };
+  1626→}
+  1627→
+  1628→// ============================================================
+  1629→// NAMUNA 33 - वित्तीय अहवाल (Financial Summary)
+  1630→// ============================================================
+  1631→async function generateNamuna33(fy: string) {
+  1632→  const [receipts, payments, journals, assets, stocks, bankAccounts, schemeFunds, namuna8s, namuna9s, collections, waterBills, works, village] = await Promise.all([
+  1633→    db.receiptEntry.findMany({ where: { financialYear: fy } }),
+  1634→    db.paymentEntry.findMany({ where: { financialYear: fy } }),
+  1635→    db.journalEntry.findMany({ where: { financialYear: fy } }),
+  1636→    db.assetEntry.findMany(),
+  1637→    db.stockEntry.findMany(),
+  1638→    db.bankAccount.findMany({ where: { isActive: true } }),
+  1639→    db.schemeFundEntry.findMany({ where: { financialYear: fy } }),
+  1640→    db.namuna8.findMany({ where: { financialYear: fy } }),
+  1641→    db.namuna9.findMany({ where: { financialYear: fy }, include: { payments: true } }),
+  1642→    db.collectionEntry.findMany({ where: { financialYear: fy } }),
+  1643→    db.waterBillEntry.findMany({ where: { financialYear: fy } }),
+  1644→    db.workEntry.findMany({ where: { financialYear: fy } }),
+  1645→    db.villageInfo.findFirst(),
+  1646→  ]);
+  1647→
+  1648→  const totalIncome = receipts.reduce((s, r) => s + r.amount, 0);
+  1649→  const totalExpenditure = payments.reduce((s, p) => s + p.amount, 0);
+  1650→  const totalDemand = namuna9s.reduce((s, n) => s + n.totalDemand, 0);
+  1651→  const totalPaid = namuna9s.reduce((s, n) => s + n.payments.reduce((ps, p) => ps + p.amountPaid, 0), 0);
+  1652→  const totalTaxAssessed = namuna8s.reduce((s, n) => s + (n.totalTaxAmt || n.totalTax), 0);
+  1653→  const totalAssetValue = assets.reduce((s, a) => s + a.currentValue, 0);
+  1654→  const totalBankBalance = bankAccounts.reduce((s, b) => s + b.balance, 0);
+  1655→  const totalSchemeReceipts = schemeFunds.filter(sf => sf.entryType === 'Receipt').reduce((s, sf) => s + sf.amount, 0);
+  1656→  const totalSchemePayments = schemeFunds.filter(sf => sf.entryType === 'Payment').reduce((s, sf) => s + sf.amount, 0);
+  1657→  const totalWaterBilled = waterBills.reduce((s, w) => s + w.totalAmount, 0);
+  1658→  const totalWaterPaid = waterBills.reduce((s, w) => s + w.paidAmount, 0);
+  1659→  const totalCollections = collections.reduce((s, c) => s + c.amount, 0);
+  1660→
+  1661→  return {
+  1662→    title: 'नमुना ३३ - वित्तीय अहवाल',
+  1663→    titleEn: 'Namuna 33 - Financial Summary',
+  1664→    receiptAndPayment: {
+  1665→      totalReceipts: r2(totalIncome), totalPayments: r2(totalExpenditure),
+  1666→      surplus: r2(totalIncome - totalExpenditure),
+  1667→      receiptCount: receipts.length, paymentCount: payments.length, journalCount: journals.length,
+  1668→    },
+  1669→    taxCollection: {
+  1670→      totalAssessed: r2(totalTaxAssessed), totalDemand: r2(totalDemand),
+  1671→      totalCollected: r2(totalPaid), totalOutstanding: r2(totalDemand - totalPaid),
+  1672→      collectionEfficiency: totalDemand > 0 ? r2((totalPaid / totalDemand) * 100) : 0,
+  1673→      totalCollections: r2(totalCollections),
+  1674→    },
+  1675→    waterTax: {
+  1676→      totalBilled: r2(totalWaterBilled), totalPaid: r2(totalWaterPaid),
+  1677→      totalOutstanding: r2(totalWaterBilled - totalWaterPaid),
+  1678→      pendingBills: waterBills.filter(w => w.status === 'Pending').length,
+  1679→    },
+  1680→    assetsAndStock: {
+  1681→      totalAssetValue: r2(totalAssetValue), totalAssetCount: assets.length,
+  1682→      totalDepreciation: r2(assets.reduce((s, a) => s + (a.purchaseCost - a.currentValue), 0)),
+  1683→      totalStockValue: r2(stocks.reduce((s, st) => s + st.totalValue, 0)), totalStockItems: stocks.length,
+  1684→      totalBankBalance: r2(totalBankBalance), bankCount: bankAccounts.length,
+  1685→    },
+  1686→    schemeAndWorks: {
+  1687→      totalSchemeReceipts: r2(totalSchemeReceipts), totalSchemePayments: r2(totalSchemePayments),
+  1688→      schemeBalance: r2(totalSchemeReceipts - totalSchemePayments),
+  1689→      totalWorks: works.length, completedWorks: works.filter(w => w.status === 'Completed').length,
+  1690→      totalSanctionAmount: r2(works.reduce((s, w) => s + w.sanctionAmount, 0)),
+  1691→      totalWorkExpenditure: r2(works.reduce((s, w) => s + w.totalExpenditure, 0)),
+  1692→    },
+  1693→    balanceSheet: {
+  1694→      totalAssets: r2(totalAssetValue + totalBankBalance + (totalIncome - totalExpenditure)),
+  1695→      totalLiabilities: r2(totalSchemeReceipts - totalSchemePayments + (totalIncome - totalExpenditure)),
+  1696→    },
+  1697→    meta: { village, financialYear: fy, generatedAt: new Date().toISOString() },
+  1698→  };
+  1699→}
+  1700→
+  1701→// ============================================================
+  1702→// SUMMARY ENDPOINT - When namuna=all
+  1703→// ============================================================
+  1704→async function generateSummary(fy: string) {
+  1705→  const budgetCount = await db.budgetEntry.count({ where: { financialYear: fy } });
+  1706→  const receiptCount = await db.receiptEntry.count({ where: { financialYear: fy } });
+  1707→  const paymentCount = await db.paymentEntry.count({ where: { financialYear: fy } });
+  1708→  const journalCount = await db.journalEntry.count({ where: { financialYear: fy } });
+  1709→  const assetCount = await db.assetEntry.count();
+  1710→  const stockCount = await db.stockEntry.count();
+  1711→  const schemeFundCount = await db.schemeFundEntry.count({ where: { financialYear: fy } });
+  1712→  const namuna8Count = await db.namuna8.count({ where: { financialYear: fy } });
+  1713→  const namuna9Count = await db.namuna9.count({ where: { financialYear: fy } });
+  1714→  const paymentCount2 = await db.payment.count();
+  1715→  const collectionCount = await db.collectionEntry.count({ where: { financialYear: fy } });
+  1716→  const waterBillCount = await db.waterBillEntry.count({ where: { financialYear: fy } });
+  1717→  const workCount = await db.workEntry.count({ where: { financialYear: fy } });
+  1718→  const ledgerCount = await db.ledgerEntry.count({ where: { financialYear: fy } });
+  1719→  const bankCount = await db.bankAccount.count({ where: { isActive: true } });
+  1720→  const salaryCount = await db.salaryEntry.count({ where: { financialYear: fy } });
+  1721→
+  1722→  const namunaDefinitions = [
+  1723→    { namuna: 1, title: 'अंदाजपत्रक मालमत्ता पत्र', titleEn: 'Budget Assets Sheet', source: 'BudgetEntry', count: budgetCount },
+  1724→    { namuna: 2, title: 'अंदाजपत्रक उत्पन्न व खर्च', titleEn: 'Budget Income vs Expenditure', source: 'BudgetEntry', count: budgetCount },
+  1725→    { namuna: 3, title: 'रोकड वही', titleEn: 'Cash Book', source: 'ReceiptEntry+PaymentEntry', count: receiptCount + paymentCount },
+  1726→    { namuna: 4, title: 'बँक वही', titleEn: 'Bank Book', source: 'ReceiptEntry+PaymentEntry(Bank)', count: receiptCount + paymentCount },
+  1727→    { namuna: 5, title: 'मालमत्ता रजिस्टर', titleEn: 'Asset Register', source: 'AssetEntry', count: assetCount },
+  1728→    { namuna: 6, title: 'साठा रजिस्टर', titleEn: 'Stock Register', source: 'StockEntry', count: stockCount },
+  1729→    { namuna: 7, title: 'अनुदान नोंदवही', titleEn: 'Grant Register', source: 'SchemeFundEntry', count: schemeFundCount },
+  1730→    { namuna: 8, title: 'कर आकारणी', titleEn: 'Tax Assessment', source: 'Namuna8', count: namuna8Count },
+  1731→    { namuna: 9, title: 'मागणी नोंदवही', titleEn: 'Demand Register', source: 'Namuna9', count: namuna9Count },
+  1732→    { namuna: 10, title: 'थकबाकी/DCB', titleEn: 'Demand Collection Balance', source: 'Namuna9+Payment', count: namuna9Count + paymentCount2 },
+  1733→    { namuna: 11, title: 'दैनंदिन रोकड वही', titleEn: 'Daily Cash Summary', source: 'ReceiptEntry+PaymentEntry', count: receiptCount + paymentCount },
+  1734→    { namuna: 12, title: 'जमा खाते रजिस्टर', titleEn: 'Credit Account Register', source: 'LedgerEntry+ReceiptEntry', count: Math.max(ledgerCount, receiptCount) },
+  1735→    { namuna: 13, title: 'नामे खाते रजिस्टर', titleEn: 'Debit Account Register', source: 'LedgerEntry+PaymentEntry', count: Math.max(ledgerCount, paymentCount) },
+  1736→    { namuna: 14, title: 'खाते खत', titleEn: 'Ledger', source: 'LedgerEntry+Transactions', count: Math.max(ledgerCount, receiptCount + paymentCount + journalCount) },
+  1737→    { namuna: 15, title: 'तपासणी पत्र', titleEn: 'Trial Balance', source: 'LedgerEntry+Transactions', count: Math.max(ledgerCount, receiptCount + paymentCount) },
+  1738→    { namuna: 16, title: 'मालमत्ता वही', titleEn: 'Asset Verification', source: 'AssetEntry', count: assetCount },
+  1739→    { namuna: 17, title: 'देताणी वही', titleEn: 'Liabilities Register', source: 'BudgetEntry+PaymentEntry', count: budgetCount + paymentCount },
+  1740→    { namuna: 18, title: 'आढावा मालमत्ता', titleEn: 'Asset Verification Report', source: 'AssetEntry', count: assetCount },
+  1741→    { namuna: 19, title: 'कर वसूल वही', titleEn: 'Tax Collection Register', source: 'CollectionEntry', count: collectionCount },
+  1742→    { namuna: 20, title: 'पाणीपट्टी वसूल वही', titleEn: 'Water Tax Collection', source: 'WaterBillEntry', count: waterBillCount },
+  1743→    { namuna: 21, title: 'वसूल तपासणी', titleEn: 'Collection Verification', source: 'CollectionEntry+Payment', count: collectionCount + paymentCount2 },
+  1744→    { namuna: 22, title: 'देणेदार यादी', titleEn: 'Debtors List', source: 'Namuna9+Payment', count: namuna9Count },
+  1745→    { namuna: 23, title: 'फाळवणार यादी', titleEn: 'Creditors List', source: 'PaymentEntry', count: paymentCount },
+  1746→    { namuna: 24, title: 'वसूल अहवाल', titleEn: 'Collection Summary', source: 'Multiple', count: collectionCount + namuna8Count + namuna9Count + waterBillCount },
+  1747→    { namuna: 25, title: 'हिशेब तपासणी', titleEn: 'Audit Report', source: 'All Entries', count: receiptCount + paymentCount + journalCount + assetCount + namuna8Count + namuna9Count + collectionCount },
+  1748→    { namuna: 26, title: 'चौकशी अहवाल', titleEn: 'Inquiry Summary', source: 'All Entries', count: receiptCount + paymentCount + namuna8Count + namuna9Count },
+  1749→    { namuna: 27, title: 'शेरा नोंद', titleEn: 'Remarks/Observations', source: 'All Entries', count: receiptCount + paymentCount + namuna8Count + namuna9Count },
+  1750→    { namuna: 28, title: 'योजना निधी वही', titleEn: 'Scheme Fund Register', source: 'SchemeFundEntry+SchemeInfo', count: schemeFundCount },
+  1751→    { namuna: 29, title: 'योजना कामे वही', titleEn: 'Scheme Works Register', source: 'WorkEntry', count: workCount },
+  1752→    { namuna: 30, title: 'योजना अहवाल', titleEn: 'Scheme Completion Report', source: 'WorkEntry+SchemeInfo', count: workCount },
+  1753→    { namuna: 31, title: 'उत्पन्न व खर्च खाते', titleEn: 'Income & Expenditure Account', source: 'LedgerEntry+Transactions', count: Math.max(ledgerCount, receiptCount + paymentCount) },
+  1754→    { namuna: 32, title: 'मालमत्ता व देणेदारीपत्र', titleEn: 'Balance Sheet', source: 'All Data', count: assetCount + bankCount + receiptCount + paymentCount + schemeFundCount },
+  1755→    { namuna: 33, title: 'वित्तीय अहवाल', titleEn: 'Financial Summary', source: 'All Data', count: receiptCount + paymentCount + assetCount + namuna8Count + namuna9Count + collectionCount + waterBillCount + workCount },
+  1756→  ];
+  1757→
+  1758→  const summary = namunaDefinitions.map(n => ({
+  1759→    ...n,
+  1760→    status: n.count > 0 ? (n.count >= 5 ? 'available' as const : 'partial' as const) : 'none' as const,
+  1761→  }));
+  1762→
+  1763→  return NextResponse.json({
+  1764→    title: 'नमुना १-३३ सारांश',
+  1765→    titleEn: 'Namuna 1-33 Summary',
+  1766→    financialYear: fy,
+  1767→    namunas: summary,
+  1768→    totalAvailable: summary.filter(n => n.status === 'available').length,
+  1769→    totalPartial: summary.filter(n => n.status === 'partial').length,
+  1770→    totalNone: summary.filter(n => n.status === 'none').length,
+  1771→    dataCounts: {
+  1772→      budgetEntries: budgetCount,
+  1773→      receiptEntries: receiptCount,
+  1774→      paymentEntries: paymentCount,
+  1775→      journalEntries: journalCount,
+  1776→      assetEntries: assetCount,
+  1777→      stockEntries: stockCount,
+  1778→      schemeFundEntries: schemeFundCount,
+  1779→      namuna8Entries: namuna8Count,
+  1780→      namuna9Entries: namuna9Count,
+  1781→      payments: paymentCount2,
+  1782→      collectionEntries: collectionCount,
+  1783→      waterBillEntries: waterBillCount,
+  1784→      workEntries: workCount,
+  1785→      ledgerEntries: ledgerCount,
+  1786→      bankAccounts: bankCount,
+  1787→      salaryEntries: salaryCount,
+  1788→    },
+  1789→  });
+  1790→}
+  1791→

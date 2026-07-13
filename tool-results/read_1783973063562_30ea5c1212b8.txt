@@ -1,0 +1,1074 @@
+     1→     1→import { db } from '@/lib/db';
+     2→     2→import { NextRequest, NextResponse } from 'next/server';
+     3→     3→
+     4→     4→// GET - Namuna 1-33 auto-generation
+     5→     5→export async function GET(request: NextRequest) {
+     6→     6→  try {
+     7→     7→    const { searchParams } = new URL(request.url);
+     8→     8→    const namuna = searchParams.get('namuna');
+     9→     9→    const financialYear = searchParams.get('financialYear');
+    10→    10→
+    11→    11→    if (!namuna) {
+    12→    12→      return NextResponse.json({ error: 'Namuna number required (1-33)' }, { status: 400 });
+    13→    13→    }
+    14→    14→
+    15→    15→    const namunaNum = parseInt(namuna, 10);
+    16→    16→    if (isNaN(namunaNum) || namunaNum < 1 || namunaNum > 33) {
+    17→    17→      return NextResponse.json({ error: 'Invalid Namuna number. Must be 1-33' }, { status: 400 });
+    18→    18→    }
+    19→    19→
+    20→    20→    const fyFilter = financialYear ? { financialYear } : {};
+    21→    21→
+    22→    22→    // Get village info for all namunas
+    23→    23→    const village = await db.villageInfo.findFirst();
+    24→    24→
+    25→    25→    switch (namunaNum) {
+    26→    26→      case 1: {
+    27→    27→        // Namuna 1: Property Registration from PropertyMaster
+    28→    28→        const properties = await db.propertyMaster.findMany({
+    29→    29→          include: {
+    30→    30→            ward: true,
+    31→    31→            road: true,
+    32→    32→            owners: { include: { owner: true } },
+    33→    33→            taxRates: { include: { taxMaster: true } },
+    34→    34→          },
+    35→    35→          orderBy: { propertyNumber: 'asc' },
+    36→    36→        });
+    37→    37→
+    38→    38→        return NextResponse.json({
+    39→    39→          namuna: 1,
+    40→    40→          title: 'अर्थसंकल्प/अंदाजपत्रक',
+    41→    41→          titleEn: 'Budget Estimate',
+    42→    42→          village,
+    43→    43→          financialYear: financialYear || 'All',
+    44→    44→          entries: properties,
+    45→    45→          summary: {
+    46→    46→            totalProperties: properties.length,
+    47→    47→            byConstructionType: groupBy(properties, 'constructionType'),
+    48→    48→            byUsageType: groupBy(properties, 'usageType'),
+    49→    49→            byWard: properties.reduce((acc: Record<string, number>, p) => {
+    50→    50→              const key = p.ward?.wardName || 'Unassigned';
+    51→    51→              acc[key] = (acc[key] || 0) + 1;
+    52→    52→              return acc;
+    53→    53→            }, {}),
+    54→    54→          },
+    55→    55→        });
+    56→    56→      }
+    57→    57→
+    58→    58→      case 2: {
+    59→    59→        // Namuna 2: Property Valuation from PropertyMaster + ReadyReckoner
+    60→    60→        const properties = await db.propertyMaster.findMany({
+    61→    61→          include: {
+    62→    62→            ward: true,
+    63→    63→            owners: { include: { owner: true } },
+    64→    64→            taxRates: { include: { taxMaster: true } },
+    65→    65→          },
+    66→    66→          orderBy: { propertyNumber: 'asc' },
+    67→    67→        });
+    68→    68→
+    69→    69→        const readyReckoner = await db.readyReckonerMaster.findMany();
+    70→    70→        const namuna8s = await db.namuna8.findMany({
+    71→    71→          where: financialYear ? { financialYear } : {},
+    72→    72→          include: { property: { include: { ward: true } } },
+    73→    73→        });
+    74→    74→
+    75→    75→        // Calculate valuations
+    76→    76→        const valuations = properties.map(p => {
+    77→    77→          const rr = readyReckoner.find(r =>
+    78→    78→            r.usageType === p.usageType && r.constructionType === p.constructionType
+    79→    79→          );
+    80→    80→          const area = p.area || 0;
+    81→    81→          const rate = rr?.ratePerSqFt || 0;
+    82→    82→          const depreciation = p.depreciationRate || 0;
+    83→    83→          const usageFactor = p.usageFactor || 1;
+    84→    84→          const capitalValue = area * rate * (1 - depreciation / 100) * usageFactor;
+    85→    85→          const taxRate = p.taxRate || 0;
+    86→    86→          const annualTax = capitalValue * taxRate / 1000;
+    87→    87→
+    88→    88→          return {
+    89→    89→            propertyId: p.id,
+    90→    90→            propertyNumber: p.propertyNumber,
+    91→    91→            wardName: p.ward?.wardName || '',
+    92→    92→            usageType: p.usageType || '',
+    93→    93→            constructionType: p.constructionType || '',
+    94→    94→            area,
+    95→    95→            ratePerSqFt: rate,
+    96→    96→            depreciation,
+    97→    97→            usageFactor,
+    98→    98→            capitalValue: Math.round(capitalValue * 100) / 100,
+    99→    99→            taxRate,
+   100→   100→            annualTax: Math.round(annualTax * 100) / 100,
+   101→   101→            namuna8: namuna8s.find(n => n.propertyId === p.id),
+   102→   102→          };
+   103→   103→        });
+   104→   104→
+   105→   105→        const totalCapitalValue = valuations.reduce((sum, v) => sum + v.capitalValue, 0);
+   106→   106→        const totalTax = valuations.reduce((sum, v) => sum + v.annualTax, 0);
+   107→   107→
+   108→   108→        return NextResponse.json({
+   109→   109→          namuna: 2,
+   110→   110→          title: 'पुनर्विनियोजन व नियत वाटप (सुधारित अर्थसंकल्प)',
+   111→   111→          titleEn: 'Re-appropriation & Revised Budget',
+   112→   112→          village,
+   113→   113→          financialYear: financialYear || 'All',
+   114→   114→          entries: valuations,
+   115→   115→          summary: {
+   116→   116→            totalProperties: properties.length,
+   117→   117→            totalCapitalValue: Math.round(totalCapitalValue * 100) / 100,
+   118→   118→            totalAnnualTax: Math.round(totalTax * 100) / 100,
+   119→   119→            averageTaxPerProperty: properties.length ? Math.round((totalTax / properties.length) * 100) / 100 : 0,
+   120→   120→          },
+   121→   121→        });
+   122→   122→      }
+   123→   123→
+   124→   124→      case 3: {
+   125→   125→        // Namuna 3: Cash Book from ReceiptEntry + PaymentEntry
+   126→   126→        const [receipts, payments] = await Promise.all([
+   127→   127→          db.receiptEntry.findMany({
+   128→   128→            where: fyFilter as Parameters<typeof db.receiptEntry.findMany>[0]['where'],
+   129→   129→            orderBy: { receiptDate: 'asc' },
+   130→   130→          }),
+   131→   131→          db.paymentEntry.findMany({
+   132→   132→            where: fyFilter as Parameters<typeof db.paymentEntry.findMany>[0]['where'],
+   133→   133→            orderBy: { paymentDate: 'asc' },
+   134→   134→          }),
+   135→   135→        ]);
+   136→   136→
+   137→   137→        const totalReceipts = receipts.reduce((sum, r) => sum + r.amount, 0);
+   138→   138→        const totalPayments = payments.reduce((sum, p) => sum + p.amount, 0);
+   139→   139→
+   140→   140→        return NextResponse.json({
+   141→   141→          namuna: 3,
+   142→   142→          title: 'ग्रामपंचायत जमा-खर्च विवरण',
+   143→   143→          titleEn: 'Income & Expenditure Statement',
+   144→   144→          village,
+   145→   145→          financialYear: financialYear || 'All',
+   146→   146→          receipts,
+   147→   147→          payments,
+   148→   148→          summary: {
+   149→   149→            totalReceipts: Math.round(totalReceipts * 100) / 100,
+   150→   150→            totalPayments: Math.round(totalPayments * 100) / 100,
+   151→   151→            closingBalance: Math.round((totalReceipts - totalPayments) * 100) / 100,
+   152→   152→            receiptCount: receipts.length,
+   153→   153→            paymentCount: payments.length,
+   154→   154→          },
+   155→   155→        });
+   156→   156→      }
+   157→   157→
+   158→   158→      case 4: {
+   159→   159→        // Namuna 4: Bank Book from ReceiptEntry + PaymentEntry (bank transactions)
+   160→   160→        const [bankReceipts, bankPayments] = await Promise.all([
+   161→   161→          db.receiptEntry.findMany({
+   162→   162→            where: { ...fyFilter, bankAccountId: { not: null } } as Parameters<typeof db.receiptEntry.findMany>[0]['where'],
+   163→   163→            orderBy: { receiptDate: 'asc' },
+   164→   164→          }),
+   165→   165→          db.paymentEntry.findMany({
+   166→   166→            where: { ...fyFilter, bankAccountId: { not: null } } as Parameters<typeof db.paymentEntry.findMany>[0]['where'],
+   167→   167→            orderBy: { paymentDate: 'asc' },
+   168→   168→          }),
+   169→   169→        ]);
+   170→   170→
+   171→   171→        const bankAccountIds = [
+   172→   172→          ...new Set([
+   173→   173→            ...bankReceipts.map(r => r.bankAccountId).filter(Boolean) as string[],
+   174→   174→            ...bankPayments.map(p => p.bankAccountId).filter(Boolean) as string[],
+   175→   175→          ]),
+   176→   176→        ];
+   177→   177→
+   178→   178→        const bankAccounts = bankAccountIds.length > 0
+   179→   179→          ? await db.bankAccount.findMany({ where: { id: { in: bankAccountIds } } })
+   180→   180→          : [];
+   181→   181→
+   182→   182→        const totalDeposits = bankReceipts.reduce((sum, r) => sum + r.amount, 0);
+   183→   183→        const totalWithdrawals = bankPayments.reduce((sum, p) => sum + p.amount, 0);
+   184→   184→
+   185→   185→        return NextResponse.json({
+   186→   186→          namuna: 4,
+   187→   187→          title: 'ग्रामपंचायतीची मत्ता व दायित्वे',
+   188→   188→          titleEn: 'Assets & Liabilities',
+   189→   189→          village,
+   190→   190→          financialYear: financialYear || 'All',
+   191→   191→          bankAccounts,
+   192→   192→          deposits: bankReceipts,
+   193→   193→          withdrawals: bankPayments,
+   194→   194→          summary: {
+   195→   195→            totalDeposits: Math.round(totalDeposits * 100) / 100,
+   196→   196→            totalWithdrawals: Math.round(totalWithdrawals * 100) / 100,
+   197→   197→            closingBalance: Math.round((totalDeposits - totalWithdrawals) * 100) / 100,
+   198→   198→            bankCount: bankAccounts.length,
+   199→   199→          },
+   200→   200→        });
+   201→   201→      }
+   202→   202→
+   203→   203→      case 5: {
+   204→   204→        // Namuna 5: Asset Register from AssetEntry
+   205→   205→        const assets = await db.assetEntry.findMany({
+   206→   206→          orderBy: { assetNumber: 'asc' },
+   207→   207→        });
+   208→   208→
+   209→   209→        const totalPurchaseCost = assets.reduce((sum, a) => sum + a.purchaseCost, 0);
+   210→   210→        const totalCurrentValue = assets.reduce((sum, a) => sum + a.currentValue, 0);
+   211→   211→
+   212→   212→        return NextResponse.json({
+   213→   213→          namuna: 5,
+   214→   214→          title: 'सामान्य रोकड वही',
+   215→   215→          titleEn: 'General Cash Book',
+   216→   216→          village,
+   217→   217→          financialYear: financialYear || 'All',
+   218→   218→          entries: assets,
+   219→   219→          summary: {
+   220→   220→            totalAssets: assets.length,
+   221→   221→            totalPurchaseCost: Math.round(totalPurchaseCost * 100) / 100,
+   222→   222→            totalCurrentValue: Math.round(totalCurrentValue * 100) / 100,
+   223→   223→            totalDepreciation: Math.round((totalPurchaseCost - totalCurrentValue) * 100) / 100,
+   224→   224→            byType: groupBy(assets, 'assetType'),
+   225→   225→            byStatus: groupBy(assets, 'status'),
+   226→   226→          },
+   227→   227→        });
+   228→   228→      }
+   229→   229→
+   230→   230→      case 6: {
+   231→   231→        // Namuna 6: Stock Register from StockEntry
+   232→   232→        const stocks = await db.stockEntry.findMany({
+   233→   233→          orderBy: { stockNumber: 'asc' },
+   234→   234→        });
+   235→   235→
+   236→   236→        const totalValue = stocks.reduce((sum, s) => sum + s.totalValue, 0);
+   237→   237→
+   238→   238→        return NextResponse.json({
+   239→   239→          namuna: 6,
+   240→   240→          title: 'वर्गीकृत नोंदवही',
+   241→   241→          titleEn: 'Classified Receipt Register',
+   242→   242→          village,
+   243→   243→          financialYear: financialYear || 'All',
+   244→   244→          entries: stocks,
+   245→   245→          summary: {
+   246→   246→            totalItems: stocks.length,
+   247→   247→            totalValue: Math.round(totalValue * 100) / 100,
+   248→   248→            byCategory: groupBy(stocks, 'category'),
+   249→   249→            byStatus: groupBy(stocks, 'status'),
+   250→   250→          },
+   251→   251→        });
+   252→   252→      }
+   253→   253→
+   254→   254→      case 7: {
+   255→   255→        // Namuna 7: Revenue Collection from CollectionEntry
+   256→   256→        const collections = await db.collectionEntry.findMany({
+   257→   257→          where: fyFilter as Parameters<typeof db.collectionEntry.findMany>[0]['where'],
+   258→   258→          orderBy: { collectionDate: 'asc' },
+   259→   259→        });
+   260→   260→
+   261→   261→        const totalCollected = collections.reduce((sum, c) => sum + c.amount, 0);
+   262→   262→
+   263→   263→        return NextResponse.json({
+   264→   264→          namuna: 7,
+   265→   265→          title: 'सामान्य पावती',
+   266→   266→          titleEn: 'General Receipt',
+   267→   267→          village,
+   268→   268→          financialYear: financialYear || 'All',
+   269→   269→          entries: collections,
+   270→   270→          summary: {
+   271→   271→            totalEntries: collections.length,
+   272→   272→            totalCollected: Math.round(totalCollected * 100) / 100,
+   273→   273→            byType: groupBy(collections, 'collectionType'),
+   274→   274→            byPaymentMethod: groupBy(collections, 'paymentMethod'),
+   275→   275→          },
+   276→   276→        });
+   277→   277→      }
+   278→   278→
+   279→   279→      case 8: {
+   280→   280→        // Namuna 8: Tax Assessment Register
+   281→   281→        const namuna8s = await db.namuna8.findMany({
+   282→   282→          where: financialYear ? { financialYear } : {},
+   283→   283→          include: {
+   284→   284→            property: {
+   285→   285→              include: {
+   286→   286→                ward: true,
+   287→   287→                owners: { include: { owner: true } },
+   288→   288→              },
+   289→   289→            },
+   290→   290→          },
+   291→   291→          orderBy: { createdAt: 'desc' },
+   292→   292→        });
+   293→   293→
+   294→   294→        const totalTax = namuna8s.reduce((sum, n) => sum + (n.totalTaxAmt || n.totalTax), 0);
+   295→   295→
+   296→   296→        return NextResponse.json({
+   297→   297→          namuna: 8,
+   298→   298→          title: 'कर आकारणी नोंदवही',
+   299→   299→          titleEn: 'Tax Assessment Register',
+   300→   300→          village,
+   301→   301→          financialYear: financialYear || 'All',
+   302→   302→          entries: namuna8s,
+   303→   303→          summary: {
+   304→   304→            totalEntries: namuna8s.length,
+   305→   305→            totalTax: Math.round(totalTax * 100) / 100,
+   306→   306→          },
+   307→   307→        });
+   308→   308→      }
+   309→   309→
+   310→   310→      case 9: {
+   311→   311→        // Namuna 9: Demand Register
+   312→   312→        const namuna9s = await db.namuna9.findMany({
+   313→   313→          where: financialYear ? { financialYear } : {},
+   314→   314→          include: {
+   315→   315→            property: {
+   316→   316→              include: {
+   317→   317→                ward: true,
+   318→   318→                owners: { include: { owner: true } },
+   319→   319→              },
+   320→   320→            },
+   321→   321→            payments: true,
+   322→   322→          },
+   323→   323→          orderBy: { createdAt: 'desc' },
+   324→   324→        });
+   325→   325→
+   326→   326→        const totalDemand = namuna9s.reduce((sum, n) => sum + n.totalDemand, 0);
+   327→   327→        const totalPaid = namuna9s.reduce((sum, n) => sum + n.payments.reduce((s, p) => s + p.amountPaid, 0), 0);
+   328→   328→
+   329→   329→        return NextResponse.json({
+   330→   330→          namuna: 9,
+   331→   331→          title: 'कर मागणी नोंदवही',
+   332→   332→          titleEn: 'Tax Demand Register',
+   333→   333→          village,
+   334→   334→          financialYear: financialYear || 'All',
+   335→   335→          entries: namuna9s,
+   336→   336→          summary: {
+   337→   337→            totalEntries: namuna9s.length,
+   338→   338→            totalDemand: Math.round(totalDemand * 100) / 100,
+   339→   339→            totalPaid: Math.round(totalPaid * 100) / 100,
+   340→   340→            totalOutstanding: Math.round((totalDemand - totalPaid) * 100) / 100,
+   341→   341→          },
+   342→   342→        });
+   343→   343→      }
+   344→   344→
+   345→   345→      case 10: {
+   346→   346→        // Namuna 10: Grant Register from SchemeFundEntry
+   347→   347→        const schemeFunds = await db.schemeFundEntry.findMany({
+   348→   348→          where: fyFilter as Parameters<typeof db.schemeFundEntry.findMany>[0]['where'],
+   349→   349→          orderBy: { entryDate: 'asc' },
+   350→   350→        });
+   351→   351→
+   352→   352→        const totalReceipts = schemeFunds.filter(sf => sf.entryType === 'Receipt').reduce((sum, sf) => sum + sf.amount, 0);
+   353→   353→        const totalPayments = schemeFunds.filter(sf => sf.entryType === 'Payment').reduce((sum, sf) => sum + sf.amount, 0);
+   354→   354→
+   355→   355→        return NextResponse.json({
+   356→   356→          namuna: 10,
+   357→   357→          title: 'कर व फी बाबत पावती',
+   358→   358→          titleEn: 'Tax & Fee Receipt',
+   359→   359→          village,
+   360→   360→          financialYear: financialYear || 'All',
+   361→   361→          entries: schemeFunds,
+   362→   362→          summary: {
+   363→   363→            totalEntries: schemeFunds.length,
+   364→   364→            totalReceipts: Math.round(totalReceipts * 100) / 100,
+   365→   365→            totalPayments: Math.round(totalPayments * 100) / 100,
+   366→   366→            balance: Math.round((totalReceipts - totalPayments) * 100) / 100,
+   367→   367→          },
+   368→   368→        });
+   369→   369→      }
+   370→   370→
+   371→   371→      case 11: {
+   372→   372→        // Namuna 11: Income/Revenue Summary
+   373→   373→        const receipts = await db.receiptEntry.findMany({
+   374→   374→          where: fyFilter as Parameters<typeof db.receiptEntry.findMany>[0]['where'],
+   375→   375→        });
+   376→   376→
+   377→   377→        const grouped = groupAndSum(receipts, 'headOfAccount', 'amount');
+   378→   378→
+   379→   379→        return NextResponse.json({
+   380→   380→          namuna: 11,
+   381→   381→          title: 'किरकोळ कर व फी आकारणी नोंदवही',
+   382→   382→          titleEn: 'Miscellaneous Tax & Fee Assessment Register',
+   383→   383→          village,
+   384→   384→          financialYear: financialYear || 'All',
+   385→   385→          entries: receipts,
+   386→   386→          grouped,
+   387→   387→          summary: {
+   388→   388→            totalIncome: Math.round(receipts.reduce((s, r) => s + r.amount, 0) * 100) / 100,
+   389→   389→            totalEntries: receipts.length,
+   390→   390→          },
+   391→   391→        });
+   392→   392→      }
+   393→   393→
+   394→   394→      case 12: {
+   395→   395→        // Namuna 12: Expenditure Summary
+   396→   396→        const payments = await db.paymentEntry.findMany({
+   397→   397→          where: fyFilter as Parameters<typeof db.paymentEntry.findMany>[0]['where'],
+   398→   398→        });
+   399→   399→
+   400→   400→        const grouped = groupAndSum(payments, 'headOfAccount', 'amount');
+   401→   401→
+   402→   402→        return NextResponse.json({
+   403→   403→          namuna: 12,
+   404→   404→          title: 'अकस्मात खर्चाचे प्रमाणक',
+   405→   405→          titleEn: 'Contingent Expense Voucher',
+   406→   406→          village,
+   407→   407→          financialYear: financialYear || 'All',
+   408→   408→          entries: payments,
+   409→   409→          grouped,
+   410→   410→          summary: {
+   411→   411→            totalExpenditure: Math.round(payments.reduce((s, p) => s + p.amount, 0) * 100) / 100,
+   412→   412→            totalEntries: payments.length,
+   413→   413→          },
+   414→   414→        });
+   415→   415→      }
+   416→   416→
+   417→   417→      case 13: {
+   418→   418→        // Namuna 13: Income vs Expenditure
+   419→   419→        const [receipts, payments] = await Promise.all([
+   420→   420→          db.receiptEntry.findMany({
+   421→   421→            where: fyFilter as Parameters<typeof db.receiptEntry.findMany>[0]['where'],
+   422→   422→          }),
+   423→   423→          db.paymentEntry.findMany({
+   424→   424→            where: fyFilter as Parameters<typeof db.paymentEntry.findMany>[0]['where'],
+   425→   425→          }),
+   426→   426→        ]);
+   427→   427→
+   428→   428→        const totalIncome = receipts.reduce((s, r) => s + r.amount, 0);
+   429→   429→        const totalExpenditure = payments.reduce((s, p) => s + p.amount, 0);
+   430→   430→
+   431→   431→        return NextResponse.json({
+   432→   432→          namuna: 13,
+   433→   433→          title: 'कर्मचारी नोंदवही',
+   434→   434→          titleEn: 'Employee Register',
+   435→   435→          village,
+   436→   436→          financialYear: financialYear || 'All',
+   437→   437→          incomeByHead: groupAndSum(receipts, 'headOfAccount', 'amount'),
+   438→   438→          expenditureByHead: groupAndSum(payments, 'headOfAccount', 'amount'),
+   439→   439→          summary: {
+   440→   440→            totalIncome: Math.round(totalIncome * 100) / 100,
+   441→   441→            totalExpenditure: Math.round(totalExpenditure * 100) / 100,
+   442→   442→            surplus: Math.round((totalIncome - totalExpenditure) * 100) / 100,
+   443→   443→            deficit: totalExpenditure > totalIncome ? Math.round((totalExpenditure - totalIncome) * 100) / 100 : 0,
+   444→   444→          },
+   445→   445→        });
+   446→   446→      }
+   447→   447→
+   448→   448→      case 14: {
+   449→   449→        // Namuna 14: Budget vs Actual
+   450→   450→        const [receipts, payments, budgetHeads] = await Promise.all([
+   451→   451→          db.receiptEntry.findMany({
+   452→   452→            where: fyFilter as Parameters<typeof db.receiptEntry.findMany>[0]['where'],
+   453→   453→          }),
+   454→   454→          db.paymentEntry.findMany({
+   455→   455→            where: fyFilter as Parameters<typeof db.paymentEntry.findMany>[0]['where'],
+   456→   456→          }),
+   457→   457→          db.budgetHead.findMany({ where: { isActive: true } }),
+   458→   458→        ]);
+   459→   459→
+   460→   460→        const incomeByHead = groupAndSum(receipts, 'headOfAccount', 'amount');
+   461→   461→        const expenditureByHead = groupAndSum(payments, 'headOfAccount', 'amount');
+   462→   462→
+   463→   463→        return NextResponse.json({
+   464→   464→          namuna: 14,
+   465→   465→          title: 'मुद्रांक हिशोब नोंदवही',
+   466→   466→          titleEn: 'Stamp Account Register',
+   467→   467→          village,
+   468→   468→          financialYear: financialYear || 'All',
+   469→   469→          budgetHeads,
+   470→   470→          incomeByHead,
+   471→   471→          expenditureByHead,
+   472→   472→          summary: {
+   473→   473→            totalIncome: Math.round(receipts.reduce((s, r) => s + r.amount, 0) * 100) / 100,
+   474→   474→            totalExpenditure: Math.round(payments.reduce((s, p) => s + p.amount, 0) * 100) / 100,
+   475→   475→          },
+   476→   476→        });
+   477→   477→      }
+   478→   478→
+   479→   479→      case 15: {
+   480→   480→        // Namuna 15: Financial Overview
+   481→   481→        const [receipts, payments, namuna8s, namuna9s, assets, collections, schemeFunds, bankAccounts] = await Promise.all([
+   482→   482→          db.receiptEntry.findMany({ where: fyFilter as Parameters<typeof db.receiptEntry.findMany>[0]['where'] }),
+   483→   483→          db.paymentEntry.findMany({ where: fyFilter as Parameters<typeof db.paymentEntry.findMany>[0]['where'] }),
+   484→   484→          db.namuna8.findMany({ where: financialYear ? { financialYear } : {} }),
+   485→   485→          db.namuna9.findMany({ where: financialYear ? { financialYear } : {}, include: { payments: true } }),
+   486→   486→          db.assetEntry.findMany(),
+   487→   487→          db.collectionEntry.findMany({ where: fyFilter as Parameters<typeof db.collectionEntry.findMany>[0]['where'] }),
+   488→   488→          db.schemeFundEntry.findMany({ where: fyFilter as Parameters<typeof db.schemeFundEntry.findMany>[0]['where'] }),
+   489→   489→          db.bankAccount.findMany({ where: { isActive: true } }),
+   490→   490→        ]);
+   491→   491→
+   492→   492→        const totalIncome = receipts.reduce((s, r) => s + r.amount, 0);
+   493→   493→        const totalExpenditure = payments.reduce((s, p) => s + p.amount, 0);
+   494→   494→        const totalTaxAssessed = namuna8s.reduce((s, n) => s + (n.totalTaxAmt || n.totalTax), 0);
+   495→   495→        const totalDemand = namuna9s.reduce((s, n) => s + n.totalDemand, 0);
+   496→   496→        const totalPaid = namuna9s.reduce((s, n) => s + n.payments.reduce((ps, p) => ps + p.amountPaid, 0), 0);
+   497→   497→        const totalAssets = assets.reduce((s, a) => s + a.currentValue, 0);
+   498→   498→        const totalCollections = collections.reduce((s, c) => s + c.amount, 0);
+   499→   499→        const totalSchemeReceipts = schemeFunds.filter(sf => sf.entryType === 'Receipt').reduce((s, sf) => s + sf.amount, 0);
+   500→   500→        const totalSchemePayments = schemeFunds.filter(sf => sf.entryType === 'Payment').reduce((s, sf) => s + sf.amount, 0);
+   501→   501→        const totalBankBalance = bankAccounts.reduce((s, b) => s + b.balance, 0);
+   502→   502→
+   503→   503→        return NextResponse.json({
+   504→   504→          namuna: 15,
+   505→   505→          title: 'उपभोग्य वस्तू साठा नोंदवही',
+   506→   506→          titleEn: 'Consumable Stock Register',
+   507→   507→          village,
+   508→   508→          financialYear: financialYear || 'All',
+   509→   509→          summary: {
+   510→   510→            totalIncome: Math.round(totalIncome * 100) / 100,
+   511→   511→            totalExpenditure: Math.round(totalExpenditure * 100) / 100,
+   512→   512→            surplus: Math.round((totalIncome - totalExpenditure) * 100) / 100,
+   513→   513→            totalTaxAssessed: Math.round(totalTaxAssessed * 100) / 100,
+   514→   514→            totalDemand: Math.round(totalDemand * 100) / 100,
+   515→   515→            totalPaid: Math.round(totalPaid * 100) / 100,
+   516→   516→            totalOutstanding: Math.round((totalDemand - totalPaid) * 100) / 100,
+   517→   517→            totalAssets: Math.round(totalAssets * 100) / 100,
+   518→   518→            totalCollections: Math.round(totalCollections * 100) / 100,
+   519→   519→            totalSchemeReceipts: Math.round(totalSchemeReceipts * 100) / 100,
+   520→   520→            totalSchemePayments: Math.round(totalSchemePayments * 100) / 100,
+   521→   521→            totalBankBalance: Math.round(totalBankBalance * 100) / 100,
+   522→   522→          },
+   523→   523→          bankAccounts,
+   524→   524→        });
+   525→   525→      }
+   526→   526→
+   527→   527→      case 16: {
+   528→   528→        // Namuna 16: Work Register
+   529→   529→        const schemeFunds = await db.schemeFundEntry.findMany({
+   530→   530→          where: { ...fyFilter, entryType: 'Payment' } as Parameters<typeof db.schemeFundEntry.findMany>[0]['where'],
+   531→   531→          orderBy: { entryDate: 'asc' },
+   532→   532→        });
+   533→   533→
+   534→   534→        return NextResponse.json({
+   535→   535→          namuna: 16,
+   536→   536→          title: 'जडवस्तू संग्रह व जंगम मालमत्ता नोंदवही',
+   537→   537→          titleEn: 'Dead Stock & Movable Property Register',
+   538→   538→          village,
+   539→   539→          financialYear: financialYear || 'All',
+   540→   540→          entries: schemeFunds,
+   541→   541→          summary: {
+   542→   542→            totalWorks: schemeFunds.length,
+   543→   543→            totalAmount: Math.round(schemeFunds.reduce((s, sf) => s + sf.amount, 0) * 100) / 100,
+   544→   544→          },
+   545→   545→        });
+   546→   546→      }
+   547→   547→
+   548→   548→      case 17: {
+   549→   549→        // Namuna 17: Advance Register
+   550→   550→        const payments = await db.paymentEntry.findMany({
+   551→   551→          where: { ...fyFilter, headOfAccount: { contains: 'Advance' } } as Parameters<typeof db.paymentEntry.findMany>[0]['where'],
+   552→   552→          orderBy: { paymentDate: 'asc' },
+   553→   553→        });
+   554→   554→
+   555→   555→        return NextResponse.json({
+   556→   556→          namuna: 17,
+   557→   557→          title: 'अग्रीम/अनामत रक्कम नोंदवही',
+   558→   558→          titleEn: 'Advance & Deposit Register',
+   559→   559→          village,
+   560→   560→          financialYear: financialYear || 'All',
+   561→   561→          entries: payments,
+   562→   562→          summary: {
+   563→   563→            totalAdvances: payments.length,
+   564→   564→            totalAmount: Math.round(payments.reduce((s, p) => s + p.amount, 0) * 100) / 100,
+   565→   565→          },
+   566→   566→        });
+   567→   567→      }
+   568→   568→
+   569→   569→      case 18: {
+   570→   570→        // Namuna 18: Deposit Register
+   571→   571→        const receipts = await db.receiptEntry.findMany({
+   572→   572→          where: { ...fyFilter, headOfAccount: { contains: 'Deposit' } } as Parameters<typeof db.receiptEntry.findMany>[0]['where'],
+   573→   573→          orderBy: { receiptDate: 'asc' },
+   574→   574→        });
+   575→   575→
+   576→   576→        return NextResponse.json({
+   577→   577→          namuna: 18,
+   578→   578→          title: 'किरकोळ रोकडवही',
+   579→   579→          titleEn: 'Petty Cash Book',
+   580→   580→          village,
+   581→   581→          financialYear: financialYear || 'All',
+   582→   582→          entries: receipts,
+   583→   583→          summary: {
+   584→   584→            totalDeposits: receipts.length,
+   585→   585→            totalAmount: Math.round(receipts.reduce((s, r) => s + r.amount, 0) * 100) / 100,
+   586→   586→          },
+   587→   587→        });
+   588→   588→      }
+   589→   589→
+   590→   590→      case 19: {
+   591→   591→        // Namuna 19: Assessment Register from Namuna8
+   592→   592→        const namuna8s = await db.namuna8.findMany({
+   593→   593→          where: financialYear ? { financialYear } : {},
+   594→   594→          include: {
+   595→   595→            property: {
+   596→   596→              include: {
+   597→   597→                ward: true,
+   598→   598→                owners: { include: { owner: true } },
+   599→   599→              },
+   600→   600→            },
+   601→   601→          },
+   602→   602→          orderBy: { createdAt: 'desc' },
+   603→   603→        });
+   604→   604→
+   605→   605→        return NextResponse.json({
+   606→   606→          namuna: 19,
+   607→   607→          title: 'हजेरीपट (मजुरांची हजेरी)',
+   608→   608→          titleEn: 'Muster Roll / Attendance',
+   609→   609→          village,
+   610→   610→          financialYear: financialYear || 'All',
+   611→   611→          entries: namuna8s,
+   612→   612→          summary: {
+   613→   613→            totalEntries: namuna8s.length,
+   614→   614→            totalTax: Math.round(namuna8s.reduce((s, n) => s + (n.totalTaxAmt || n.totalTax), 0) * 100) / 100,
+   615→   615→          },
+   616→   616→        });
+   617→   617→      }
+   618→   618→
+   619→   619→      case 20: {
+   620→   620→        // Namuna 20: Water Bill Register
+   621→   621→        const waterBills = await db.waterBillEntry.findMany({
+   622→   622→          where: fyFilter as Parameters<typeof db.waterBillEntry.findMany>[0]['where'],
+   623→   623→          orderBy: { billDate: 'asc' },
+   624→   624→        });
+   625→   625→
+   626→   626→        return NextResponse.json({
+   627→   627→          namuna: 20,
+   628→   628→          title: 'कामाच्या अंदाजाची नोंदवही',
+   629→   629→          titleEn: 'Estimate Register for Works',
+   630→   630→          village,
+   631→   631→          financialYear: financialYear || 'All',
+   632→   632→          entries: waterBills,
+   633→   633→          summary: {
+   634→   634→            totalBills: waterBills.length,
+   635→   635→            totalAmount: Math.round(waterBills.reduce((s, w) => s + w.totalAmount, 0) * 100) / 100,
+   636→   636→            totalPaid: Math.round(waterBills.reduce((s, w) => s + w.paidAmount, 0) * 100) / 100,
+   637→   637→            pending: waterBills.filter(w => w.status === 'Pending').length,
+   638→   638→            byStatus: groupBy(waterBills, 'status'),
+   639→   639→          },
+   640→   640→        });
+   641→   641→      }
+   642→   642→
+   643→   643→      case 21: {
+   644→   644→        // Namuna 21: House Tax Collection
+   645→   645→        const collections = await db.collectionEntry.findMany({
+   646→   646→          where: { ...fyFilter, collectionType: 'Tax' } as Parameters<typeof db.collectionEntry.findMany>[0]['where'],
+   647→   647→        });
+   648→   648→        const payments = await db.paymentEntry.findMany({
+   649→   649→          where: { ...fyFilter, headOfAccount: { contains: 'House' } } as Parameters<typeof db.paymentEntry.findMany>[0]['where'],
+   650→   650→        });
+   651→   651→
+   652→   652→        return NextResponse.json({
+   653→   653→          namuna: 21,
+   654→   654→          title: 'कर्मचाऱ्याच्या देयकाची नोंदवही',
+   655→   655→          titleEn: 'Employee Bill Register',
+   656→   656→          village,
+   657→   657→          financialYear: financialYear || 'All',
+   658→   658→          collections,
+   659→   659→          payments,
+   660→   660→          summary: {
+   661→   661→            totalCollected: Math.round(collections.reduce((s, c) => s + c.amount, 0) * 100) / 100,
+   662→   662→            totalPayments: Math.round(payments.reduce((s, p) => s + p.amount, 0) * 100) / 100,
+   663→   663→          },
+   664→   664→        });
+   665→   665→      }
+   666→   666→
+   667→   667→      case 22: {
+   668→   668→        // Namuna 22: Water Tax Collection
+   669→   669→        const collections = await db.collectionEntry.findMany({
+   670→   670→          where: { ...fyFilter, collectionType: 'Water' } as Parameters<typeof db.collectionEntry.findMany>[0]['where'],
+   671→   671→        });
+   672→   672→
+   673→   673→        return NextResponse.json({
+   674→   674→          namuna: 22,
+   675→   675→          title: 'स्थावर मालमत्ता नोंदवही',
+   676→   676→          titleEn: 'Immovable Property Register',
+   677→   677→          village,
+   678→   678→          financialYear: financialYear || 'All',
+   679→   679→          entries: collections,
+   680→   680→          summary: {
+   681→   681→            totalCollected: Math.round(collections.reduce((s, c) => s + c.amount, 0) * 100) / 100,
+   682→   682→            totalEntries: collections.length,
+   683→   683→          },
+   684→   684→        });
+   685→   685→      }
+   686→   686→
+   687→   687→      case 23: {
+   688→   688→        // Namuna 23: Light Tax Collection
+   689→   689→        const collections = await db.collectionEntry.findMany({
+   690→   690→          where: { ...fyFilter, collectionType: 'Light' } as Parameters<typeof db.collectionEntry.findMany>[0]['where'],
+   691→   691→        });
+   692→   692→
+   693→   693→        return NextResponse.json({
+   694→   694→          namuna: 23,
+   695→   695→          title: 'ताब्यातील रस्त्यांची नोंदवही',
+   696→   696→          titleEn: 'Road Register',
+   697→   697→          village,
+   698→   698→          financialYear: financialYear || 'All',
+   699→   699→          entries: collections,
+   700→   700→          summary: {
+   701→   701→            totalCollected: Math.round(collections.reduce((s, c) => s + c.amount, 0) * 100) / 100,
+   702→   702→            totalEntries: collections.length,
+   703→   703→          },
+   704→   704→        });
+   705→   705→      }
+   706→   706→
+   707→   707→      case 24: {
+   708→   708→        // Namuna 24: Health Tax Collection
+   709→   709→        const collections = await db.collectionEntry.findMany({
+   710→   710→          where: { ...fyFilter, collectionType: 'Health' } as Parameters<typeof db.collectionEntry.findMany>[0]['where'],
+   711→   711→        });
+   712→   712→
+   713→   713→        return NextResponse.json({
+   714→   714→          namuna: 24,
+   715→   715→          title: 'जमिनीची नोंदवही',
+   716→   716→          titleEn: 'Land Register',
+   717→   717→          village,
+   718→   718→          financialYear: financialYear || 'All',
+   719→   719→          entries: collections,
+   720→   720→          summary: {
+   721→   721→            totalCollected: Math.round(collections.reduce((s, c) => s + c.amount, 0) * 100) / 100,
+   722→   722→            totalEntries: collections.length,
+   723→   723→          },
+   724→   724→        });
+   725→   725→      }
+   726→   726→
+   727→   727→      case 25: {
+   728→   728→        // Namuna 25: Balance Sheet (computed from all data)
+   729→   729→        const [receipts, payments, assets, bankAccounts, schemeFunds] = await Promise.all([
+   730→   730→          db.receiptEntry.findMany({ where: fyFilter as Parameters<typeof db.receiptEntry.findMany>[0]['where'] }),
+   731→   731→          db.paymentEntry.findMany({ where: fyFilter as Parameters<typeof db.paymentEntry.findMany>[0]['where'] }),
+   732→   732→          db.assetEntry.findMany(),
+   733→   733→          db.bankAccount.findMany({ where: { isActive: true } }),
+   734→   734→          db.schemeFundEntry.findMany({ where: fyFilter as Parameters<typeof db.schemeFundEntry.findMany>[0]['where'] }),
+   735→   735→        ]);
+   736→   736→
+   737→   737→        const totalIncome = receipts.reduce((s, r) => s + r.amount, 0);
+   738→   738→        const totalExpenditure = payments.reduce((s, p) => s + p.amount, 0);
+   739→   739→        const totalAssetValue = assets.reduce((s, a) => s + a.currentValue, 0);
+   740→   740→        const totalBankBalance = bankAccounts.reduce((s, b) => s + b.balance, 0);
+   741→   741→        const totalSchemeBalance = schemeFunds.filter(sf => sf.entryType === 'Receipt').reduce((s, sf) => s + sf.amount, 0) -
+   742→   742→          schemeFunds.filter(sf => sf.entryType === 'Payment').reduce((s, sf) => s + sf.amount, 0);
+   743→   743→
+   744→   744→        return NextResponse.json({
+   745→   745→          namuna: 25,
+   746→   746→          title: 'गुंतवणूक नोंदवही',
+   747→   747→          titleEn: 'Investment Register',
+   748→   748→          village,
+   749→   749→          financialYear: financialYear || 'All',
+   750→   750→          assets: {
+   751→   751→            fixedAssets: Math.round(totalAssetValue * 100) / 100,
+   752→   752→            bankBalance: Math.round(totalBankBalance * 100) / 100,
+   753→   753→            cashBalance: Math.round((totalIncome - totalExpenditure) * 100) / 100,
+   754→   754→            totalAssets: Math.round((totalAssetValue + totalBankBalance + (totalIncome - totalExpenditure)) * 100) / 100,
+   755→   755→          },
+   756→   756→          liabilities: {
+   757→   757→            schemeFundBalance: Math.round(totalSchemeBalance * 100) / 100,
+   758→   758→            surplus: Math.round((totalIncome - totalExpenditure) * 100) / 100,
+   759→   759→            totalLiabilities: Math.round((totalSchemeBalance + (totalIncome - totalExpenditure)) * 100) / 100,
+   760→   760→          },
+   761→   761→        });
+   762→   762→      }
+   763→   763→
+   764→   764→      case 26: {
+   765→   765→        // Namuna 26: Income & Expenditure Account
+   766→   766→        const [receipts, payments] = await Promise.all([
+   767→   767→          db.receiptEntry.findMany({ where: fyFilter as Parameters<typeof db.receiptEntry.findMany>[0]['where'] }),
+   768→   768→          db.paymentEntry.findMany({ where: fyFilter as Parameters<typeof db.paymentEntry.findMany>[0]['where'] }),
+   769→   769→        ]);
+   770→   770→
+   771→   771→        const incomeByHead = groupAndSum(receipts, 'headOfAccount', 'amount');
+   772→   772→        const expenditureByHead = groupAndSum(payments, 'headOfAccount', 'amount');
+   773→   773→        const totalIncome = receipts.reduce((s, r) => s + r.amount, 0);
+   774→   774→        const totalExpenditure = payments.reduce((s, p) => s + p.amount, 0);
+   775→   775→
+   776→   776→        return NextResponse.json({
+   777→   777→          namuna: 26,
+   778→   778→          title: 'मासिक विवरण',
+   779→   779→          titleEn: 'Monthly Statement',
+   780→   780→          village,
+   781→   781→          financialYear: financialYear || 'All',
+   782→   782→          income: incomeByHead,
+   783→   783→          expenditure: expenditureByHead,
+   784→   784→          summary: {
+   785→   785→            totalIncome: Math.round(totalIncome * 100) / 100,
+   786→   786→            totalExpenditure: Math.round(totalExpenditure * 100) / 100,
+   787→   787→            surplus: Math.round((totalIncome - totalExpenditure) * 100) / 100,
+   788→   788→          },
+   789→   789→        });
+   790→   790→      }
+   791→   791→
+   792→   792→      case 27: {
+   793→   793→        // Namuna 27: Receipts & Payments Account
+   794→   794→        const [receipts, payments] = await Promise.all([
+   795→   795→          db.receiptEntry.findMany({ where: fyFilter as Parameters<typeof db.receiptEntry.findMany>[0]['where'], orderBy: { receiptDate: 'asc' } }),
+   796→   796→          db.paymentEntry.findMany({ where: fyFilter as Parameters<typeof db.paymentEntry.findMany>[0]['where'], orderBy: { paymentDate: 'asc' } }),
+   797→   797→        ]);
+   798→   798→
+   799→   799→        return NextResponse.json({
+   800→   800→          namuna: 27,
+   801→   801→          title: 'लेखापरीक्षण आक्षेपांच्या पुर्तेचे मासिक विवरण',
+   802→   802→          titleEn: 'Audit Objection Compliance Monthly Statement',
+   803→   803→          village,
+   804→   804→          financialYear: financialYear || 'All',
+   805→   805→          receipts,
+   806→   806→          payments,
+   807→   807→          summary: {
+   808→   808→            totalReceipts: Math.round(receipts.reduce((s, r) => s + r.amount, 0) * 100) / 100,
+   809→   809→            totalPayments: Math.round(payments.reduce((s, p) => s + p.amount, 0) * 100) / 100,
+   810→   810→          },
+   811→   811→        });
+   812→   812→      }
+   813→   813→
+   814→   814→      case 28: {
+   815→   815→        // Namuna 28: Capital Account
+   816→   816→        const [assets, receipts, payments] = await Promise.all([
+   817→   817→          db.assetEntry.findMany(),
+   818→   818→          db.receiptEntry.findMany({ where: fyFilter as Parameters<typeof db.receiptEntry.findMany>[0]['where'] }),
+   819→   819→          db.paymentEntry.findMany({ where: fyFilter as Parameters<typeof db.paymentEntry.findMany>[0]['where'] }),
+   820→   820→        ]);
+   821→   821→
+   822→   822→        const totalAssetValue = assets.reduce((s, a) => s + a.currentValue, 0);
+   823→   823→        const totalIncome = receipts.reduce((s, r) => s + r.amount, 0);
+   824→   824→        const totalExpenditure = payments.reduce((s, p) => s + p.amount, 0);
+   825→   825→
+   826→   826→        return NextResponse.json({
+   827→   827→          namuna: 28,
+   828→   828→          title: 'मागासवर्गीय 15% व महिला बालकल्याण 10% खर्चाचे मासिक विवरण',
+   829→   829→          titleEn: 'SC 15% & Women/Child Welfare 10% Monthly Expenditure',
+   830→   830→          village,
+   831→   831→          financialYear: financialYear || 'All',
+   832→   832→          fixedAssets: Math.round(totalAssetValue * 100) / 100,
+   833→   833→          accumulatedSurplus: Math.round((totalIncome - totalExpenditure) * 100) / 100,
+   834→   834→          totalCapital: Math.round((totalAssetValue + totalIncome - totalExpenditure) * 100) / 100,
+   835→   835→        });
+   836→   836→      }
+   837→   837→
+   838→   838→      case 29: {
+   839→   839→        // Namuna 29: Contingent Fund
+   840→   840→        const [receipts, payments] = await Promise.all([
+   841→   841→          db.receiptEntry.findMany({ where: { ...fyFilter, headOfAccount: { contains: 'Contingent' } } as Parameters<typeof db.receiptEntry.findMany>[0]['where'] }),
+   842→   842→          db.paymentEntry.findMany({ where: { ...fyFilter, headOfAccount: { contains: 'Contingent' } } as Parameters<typeof db.paymentEntry.findMany>[0]['where'] }),
+   843→   843→        ]);
+   844→   844→
+   845→   845→        return NextResponse.json({
+   846→   846→          namuna: 29,
+   847→   847→          title: 'कर्जाची नोंदवही',
+   848→   848→          titleEn: 'Loan Register',
+   849→   849→          village,
+   850→   850→          financialYear: financialYear || 'All',
+   851→   851→          receipts,
+   852→   852→          payments,
+   853→   853→          summary: {
+   854→   854→            totalReceipts: Math.round(receipts.reduce((s, r) => s + r.amount, 0) * 100) / 100,
+   855→   855→            totalPayments: Math.round(payments.reduce((s, p) => s + p.amount, 0) * 100) / 100,
+   856→   856→          },
+   857→   857→        });
+   858→   858→      }
+   859→   859→
+   860→   860→      case 30: {
+   861→   861→        // Namuna 30: Trust Fund
+   862→   862→        const [receipts, payments] = await Promise.all([
+   863→   863→          db.receiptEntry.findMany({ where: { ...fyFilter, headOfAccount: { contains: 'Trust' } } as Parameters<typeof db.receiptEntry.findMany>[0]['where'] }),
+   864→   864→          db.paymentEntry.findMany({ where: { ...fyFilter, headOfAccount: { contains: 'Trust' } } as Parameters<typeof db.paymentEntry.findMany>[0]['where'] }),
+   865→   865→        ]);
+   866→   866→
+   867→   867→        return NextResponse.json({
+   868→   868→          namuna: 30,
+   869→   869→          title: 'लेखा परीक्षण आक्षेप पूर्तता नोंदवही',
+   870→   870→          titleEn: 'Audit Objection Compliance Register',
+   871→   871→          village,
+   872→   872→          financialYear: financialYear || 'All',
+   873→   873→          receipts,
+   874→   874→          payments,
+   875→   875→          summary: {
+   876→   876→            totalReceipts: Math.round(receipts.reduce((s, r) => s + r.amount, 0) * 100) / 100,
+   877→   877→            totalPayments: Math.round(payments.reduce((s, p) => s + p.amount, 0) * 100) / 100,
+   878→   878→          },
+   879→   879→        });
+   880→   880→      }
+   881→   881→
+   882→   882→      case 31: {
+   883→   883→        // Namuna 31: Audit Report Summary
+   884→   884→        const [receipts, payments, namuna8s, namuna9s, assets, collections, bankAccounts] = await Promise.all([
+   885→   885→          db.receiptEntry.findMany({ where: fyFilter as Parameters<typeof db.receiptEntry.findMany>[0]['where'] }),
+   886→   886→          db.paymentEntry.findMany({ where: fyFilter as Parameters<typeof db.paymentEntry.findMany>[0]['where'] }),
+   887→   887→          db.namuna8.findMany({ where: financialYear ? { financialYear } : {} }),
+   888→   888→          db.namuna9.findMany({ where: financialYear ? { financialYear } : {}, include: { payments: true } }),
+   889→   889→          db.assetEntry.findMany(),
+   890→   890→          db.collectionEntry.findMany({ where: fyFilter as Parameters<typeof db.collectionEntry.findMany>[0]['where'] }),
+   891→   891→          db.bankAccount.findMany({ where: { isActive: true } }),
+   892→   892→        ]);
+   893→   893→
+   894→   894→        const totalDemand = namuna9s.reduce((s, n) => s + n.totalDemand, 0);
+   895→   895→        const totalPaid = namuna9s.reduce((s, n) => s + n.payments.reduce((ps, p) => ps + p.amountPaid, 0), 0);
+   896→   896→
+   897→   897→        return NextResponse.json({
+   898→   898→          namuna: 31,
+   899→   899→          title: 'प्रवास भत्ता देयक',
+   900→   900→          titleEn: 'Travel Allowance Bill',
+   901→   901→          village,
+   902→   902→          financialYear: financialYear || 'All',
+   903→   903→          financialSummary: {
+   904→   904→            totalIncome: Math.round(receipts.reduce((s, r) => s + r.amount, 0) * 100) / 100,
+   905→   905→            totalExpenditure: Math.round(payments.reduce((s, p) => s + p.amount, 0) * 100) / 100,
+   906→   906→          },
+   907→   907→          taxSummary: {
+   908→   908→            totalAssessed: Math.round(namuna8s.reduce((s, n) => s + (n.totalTaxAmt || n.totalTax), 0) * 100) / 100,
+   909→   909→            totalDemand: Math.round(totalDemand * 100) / 100,
+   910→   910→            totalCollected: Math.round(totalPaid * 100) / 100,
+   911→   911→            collectionEfficiency: totalDemand > 0 ? Math.round((totalPaid / totalDemand) * 10000) / 100 : 0,
+   912→   912→          },
+   913→   913→          assetSummary: {
+   914→   914→            totalAssets: assets.length,
+   915→   915→            totalValue: Math.round(assets.reduce((s, a) => s + a.currentValue, 0) * 100) / 100,
+   916→   916→          },
+   917→   917→          bankSummary: {
+   918→   918→            totalAccounts: bankAccounts.length,
+   919→   919→            totalBalance: Math.round(bankAccounts.reduce((s, b) => s + b.balance, 0) * 100) / 100,
+   920→   920→          },
+   921→   921→        });
+   922→   922→      }
+   923→   923→
+   924→   924→      case 32: {
+   925→   925→        // Namuna 32: Annual Financial Statement
+   926→   926→        const [receipts, payments, namuna8s, namuna9s, assets, schemeFunds, collections, bankAccounts] = await Promise.all([
+   927→   927→          db.receiptEntry.findMany({ where: fyFilter as Parameters<typeof db.receiptEntry.findMany>[0]['where'] }),
+   928→   928→          db.paymentEntry.findMany({ where: fyFilter as Parameters<typeof db.paymentEntry.findMany>[0]['where'] }),
+   929→   929→          db.namuna8.findMany({ where: financialYear ? { financialYear } : {} }),
+   930→   930→          db.namuna9.findMany({ where: financialYear ? { financialYear } : {}, include: { payments: true, property: { include: { ward: true } } } }),
+   931→   931→          db.assetEntry.findMany(),
+   932→   932→          db.schemeFundEntry.findMany({ where: fyFilter as Parameters<typeof db.schemeFundEntry.findMany>[0]['where'] }),
+   933→   933→          db.collectionEntry.findMany({ where: fyFilter as Parameters<typeof db.collectionEntry.findMany>[0]['where'] }),
+   934→   934→          db.bankAccount.findMany({ where: { isActive: true } }),
+   935→   935→        ]);
+   936→   936→
+   937→   937→        const totalIncome = receipts.reduce((s, r) => s + r.amount, 0);
+   938→   938→        const totalExpenditure = payments.reduce((s, p) => s + p.amount, 0);
+   939→   939→        const totalDemand = namuna9s.reduce((s, n) => s + n.totalDemand, 0);
+   940→   940→        const totalPaid = namuna9s.reduce((s, n) => s + n.payments.reduce((ps, p) => ps + p.amountPaid, 0), 0);
+   941→   941→
+   942→   942→        return NextResponse.json({
+   943→   943→          namuna: 32,
+   944→   944→          title: 'रकमेच्या परताव्यासाठीचा आदेश',
+   945→   945→          titleEn: 'Refund Order',
+   946→   946→          village,
+   947→   947→          financialYear: financialYear || 'All',
+   948→   948→          income: {
+   949→   949→            taxRevenue: Math.round(namuna8s.reduce((s, n) => s + (n.totalTaxAmt || n.totalTax), 0) * 100) / 100,
+   950→   950→            nonTaxRevenue: Math.round(collections.reduce((s, c) => s + c.amount, 0) * 100) / 100,
+   951→   951→            grants: Math.round(schemeFunds.filter(sf => sf.entryType === 'Receipt').reduce((s, sf) => s + sf.amount, 0) * 100) / 100,
+   952→   952→            otherIncome: Math.round(totalIncome * 100) / 100,
+   953→   953→          },
+   954→   954→          expenditure: {
+   955→   955→            establishment: Math.round(payments.filter(p => p.headOfAccount?.includes('Salary') || p.headOfAccount?.includes('पगार')).reduce((s, p) => s + p.amount, 0) * 100) / 100,
+   956→   956→            development: Math.round(schemeFunds.filter(sf => sf.entryType === 'Payment').reduce((s, sf) => s + sf.amount, 0) * 100) / 100,
+   957→   957→            maintenance: Math.round(payments.filter(p => p.headOfAccount?.includes('Maintenance') || p.headOfAccount?.includes('देखभाल')).reduce((s, p) => s + p.amount, 0) * 100) / 100,
+   958→   958→            otherExpenditure: Math.round(totalExpenditure * 100) / 100,
+   959→   959→          },
+   960→   960→          assets: {
+   961→   961→            fixedAssets: Math.round(assets.reduce((s, a) => s + a.currentValue, 0) * 100) / 100,
+   962→   962→            bankBalance: Math.round(bankAccounts.reduce((s, b) => s + b.balance, 0) * 100) / 100,
+   963→   963→            cashInHand: Math.round((totalIncome - totalExpenditure) * 100) / 100,
+   964→   964→          },
+   965→   965→          collectionEfficiency: {
+   966→   966→            totalDemand: Math.round(totalDemand * 100) / 100,
+   967→   967→            totalCollected: Math.round(totalPaid * 100) / 100,
+   968→   968→            efficiency: totalDemand > 0 ? Math.round((totalPaid / totalDemand) * 10000) / 100 : 0,
+   969→   969→          },
+   970→   970→        });
+   971→   971→      }
+   972→   972→
+   973→   973→      case 33: {
+   974→   974→        // Namuna 33: Consolidated Final Accounts
+   975→   975→        const [receipts, payments, namuna8s, namuna9s, assets, schemeFunds, collections, bankAccounts, stocks] = await Promise.all([
+   976→   976→          db.receiptEntry.findMany({ where: fyFilter as Parameters<typeof db.receiptEntry.findMany>[0]['where'] }),
+   977→   977→          db.paymentEntry.findMany({ where: fyFilter as Parameters<typeof db.paymentEntry.findMany>[0]['where'] }),
+   978→   978→          db.namuna8.findMany({ where: financialYear ? { financialYear } : {} }),
+   979→   979→          db.namuna9.findMany({ where: financialYear ? { financialYear } : {}, include: { payments: true, property: { include: { ward: true, owners: { include: { owner: true } } } } } }),
+   980→   980→          db.assetEntry.findMany(),
+   981→   981→          db.schemeFundEntry.findMany({ where: fyFilter as Parameters<typeof db.schemeFundEntry.findMany>[0]['where'] }),
+   982→   982→          db.collectionEntry.findMany({ where: fyFilter as Parameters<typeof db.collectionEntry.findMany>[0]['where'] }),
+   983→   983→          db.bankAccount.findMany({ where: { isActive: true } }),
+   984→   984→          db.stockEntry.findMany(),
+   985→   985→        ]);
+   986→   986→
+   987→   987→        const totalIncome = receipts.reduce((s, r) => s + r.amount, 0);
+   988→   988→        const totalExpenditure = payments.reduce((s, p) => s + p.amount, 0);
+   989→   989→        const totalDemand = namuna9s.reduce((s, n) => s + n.totalDemand, 0);
+   990→   990→        const totalPaid = namuna9s.reduce((s, n) => s + n.payments.reduce((ps, p) => ps + p.amountPaid, 0), 0);
+   991→   991→        const totalAssetValue = assets.reduce((s, a) => s + a.currentValue, 0);
+   992→   992→        const totalStockValue = stocks.reduce((s, st) => s + st.totalValue, 0);
+   993→   993→        const totalBankBalance = bankAccounts.reduce((s, b) => s + b.balance, 0);
+   994→   994→
+   995→   995→        return NextResponse.json({
+   996→   996→          namuna: 33,
+   997→   997→          title: 'वृक्ष नोंदवही',
+   998→   998→          titleEn: 'Tree Register',
+   999→   999→          village,
+  1000→  1000→          financialYear: financialYear || 'All',
+  1001→  1001→          receiptAndPayments: {
+  1002→  1002→            openingBalance: 0,
+  1003→  1003→            totalReceipts: Math.round(totalIncome * 100) / 100,
+  1004→  1004→            totalPayments: Math.round(totalExpenditure * 100) / 100,
+  1005→  1005→            closingBalance: Math.round((totalIncome - totalExpenditure) * 100) / 100,
+  1006→  1006→          },
+  1007→  1007→          incomeAndExpenditure: {
+  1008→  1008→            totalIncome: Math.round(totalIncome * 100) / 100,
+  1009→  1009→            totalExpenditure: Math.round(totalExpenditure * 100) / 100,
+  1010→  1010→            surplus: Math.round((totalIncome - totalExpenditure) * 100) / 100,
+  1011→  1011→          },
+  1012→  1012→          balanceSheet: {
+  1013→  1013→            assets: {
+  1014→  1014→              fixedAssets: Math.round(totalAssetValue * 100) / 100,
+  1015→  1015→              stock: Math.round(totalStockValue * 100) / 100,
+  1016→  1016→              bankBalance: Math.round(totalBankBalance * 100) / 100,
+  1017→  1017→              cashBalance: Math.round((totalIncome - totalExpenditure) * 100) / 100,
+  1018→  1018→              totalAssets: Math.round((totalAssetValue + totalStockValue + totalBankBalance + (totalIncome - totalExpenditure)) * 100) / 100,
+  1019→  1019→            },
+  1020→  1020→            liabilities: {
+  1021→  1021→              schemeFundBalance: Math.round((schemeFunds.filter(sf => sf.entryType === 'Receipt').reduce((s, sf) => s + sf.amount, 0) - schemeFunds.filter(sf => sf.entryType === 'Payment').reduce((s, sf) => s + sf.amount, 0)) * 100) / 100,
+  1022→  1022→              accumulatedSurplus: Math.round((totalIncome - totalExpenditure) * 100) / 100,
+  1023→  1023→            },
+  1024→  1024→          },
+  1025→  1025→          taxCollection: {
+  1026→  1026→            totalAssessed: Math.round(namuna8s.reduce((s, n) => s + (n.totalTaxAmt || n.totalTax), 0) * 100) / 100,
+  1027→  1027→            totalDemand: Math.round(totalDemand * 100) / 100,
+  1028→  1028→            totalCollected: Math.round(totalPaid * 100) / 100,
+  1029→  1029→            outstanding: Math.round((totalDemand - totalPaid) * 100) / 100,
+  1030→  1030→            collectionEfficiency: totalDemand > 0 ? Math.round((totalPaid / totalDemand) * 10000) / 100 : 0,
+  1031→  1031→          },
+  1032→  1032→          propertyStats: {
+  1033→  1033→            totalProperties: await db.propertyMaster.count(),
+  1034→  1034→            totalWards: await db.wardMaster.count(),
+  1035→  1035→          },
+  1036→  1036→        });
+  1037→  1037→      }
+  1038→  1038→
+  1039→  1039→      default:
+  1040→  1040→        return NextResponse.json({ error: `Namuna ${namunaNum} not implemented yet` }, { status: 501 });
+  1041→  1041→    }
+  1042→  1042→  } catch (error) {
+  1043→  1043→    console.error('Namuna Reports GET error:', error);
+  1044→  1044→    return NextResponse.json({ error: 'Failed to fetch namuna report' }, { status: 500 });
+  1045→  1045→  }
+  1046→  1046→}
+  1047→  1047→
+  1048→  1048→// Helper: Group array by a field
+  1049→  1049→function groupBy(arr: Record<string, unknown>[], field: string): Record<string, number> {
+  1050→  1050→  const result: Record<string, number> = {};
+  1051→  1051→  for (const item of arr) {
+  1052→  1052→    const key = String(item[field] || 'Unassigned');
+  1053→  1053→    result[key] = (result[key] || 0) + 1;
+  1054→  1054→  }
+  1055→  1055→  return result;
+  1056→  1056→}
+  1057→  1057→
+  1058→  1058→// Helper: Group and sum by a field
+  1059→  1059→function groupAndSum(arr: Record<string, unknown>[], groupField: string, sumField: string): { key: string; total: number; count: number }[] {
+  1060→  1060→  const map: Record<string, { total: number; count: number }> = {};
+  1061→  1061→  for (const item of arr) {
+  1062→  1062→    const key = String(item[groupField] || 'Unassigned');
+  1063→  1063→    const value = Number(item[sumField]) || 0;
+  1064→  1064→    if (!map[key]) map[key] = { total: 0, count: 0 };
+  1065→  1065→    map[key].total += value;
+  1066→  1066→    map[key].count++;
+  1067→  1067→  }
+  1068→  1068→  return Object.entries(map).map(([key, val]) => ({
+  1069→  1069→    key,
+  1070→  1070→    total: Math.round(val.total * 100) / 100,
+  1071→  1071→    count: val.count,
+  1072→  1072→  }));
+  1073→  1073→}
+  1074→  1074→

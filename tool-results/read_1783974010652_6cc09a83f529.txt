@@ -1,0 +1,866 @@
+     1→'use client';
+     2→
+     3→import React, { useState, useEffect, useCallback, useMemo } from 'react';
+     4→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+     5→import { Badge } from '@/components/ui/badge';
+     6→import { Button } from '@/components/ui/button';
+     7→import { Input } from '@/components/ui/input';
+     8→import {
+     9→  Select,
+    10→  SelectContent,
+    11→  SelectItem,
+    12→  SelectTrigger,
+    13→  SelectValue,
+    14→} from '@/components/ui/select';
+    15→import {
+    16→  Table,
+    17→  TableBody,
+    18→  TableCell,
+    19→  TableHead,
+    20→  TableHeader,
+    21→  TableRow,
+    22→} from '@/components/ui/table';
+    23→import { Separator } from '@/components/ui/separator';
+    24→import { Skeleton } from '@/components/ui/skeleton';
+    25→import {
+    26→  Printer, Download, RefreshCw, ArrowLeft,
+    27→  FileText, BookOpen, Receipt, FolderArchive,
+    28→  PackageCheck, HandCoins, CircleDollarSign, BookCopy,
+    29→  FileBadge, FileCheck2, FileBarChart, FileLock2,
+    30→  ScrollText, Gauge, Users,
+    31→  TrendingUp, TrendingDown,
+    32→  IndianRupee, AlertCircle, CheckCircle2, Loader2,
+    33→  Search as SearchIcon, Landmark,
+    34→} from 'lucide-react';
+    35→
+    36→// ─── Namuna Definitions ───────────────────────────────────────────────────
+    37→
+    38→interface NamunaDef {
+    39→  num: number;
+    40→  nameMr: string;
+    41→  nameEn: string;
+    42→  category: string;
+    43→  color: string;
+    44→  bg: string;
+    45→  icon: React.ElementType;
+    46→}
+    47→
+    48→const NAMUNA_DEFS: NamunaDef[] = [
+    49→  // अर्थसंकल्प व आर्थिक विवरण
+    50→  { num: 1, nameMr: 'अर्थसंकल्प/अंदाजपत्रक', nameEn: 'Budget Estimate', category: 'budget', color: 'text-cyan-600', bg: 'bg-cyan-50', icon: FileBadge },
+    51→  { num: 2, nameMr: 'पुनर्विनियोजन व नियत वाटप (सुधारित अर्थसंकल्प)', nameEn: 'Re-appropriation & Revised Budget', category: 'budget', color: 'text-teal-600', bg: 'bg-teal-50', icon: FileCheck2 },
+    52→  // आर्थिक स्थिती विवरण
+    53→  { num: 3, nameMr: 'ग्रामपंचायत जमा-खर्च विवरण', nameEn: 'Income & Expenditure Statement', category: 'financial', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: FileBarChart },
+    54→  { num: 4, nameMr: 'ग्रामपंचायतीची मत्ता व दायित्वे', nameEn: 'Assets & Liabilities', category: 'financial', color: 'text-teal-600', bg: 'bg-teal-50', icon: Gauge },
+    55→  // रोकड व पावती
+    56→  { num: 5, nameMr: 'सामान्य रोकड वही', nameEn: 'General Cash Book', category: 'cash', color: 'text-green-600', bg: 'bg-green-50', icon: BookCopy },
+    57→  { num: 5.1, nameMr: 'दैनिक रोकडवही (५ क)', nameEn: 'Daily Cash Book', category: 'cash', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: BookCopy },
+    58→  { num: 6, nameMr: 'वर्गीकृत नोंदवही', nameEn: 'Classified Receipt Register', category: 'cash', color: 'text-indigo-600', bg: 'bg-indigo-50', icon: BookOpen },
+    59→  { num: 7, nameMr: 'सामान्य पावती', nameEn: 'General Receipt', category: 'cash', color: 'text-green-600', bg: 'bg-green-50', icon: Receipt },
+    60→  // कर आकारणी व मागणी
+    61→  { num: 8, nameMr: 'कर आकारणी नोंदवही', nameEn: 'Tax Assessment Register', category: 'tax', color: 'text-green-600', bg: 'bg-green-50', icon: FileText },
+    62→  { num: 9, nameMr: 'कर मागणी नोंदवही', nameEn: 'Tax Demand Register', category: 'tax', color: 'text-amber-600', bg: 'bg-amber-50', icon: BookOpen },
+    63→  { num: 9.1, nameMr: 'कराची मागणी पावती (९ क)', nameEn: 'Tax Demand Bill', category: 'tax', color: 'text-rose-600', bg: 'bg-rose-50', icon: Receipt },
+    64→  { num: 10, nameMr: 'कर व फी बाबत पावती', nameEn: 'Tax & Fee Receipt', category: 'tax', color: 'text-cyan-600', bg: 'bg-cyan-50', icon: CircleDollarSign },
+    65→  { num: 11, nameMr: 'किरकोळ कर व फी आकारणी नोंदवही', nameEn: 'Miscellaneous Tax & Fee Assessment Register', category: 'tax', color: 'text-purple-600', bg: 'bg-purple-50', icon: ScrollText },
+    66→  // खर्च व प्रमाणक
+    67→  { num: 12, nameMr: 'अकस्मात खर्चाचे प्रमाणक', nameEn: 'Contingent Expense Voucher', category: 'expense', color: 'text-red-600', bg: 'bg-red-50', icon: FileText },
+    68→  { num: 18, nameMr: 'किरकोळ रोकडवही', nameEn: 'Petty Cash Book', category: 'expense', color: 'text-orange-600', bg: 'bg-orange-50', icon: BookCopy },
+    69→  // कर्मचारी व वेतन
+    70→  { num: 13, nameMr: 'कर्मचारी नोंदवही', nameEn: 'Employee Register', category: 'employee', color: 'text-blue-600', bg: 'bg-blue-50', icon: Users },
+    71→  { num: 14, nameMr: 'मुद्रांक हिशोब नोंदवही', nameEn: 'Stamp Account Register', category: 'employee', color: 'text-amber-600', bg: 'bg-amber-50', icon: FileText },
+    72→  { num: 21, nameMr: 'कर्मचाऱ्याच्या देयकाची नोंदवही', nameEn: 'Employee Bill Register', category: 'employee', color: 'text-green-600', bg: 'bg-green-50', icon: IndianRupee },
+    73→  { num: 31, nameMr: 'प्रवास भत्ता देयक', nameEn: 'Travel Allowance Bill', category: 'employee', color: 'text-teal-600', bg: 'bg-teal-50', icon: FileText },
+    74→  // साठा व मालमत्ता
+    75→  { num: 15, nameMr: 'उपभोग्य वस्तू साठा नोंदवही', nameEn: 'Consumable Stock Register', category: 'asset', color: 'text-indigo-600', bg: 'bg-indigo-50', icon: PackageCheck },
+    76→  { num: 16, nameMr: 'जडवस्तू संग्रह व जंगम मालमत्ता नोंदवही', nameEn: 'Dead Stock & Movable Property Register', category: 'asset', color: 'text-orange-600', bg: 'bg-orange-50', icon: FolderArchive },
+    77→  { num: 17, nameMr: 'अग्रीम/अनामत रक्कम नोंदवही', nameEn: 'Advance & Deposit Register', category: 'asset', color: 'text-purple-600', bg: 'bg-purple-50', icon: HandCoins },
+    78→  { num: 22, nameMr: 'स्थावर मालमत्ता नोंदवही', nameEn: 'Immovable Property Register', category: 'asset', color: 'text-orange-600', bg: 'bg-orange-50', icon: FolderArchive },
+    79→  { num: 23, nameMr: 'ताब्यातील रस्त्यांची नोंदवही', nameEn: 'Road Register', category: 'asset', color: 'text-amber-600', bg: 'bg-amber-50', icon: FileText },
+    80→  { num: 24, nameMr: 'जमिनीची नोंदवही', nameEn: 'Land Register', category: 'asset', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: Landmark },
+    81→  { num: 25, nameMr: 'गुंतवणूक नोंदवही', nameEn: 'Investment Register', category: 'asset', color: 'text-cyan-600', bg: 'bg-cyan-50', icon: TrendingUp },
+    82→  { num: 33, nameMr: 'वृक्ष नोंदवही', nameEn: 'Tree Register', category: 'asset', color: 'text-green-600', bg: 'bg-green-50', icon: FileText },
+    83→  // विकासकाम व देयक
+    84→  { num: 19, nameMr: 'हजेरीपट (मजुरांची हजेरी)', nameEn: 'Muster Roll / Attendance', category: 'works', color: 'text-amber-600', bg: 'bg-amber-50', icon: FileText },
+    85→  { num: 20, nameMr: 'कामाच्या अंदाजाची नोंदवही', nameEn: 'Estimate Register for Works', category: 'works', color: 'text-orange-600', bg: 'bg-orange-50', icon: FileText },
+    86→  { num: 20.1, nameMr: 'मोजमाप वही (२० क)', nameEn: 'Measurement Book', category: 'works', color: 'text-rose-600', bg: 'bg-rose-50', icon: FileText },
+    87→  { num: 20.2, nameMr: 'कामाचे देयक (२० ख)', nameEn: 'Work Bill', category: 'works', color: 'text-red-600', bg: 'bg-red-50', icon: FileText },
+    88→  // मासिक विवरण व लेखापरीक्षण
+    89→  { num: 26.1, nameMr: 'जमा मासिक विवरण (२६ क)', nameEn: 'Monthly Income Statement', category: 'audit', color: 'text-green-600', bg: 'bg-green-50', icon: TrendingUp },
+    90→  { num: 26.2, nameMr: 'खर्चाचे मासिक विवरण (२६ ख)', nameEn: 'Monthly Expenditure Statement', category: 'audit', color: 'text-red-600', bg: 'bg-red-50', icon: TrendingDown },
+    91→  { num: 27, nameMr: 'लेखापरीक्षण आक्षेपांच्या पुर्तेचे मासिक विवरण', nameEn: 'Audit Objection Compliance Monthly Statement', category: 'audit', color: 'text-slate-600', bg: 'bg-slate-50', icon: FileLock2 },
+    92→  { num: 28, nameMr: 'मागासवर्गीय 15% व महिला बालकल्याण 10% खर्चाचे मासिक विवरण', nameEn: 'SC 15% & Women/Child Welfare 10% Monthly Expenditure', category: 'audit', color: 'text-purple-600', bg: 'bg-purple-50', icon: FileBarChart },
+    93→  { num: 29, nameMr: 'कर्जाची नोंदवही', nameEn: 'Loan Register', category: 'audit', color: 'text-rose-600', bg: 'bg-rose-50', icon: FileText },
+    94→  { num: 30, nameMr: 'लेखा परीक्षण आक्षेप पूर्तता नोंदवही', nameEn: 'Audit Objection Compliance Register', category: 'audit', color: 'text-gray-600', bg: 'bg-gray-50', icon: FileLock2 },
+    95→  { num: 32, nameMr: 'रकमेच्या परताव्यासाठीचा आदेश', nameEn: 'Refund Order', category: 'audit', color: 'text-red-600', bg: 'bg-red-50', icon: FileText },
+    96→];
+    97→
+    98→// ─── Category Definitions ────────────────────────────────────────────────
+    99→
+   100→const CATEGORIES: Record<string, { label: string; labelEn: string; color: string; gradient: string }> = {
+   101→  budget:    { label: 'अर्थसंकल्प व आर्थिक विवरण', labelEn: 'Budget & Financial',   color: '#0891b2', gradient: 'from-cyan-600 to-teal-700' },
+   102→  financial: { label: 'आर्थिक स्थिती विवरण',     labelEn: 'Financial Position',  color: '#059669', gradient: 'from-green-600 to-emerald-700' },
+   103→  cash:      { label: 'रोकड व पावती',           labelEn: 'Cash & Receipts',     color: '#16a34a', gradient: 'from-green-500 to-lime-600' },
+   104→  tax:       { label: 'कर आकारणी व मागणी',      labelEn: 'Tax & Demand',        color: '#dc2626', gradient: 'from-red-600 to-rose-700' },
+   105→  expense:   { label: 'खर्च व प्रमाणक',          labelEn: 'Expenses & Vouchers',  color: '#ea580c', gradient: 'from-orange-600 to-amber-700' },
+   106→  employee:  { label: 'कर्मचारी व वेतन',         labelEn: 'Employees & Salary',  color: '#2563eb', gradient: 'from-blue-600 to-indigo-700' },
+   107→  asset:     { label: 'साठा व मालमत्ता',          labelEn: 'Stock & Assets',      color: '#9333ea', gradient: 'from-purple-600 to-violet-700' },
+   108→  works:     { label: 'विकासकाम व देयक',         labelEn: 'Works & Bills',       color: '#d97706', gradient: 'from-amber-600 to-orange-700' },
+   109→  audit:     { label: 'मासिक विवरण व लेखापरीक्षण', labelEn: 'Monthly & Audit',    color: '#475569', gradient: 'from-slate-600 to-gray-700' },
+   110→};
+   111→
+   112→// ─── Types ────────────────────────────────────────────────────────────────
+   113→
+   114→interface NamunaReportsProps {
+   115→  initialNamuna?: string;
+   116→  onNavigate?: (viewId: string) => void;
+   117→}
+   118→
+   119→interface ReportData {
+   120→  title: string;
+   121→  titleEn: string;
+   122→  headers: string[];
+   123→  rows: Array<Record<string, unknown>>;
+   124→  totals: Record<string, unknown>;
+   125→  meta?: Record<string, unknown>;
+   126→  villageName?: string;
+   127→  taluka?: string;
+   128→  district?: string;
+   129→  financialYear?: string;
+   130→  namuna?: number;
+   131→}
+   132→
+   133→// ─── Helpers ──────────────────────────────────────────────────────────────
+   134→
+   135→function formatCurrency(val: unknown): string {
+   136→  const num = Number(val) || 0;
+   137→  return `₹${num.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+   138→}
+   139→
+   140→function isCurrencyKey(key: string): boolean {
+   141→  const k = key.toLowerCase();
+   142→  return k.includes('रक्कम') || k.includes('किंमत') || k.includes('मूल्य') || k.includes('जमा') ||
+   143→    k.includes('नामे') || k.includes('शिल्लक') || k.includes('कर') || k.includes('मागणी') ||
+   144→    k.includes('वसूल') || k.includes('बक्की') || k.includes('खर्च') || k.includes('उत्पन्न') ||
+   145→    k.includes('प्राप्त') || k.includes('ठेव') || k.includes('काढा') || k.includes('घसरण') ||
+   146→    k.includes('खरेदी') || k.includes('सध्याची') || k.includes('एकूण_कर') || k.includes('एकूण_मागणी') ||
+   147→    k.includes('एकूण_वसूल') || k.includes('एकूण_शिल्लक') || k.includes('एकूण_जमा') || k.includes('एकूण_नामे') ||
+   148→    k.includes('एकूण_बक्की') || k.includes('एकूण_खर्च') || k.includes('एकूण_उत्पन्न') ||
+   149→    k.includes('एकूण_मूल्य') || k.includes('एकूण_भरलेले') || k.includes('एकूण_रक्कम') ||
+   150→    k.includes('एकूण_प्राप्त') || k.includes('एकूण_खरेदी') || k.includes('एकूण_सध्याची') ||
+   151→    k.includes('भरलेले') || k.includes('चालू_कर') || k.includes('मागील_बक्की') ||
+   152→    k.includes('दंड') || k.includes('व्याज') || k.includes('एकूण_मागणी') || k.includes('निव्वळ') ||
+   153→    k.includes('फरक') || k.includes('एकूण_मालमत्ता') || k.includes('एकूण_देणेदारी') ||
+   154→    k.includes('एकूण_घसरण') || k.includes('एकूण_खरेदी_किंमत') || k.includes('एकूण_सध्याची_किंमत');
+   155→}
+   156→
+   157→function isNumberKey(key: string): boolean {
+   158→  const k = key.toLowerCase();
+   159→  return k.includes('शिल्लक') || k.includes('टक्के') || k.includes('वसूल_टक्के') || k.includes('क्षेत्रफळ') || k === '_sr' || k.includes('प्रमाण');
+   160→}
+   161→
+   162→function isTotalKey(key: string): boolean {
+   163→  return key.startsWith('एकूण') || key.startsWith('निव्वळ') || key.startsWith('फरक');
+   164→}
+   165→
+   166→// ─── Namuna Key Parsing & Display ──────────────────────────────────────────
+   167→
+   168→/** Convert initialNamuna string like "5ka", "9ka", "20ka", "20kha", "26ka", "26kha" to the decimal num used in NAMUNA_DEFS */
+   169→function parseNamunaKey(key: string): number {
+   170→  const s = key.trim().toLowerCase();
+   171→  // Sub-forms: 5ka → 5.1, 9ka → 9.1, 20ka → 20.1, 20kha → 20.2, 26ka → 26.1, 26kha → 26.2
+   172→  if (s === '5ka') return 5.1;
+   173→  if (s === '9ka') return 9.1;
+   174→  if (s === '20ka') return 20.1;
+   175→  if (s === '20kha') return 20.2;
+   176→  if (s === '26ka') return 26.1;
+   177→  if (s === '26kha') return 26.2;
+   178→  return parseInt(s, 10);
+   179→}
+   180→
+   181→/** Format namuna num for display: 5.1 → "५ क", 20.2 → "२० ख", etc. */
+   182→function formatNamunaNum(num: number): string {
+   183→  const marathiDigits = ['०','१','२','३','४','५','६','७','८','९'];
+   184→  const toMr = (n: number) => String(n).split('').map(c => marathiDigits[parseInt(c)] ?? c).join('');
+   185→  const base = Math.floor(num);
+   186→  const sub = Math.round((num - base) * 10); // 1=क, 2=ख
+   187→  const suffix = sub === 1 ? ' क' : sub === 2 ? ' ख' : '';
+   188→  return toMr(base) + suffix;
+   189→}
+   190→
+   191→// ─── Main Component ───────────────────────────────────────────────────────
+   192→
+   193→export default function NamunaReports({ initialNamuna, onNavigate }: NamunaReportsProps) {
+   194→  const [selectedNamuna, setSelectedNamuna] = useState<number | null>(
+   195→    initialNamuna ? parseNamunaKey(initialNamuna) : null
+   196→  );
+   197→  const [reportData, setReportData] = useState<ReportData | null>(null);
+   198→  const [loading, setLoading] = useState(false);
+   199→  const [error, setError] = useState<string | null>(null);
+   200→  const [financialYear, setFinancialYear] = useState('2024-25');
+   201→  const [searchQuery, setSearchQuery] = useState('');
+   202→  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+   203→
+   204→  // Grouped namunas
+   205→  const groupedNamunas = useMemo(() => {
+   206→    const groups: Record<string, NamunaDef[]> = {};
+   207→    for (const n of NAMUNA_DEFS) {
+   208→      if (!groups[n.category]) groups[n.category] = [];
+   209→      groups[n.category].push(n);
+   210→    }
+   211→    return groups;
+   212→  }, []);
+   213→
+   214→  // Filtered namunas for grid
+   215→  const filteredNamunas = useMemo(() => {
+   216→    let items = NAMUNA_DEFS;
+   217→    if (categoryFilter !== 'all') {
+   218→      items = items.filter(n => n.category === categoryFilter);
+   219→    }
+   220→    return items;
+   221→  }, [categoryFilter]);
+   222→
+   223→  // Fetch report data
+   224→  const fetchReport = useCallback(async (namunaNum: number, fy: string) => {
+   225→    setLoading(true);
+   226→    setError(null);
+   227→    try {
+   228→      const res = await fetch(`/api/auto-generate?namuna=${namunaNum}&financialYear=${fy}`);
+   229→      if (!res.ok) {
+   230→        const errData = await res.json().catch(() => ({}));
+   231→        throw new Error(errData.error || `HTTP ${res.status}`);
+   232→      }
+   233→      const data = await res.json();
+   234→      setReportData(data);
+   235→    } catch (err) {
+   236→      setError(err instanceof Error ? err.message : 'Failed to load report');
+   237→      setReportData(null);
+   238→    } finally {
+   239→      setLoading(false);
+   240→    }
+   241→  }, []);
+   242→
+   243→  // Auto-fetch on selection
+   244→  useEffect(() => {
+   245→    if (selectedNamuna === null) return;
+   246→    const controller = new AbortController();
+   247→    setLoading(true);
+   248→    setError(null);
+   249→    fetch(`/api/auto-generate?namuna=${selectedNamuna}&financialYear=${financialYear}`, { signal: controller.signal })
+   250→      .then(res => {
+   251→        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+   252→        return res.json();
+   253→      })
+   254→      .then(data => setReportData(data))
+   255→      .catch(err => {
+   256→        if (err.name !== 'AbortError') {
+   257→          setError(err.message);
+   258→          setReportData(null);
+   259→        }
+   260→      })
+   261→      .finally(() => setLoading(false));
+   262→    return () => controller.abort();
+   263→  }, [selectedNamuna, financialYear]);
+   264→
+   265→  // Filtered rows for search
+   266→  const filteredRows = useMemo(() => {
+   267→    if (!reportData?.rows || !searchQuery.trim()) return reportData?.rows || [];
+   268→    const q = searchQuery.toLowerCase();
+   269→    return reportData.rows.filter(row =>
+   270→      Object.values(row).some(v => String(v).toLowerCase().includes(q))
+   271→    );
+   272→  }, [reportData?.rows, searchQuery]);
+   273→
+   274→  // Get current namuna definition
+   275→  const currentNamuna = useMemo(
+   276→    () => NAMUNA_DEFS.find(n => n.num === selectedNamuna),
+   277→    [selectedNamuna]
+   278→  );
+   279→
+   280→  // Print handler
+   281→  const handlePrint = () => {
+   282→    if (!reportData || !currentNamuna) return;
+   283→    const catInfo = CATEGORIES[currentNamuna.category];
+   284→    const printWindow = window.open('', '_blank');
+   285→    if (!printWindow) return;
+   286→    
+   287→    const tableHeaders = reportData.headers.map(h => `<th style="border:1px solid #ccc;padding:6px 10px;background:${catInfo.color};color:white;font-size:11px;text-align:left;">${h}</th>`).join('');
+   288→    const tableRows = filteredRows.map((row, i) => {
+   289→      const bgColor = i % 2 === 0 ? '#ffffff' : '#f8fafc';
+   290→      const cells = reportData.headers.map(h => {
+   291→        const key = h.replace(/\s+/g, '_').replace(/[().]/g, '');
+   292→        const val = row[key] ?? row[h] ?? '-';
+   293→        const isCurrency = isCurrencyKey(key);
+   294→        const style = isCurrency ? 'text-align:right;font-weight:600;' : '';
+   295→        const display = isCurrency && typeof val === 'number' ? formatCurrency(val) : String(val);
+   296→        return `<td style="border:1px solid #e2e8f0;padding:5px 10px;font-size:11px;background:${bgColor};${style}">${display}</td>`;
+   297→      }).join('');
+   298→      return `<tr>${cells}</tr>`;
+   299→    }).join('');
+   300→    
+   301→    const totalsHtml = reportData.totals ? Object.entries(reportData.totals).map(([k, v]) => {
+   302→      const isCur = isCurrencyKey(k);
+   303→      const display = isCur && typeof v === 'number' ? formatCurrency(v) : String(v);
+   304→      return `<div style="display:inline-block;margin:4px 12px;font-size:12px;"><strong>${k.replace(/_/g, ' ')}:</strong> ${display}</div>`;
+   305→    }).join('') : '';
+   306→
+   307→    printWindow.document.write(`
+   308→      <html><head><title>${reportData.title}</title>
+   309→      <style>
+   310→        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap');
+   311→        body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; margin: 20px; color: #1e293b; }
+   312→        .flag-bar { display: flex; height: 6px; margin-bottom: 16px; }
+   313→        .flag-bar div { flex: 1; }
+   314→        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+   315→        .header-info { text-align: center; margin-bottom: 12px; }
+   316→        .header-info h1 { font-size: 16px; margin: 0; color: ${catInfo.color}; }
+   317→        .header-info h2 { font-size: 12px; margin: 4px 0 0; color: #64748b; }
+   318→        .header-info .village { font-size: 13px; font-weight: 600; margin: 8px 0 2px; }
+   319→        .header-info .meta { font-size: 11px; color: #64748b; }
+   320→        .totals-bar { margin-top: 16px; padding: 10px 16px; background: #f1f5f9; border-radius: 6px; border-left: 4px solid ${catInfo.color}; }
+   321→        .signature { margin-top: 40px; display: flex; justify-content: space-between; padding: 0 40px; }
+   322→        .signature div { text-align: center; font-size: 11px; border-top: 1px solid #94a3b8; padding-top: 8px; min-width: 150px; }
+   323→        @media print { body { margin: 10px; } }
+   324→      </style></head><body>
+   325→      <div class="flag-bar"><div style="background:#FF9933"></div><div style="background:white"></div><div style="background:#138808"></div></div>
+   326→      <div class="header-info">
+   327→        <div class="village">${reportData.villageName || 'ग्रामपंचायत'}</div>
+   328→        <div class="meta">${reportData.taluka ? `ता. ${reportData.taluka}` : ''} ${reportData.district ? `जि. ${reportData.district}` : ''}</div>
+   329→        <h1>${reportData.title}</h1>
+   330→        <h2>${reportData.titleEn}</h2>
+   331→        <div class="meta">वित्तीय वर्ष: ${reportData.financialYear || financialYear}</div>
+   332→      </div>
+   333→      <table><thead><tr>${tableHeaders}</tr></thead><tbody>${tableRows}</tbody></table>
+   334→      ${totalsHtml ? `<div class="totals-bar">${totalsHtml}</div>` : ''}
+   335→      <div class="signature">
+   336→        <div>मालकाची सही</div>
+   337→        <div>ग्रामसेवक सही</div>
+   338→        <div>सरपंच सही व मुद्रा</div>
+   339→        <div>सचिव सही व मुद्रा</div>
+   340→      </div>
+   341→      <div class="flag-bar" style="margin-top:24px"><div style="background:#FF9933"></div><div style="background:white"></div><div style="background:#138808"></div></div>
+   342→      </body></html>
+   343→    `);
+   344→    printWindow.document.close();
+   345→    setTimeout(() => printWindow.print(), 500);
+   346→  };
+   347→
+   348→  // Export CSV handler
+   349→  const handleExport = () => {
+   350→    if (!reportData) return;
+   351→    const rows = filteredRows;
+   352→    let csv = reportData.headers.map(h => `"${h}"`).join(',') + '\n';
+   353→    rows.forEach(row => {
+   354→      const cells = reportData.headers.map(h => {
+   355→        const key = h.replace(/\s+/g, '_').replace(/[().]/g, '');
+   356→        const val = row[key] ?? row[h] ?? '-';
+   357→        return `"${String(val).replace(/"/g, '""')}"`;
+   358→      });
+   359→      csv += cells.join(',') + '\n';
+   360→    });
+   361→    // Totals row
+   362→    if (reportData.totals) {
+   363→      const totalCells = reportData.headers.map(h => {
+   364→        const key = h.replace(/\s+/g, '_').replace(/[().]/g, '');
+   365→        const val = reportData.totals?.[key];
+   366→        return val !== undefined ? `"${val}"` : '""';
+   367→      });
+   368→      csv += totalCells.join(',') + '\n';
+   369→    }
+   370→    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+   371→    const link = document.createElement('a');
+   372→    link.href = URL.createObjectURL(blob);
+   373→    link.download = `namuna-${selectedNamuna}-${financialYear}.csv`;
+   374→    link.click();
+   375→  };
+   376→
+   377→  // ─── RENDER: Grid View ────────────────────────────────────────────────
+   378→
+   379→  if (selectedNamuna === null) {
+   380→    return (
+   381→      <div className="space-y-6">
+   382→        {/* Header */}
+   383→        <Card className="border-0 shadow-lg overflow-hidden">
+   384→          <div className="h-2 bg-gradient-to-r from-teal-600 via-emerald-600 to-green-600" />
+   385→          <CardContent className="p-4 sm:p-6">
+   386→            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+   387→              <div className="h-14 w-14 rounded-2xl flex items-center justify-center shadow-lg bg-gradient-to-br from-teal-600 to-emerald-700">
+   388→                <FileBadge className="h-7 w-7 text-white" />
+   389→              </div>
+   390→              <div className="flex-1">
+   391→                <h2 className="text-2xl font-bold bg-gradient-to-r from-teal-700 to-emerald-700 bg-clip-text text-transparent">
+   392→                  नमुना अहवाल (१-३३)
+   393→                </h2>
+   394→                <p className="text-sm text-muted-foreground mt-0.5">
+   395→                  Namuna Reports 1-33 | सर्व सरकारी नमुने एकाच ठिकाणी
+   396→                </p>
+   397→              </div>
+   398→              <Badge className="bg-gradient-to-r from-teal-500 to-emerald-500 text-white border-0 shadow-sm text-sm px-3 py-1">
+   399→                {NAMUNA_DEFS.length} नमुने
+   400→              </Badge>
+   401→            </div>
+   402→
+   403→            {/* Financial Year Selector */}
+   404→            <div className="mt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+   405→              <div className="flex items-center gap-2">
+   406→                <span className="text-sm font-medium text-muted-foreground">वित्तीय वर्ष:</span>
+   407→                <Select value={financialYear} onValueChange={setFinancialYear}>
+   408→                  <SelectTrigger className="w-[130px] h-9 text-sm border-teal-200">
+   409→                    <SelectValue />
+   410→                  </SelectTrigger>
+   411→                  <SelectContent>
+   412→                    <SelectItem value="2023-24">2023-24</SelectItem>
+   413→                    <SelectItem value="2024-25">2024-25</SelectItem>
+   414→                    <SelectItem value="2025-26">2025-26</SelectItem>
+   415→                  </SelectContent>
+   416→                </Select>
+   417→              </div>
+   418→              <div className="flex-1" />
+   419→              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+   420→                <SelectTrigger className="w-[180px] h-9 text-sm border-teal-200">
+   421→                  <SelectValue placeholder="सर्व वर्ग" />
+   422→                </SelectTrigger>
+   423→                <SelectContent>
+   424→                  <SelectItem value="all">सर्व वर्ग (All)</SelectItem>
+   425→                  {Object.entries(CATEGORIES).map(([key, cat]) => (
+   426→                    <SelectItem key={key} value={key}>{cat.label} ({cat.labelEn})</SelectItem>
+   427→                  ))}
+   428→                </SelectContent>
+   429→              </Select>
+   430→            </div>
+   431→          </CardContent>
+   432→        </Card>
+   433→
+   434→        {/* Category Groups */}
+   435→        {categoryFilter === 'all' ? (
+   436→          Object.entries(groupedNamunas).map(([catKey, namunas]) => {
+   437→            const catInfo = CATEGORIES[catKey];
+   438→            if (!catInfo) return null;
+   439→            return (
+   440→              <div key={catKey} className="space-y-3">
+   441→                {/* Category Header */}
+   442→                <div className="flex items-center gap-3 px-1">
+   443→                  <div className="h-7 w-1.5 rounded-full" style={{ background: catInfo.color }} />
+   444→                  <h3 className="text-sm font-bold" style={{ color: catInfo.color }}>
+   445→                    {catInfo.label}
+   446→                  </h3>
+   447→                  <span className="text-xs text-muted-foreground">({catInfo.labelEn})</span>
+   448→                  <Badge className="text-[10px] border-0 px-2" style={{ background: catInfo.color + '18', color: catInfo.color }}>
+   449→                    {namunas.length}
+   450→                  </Badge>
+   451→                </div>
+   452→                {/* Namuna Grid */}
+   453→                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+   454→                  {namunas.map(n => (
+   455→                    <button
+   456→                      key={n.num}
+   457→                      onClick={() => setSelectedNamuna(n.num)}
+   458→                      className="group relative flex items-center gap-2.5 p-3 rounded-xl border border-gray-100 bg-white hover:shadow-md hover:border-gray-200 transition-all duration-200 text-left overflow-hidden"
+   459→                    >
+   460→                      <div className="absolute top-0 left-0 right-0 h-0.5 opacity-60 group-hover:h-1 transition-all" style={{ background: catInfo.color }} />
+   461→                      <div className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${n.bg}`}>
+   462→                        <n.icon className={`h-4 w-4 ${n.color}`} />
+   463→                      </div>
+   464→                      <div className="min-w-0 flex-1">
+   465→                        <div className="flex items-center gap-1.5 mb-0.5">
+   466→                          <Badge className="text-[9px] border-0 font-bold px-1.5 py-0 leading-4 text-white" style={{ background: catInfo.color }}>
+   467→                            {formatNamunaNum(n.num)}
+   468→                          </Badge>
+   469→                        </div>
+   470→                        <p className="text-[11px] font-semibold leading-tight truncate">{n.nameMr}</p>
+   471→                        <p className="text-[9px] text-muted-foreground leading-tight truncate">{n.nameEn}</p>
+   472→                      </div>
+   473→                    </button>
+   474→                  ))}
+   475→                </div>
+   476→              </div>
+   477→            );
+   478→          })
+   479→        ) : (
+   480→          /* Filtered grid */
+   481→          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+   482→            {filteredNamunas.map(n => {
+   483→              const catInfo = CATEGORIES[n.category];
+   484→              return (
+   485→                <button
+   486→                  key={n.num}
+   487→                  onClick={() => setSelectedNamuna(n.num)}
+   488→                  className="group relative flex items-center gap-2.5 p-3 rounded-xl border border-gray-100 bg-white hover:shadow-md hover:border-gray-200 transition-all duration-200 text-left overflow-hidden"
+   489→                >
+   490→                  <div className="absolute top-0 left-0 right-0 h-0.5 opacity-60 group-hover:h-1 transition-all" style={{ background: catInfo?.color || '#059669' }} />
+   491→                  <div className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${n.bg}`}>
+   492→                    <n.icon className={`h-4 w-4 ${n.color}`} />
+   493→                  </div>
+   494→                  <div className="min-w-0 flex-1">
+   495→                    <div className="flex items-center gap-1.5 mb-0.5">
+   496→                      <Badge className="text-[9px] border-0 font-bold px-1.5 py-0 leading-4 text-white" style={{ background: catInfo?.color || '#059669' }}>
+   497→                        {formatNamunaNum(n.num)}
+   498→                      </Badge>
+   499→                    </div>
+   500→                    <p className="text-[11px] font-semibold leading-tight truncate">{n.nameMr}</p>
+   501→                    <p className="text-[9px] text-muted-foreground leading-tight truncate">{n.nameEn}</p>
+   502→                  </div>
+   503→                </button>
+   504→              );
+   505→            })}
+   506→          </div>
+   507→        )}
+   508→      </div>
+   509→    );
+   510→  }
+   511→
+   512→  // ─── RENDER: Report Detail View ───────────────────────────────────────
+   513→
+   514→  const catInfo = currentNamuna ? CATEGORIES[currentNamuna.category] : null;
+   515→  const catColor = catInfo?.color || '#059669';
+   516→
+   517→  return (
+   518→    <div className="space-y-4">
+   519→      {/* Report Header */}
+   520→      <Card className="border-0 shadow-lg overflow-hidden">
+   521→        <div className="h-2 bg-gradient-to-r" style={{ background: `linear-gradient(90deg, ${catColor}, ${catColor}bb)` }} />
+   522→        <CardContent className="p-4 sm:p-5">
+   523→          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+   524→            <Button
+   525→              variant="ghost"
+   526→              size="sm"
+   527→              onClick={() => { setSelectedNamuna(null); setReportData(null); setSearchQuery(''); setError(null); }}
+   528→              className="h-10 w-10 p-0 rounded-xl hover:bg-gray-100 shrink-0"
+   529→            >
+   530→              <ArrowLeft className="h-5 w-5" />
+   531→            </Button>
+   532→            {currentNamuna && (
+   533→              <div className={`h-12 w-12 rounded-xl flex items-center justify-center shadow-md shrink-0 ${currentNamuna.bg}`}>
+   534→                <currentNamuna.icon className={`h-6 w-6 ${currentNamuna.color}`} />
+   535→              </div>
+   536→            )}
+   537→            <div className="flex-1 min-w-0">
+   538→              <h2 className="text-lg sm:text-xl font-bold leading-tight" style={{ color: catColor }}>
+   539→                {reportData?.title || (currentNamuna ? `नमुना ${currentNamuna.num} — ${currentNamuna.nameMr}` : 'नमुना अहवाल')}
+   540→              </h2>
+   541→              <p className="text-sm text-muted-foreground mt-0.5">
+   542→                {reportData?.titleEn || currentNamuna?.nameEn || ''}
+   543→              </p>
+   544→              {reportData?.villageName && (
+   545→                <p className="text-xs text-muted-foreground mt-1">
+   546→                  📍 {reportData.villageName}
+   547→                  {reportData.taluka ? ` | ता. ${reportData.taluka}` : ''}
+   548→                  {reportData.district ? ` | जि. ${reportData.district}` : ''}
+   549→                </p>
+   550→              )}
+   551→            </div>
+   552→            <div className="flex items-center gap-2 shrink-0">
+   553→              <Badge className="text-white border-0 shadow-sm" style={{ background: catColor }}>
+   554→                नमुना {selectedNamuna}
+   555→              </Badge>
+   556→              {catInfo && (
+   557→                <Badge variant="outline" className="text-xs" style={{ borderColor: catColor + '40', color: catColor }}>
+   558→                  {catInfo.label}
+   559→                </Badge>
+   560→              )}
+   561→            </div>
+   562→          </div>
+   563→        </CardContent>
+   564→      </Card>
+   565→
+   566→      {/* Controls Bar */}
+   567→      <Card className="border-0 shadow-sm">
+   568→        <CardContent className="p-3">
+   569→          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+   570→            {/* Financial Year */}
+   571→            <div className="flex items-center gap-2">
+   572→              <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">वित्तीय वर्ष:</span>
+   573→              <Select value={financialYear} onValueChange={setFinancialYear}>
+   574→                <SelectTrigger className="w-[120px] h-8 text-xs">
+   575→                  <SelectValue />
+   576→                </SelectTrigger>
+   577→                <SelectContent>
+   578→                  <SelectItem value="2023-24">2023-24</SelectItem>
+   579→                  <SelectItem value="2024-25">2024-25</SelectItem>
+   580→                  <SelectItem value="2025-26">2025-26</SelectItem>
+   581→                </SelectContent>
+   582→              </Select>
+   583→            </div>
+   584→
+   585→            {/* Search */}
+   586→            <div className="relative flex-1 max-w-xs">
+   587→              <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+   588→              <Input
+   589→                placeholder="अहवालात शोधा..."
+   590→                value={searchQuery}
+   591→                onChange={e => setSearchQuery(e.target.value)}
+   592→                className="h-8 text-xs pl-8 pr-8"
+   593→              />
+   594→              {searchQuery && (
+   595→                <button
+   596→                  onClick={() => setSearchQuery('')}
+   597→                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+   598→                >
+   599→                  <AlertCircle className="h-3.5 w-3.5" />
+   600→                </button>
+   601→              )}
+   602→            </div>
+   603→
+   604→            <div className="flex-1" />
+   605→
+   606→            {/* Actions */}
+   607→            <div className="flex items-center gap-2">
+   608→              <Button
+   609→                variant="outline"
+   610→                size="sm"
+   611→                onClick={() => selectedNamuna && fetchReport(selectedNamuna, financialYear)}
+   612→                disabled={loading}
+   613→                className="h-8 text-xs"
+   614→              >
+   615→                <RefreshCw className={`h-3.5 w-3.5 mr-1 ${loading ? 'animate-spin' : ''}`} />
+   616→                पुन्हा लोड
+   617→              </Button>
+   618→              <Button
+   619→                variant="outline"
+   620→                size="sm"
+   621→                onClick={handlePrint}
+   622→                disabled={!reportData || loading}
+   623→                className="h-8 text-xs"
+   624→              >
+   625→                <Printer className="h-3.5 w-3.5 mr-1" />
+   626→                प्रिंट
+   627→              </Button>
+   628→              <Button
+   629→                variant="outline"
+   630→                size="sm"
+   631→                onClick={handleExport}
+   632→                disabled={!reportData || loading}
+   633→                className="h-8 text-xs"
+   634→              >
+   635→                <Download className="h-3.5 w-3.5 mr-1" />
+   636→                CSV
+   637→              </Button>
+   638→            </div>
+   639→          </div>
+   640→        </CardContent>
+   641→      </Card>
+   642→
+   643→      {/* Error State */}
+   644→      {error && (
+   645→        <Card className="border-red-200 bg-red-50">
+   646→          <CardContent className="p-4 flex items-center gap-3">
+   647→            <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />
+   648→            <div>
+   649→              <p className="text-sm font-medium text-red-800">अहवाल लोड करताना त्रुटी</p>
+   650→              <p className="text-xs text-red-600 mt-0.5">{error}</p>
+   651→            </div>
+   652→            <Button
+   653→              variant="outline"
+   654→              size="sm"
+   655→              onClick={() => selectedNamuna && fetchReport(selectedNamuna, financialYear)}
+   656→              className="ml-auto h-8 text-xs border-red-300 text-red-700 hover:bg-red-100"
+   657→            >
+   658→              <RefreshCw className="h-3.5 w-3.5 mr-1" />
+   659→              पुन्हा प्रयत्न
+   660→            </Button>
+   661→          </CardContent>
+   662→        </Card>
+   663→      )}
+   664→
+   665→      {/* Loading State */}
+   666→      {loading && (
+   667→        <Card className="border-0 shadow-sm">
+   668→          <CardContent className="p-6">
+   669→            <div className="flex items-center justify-center gap-3 mb-4">
+   670→              <Loader2 className="h-5 w-5 animate-spin" style={{ color: catColor }} />
+   671→              <span className="text-sm font-medium" style={{ color: catColor }}>
+   672→                नमुना {selectedNamuna} अहवाल तयार होत आहे...
+   673→              </span>
+   674→            </div>
+   675→            <div className="space-y-2">
+   676→              {[1, 2, 3, 4, 5, 6].map(i => (
+   677→                <Skeleton key={i} className="h-10 w-full" style={{ opacity: 1 - i * 0.1 }} />
+   678→              ))}
+   679→            </div>
+   680→          </CardContent>
+   681→        </Card>
+   682→      )}
+   683→
+   684→      {/* Report Table */}
+   685→      {!loading && reportData && (
+   686→        <Card className="border-0 shadow-sm overflow-hidden">
+   687→          <div className="h-1" style={{ background: `linear-gradient(90deg, ${catColor}, ${catColor}88)` }} />
+   688→
+   689→          {/* Indian Flag Bar */}
+   690→          <div className="flex h-1">
+   691→            <div className="flex-1" style={{ background: '#FF9933' }} />
+   692→            <div className="flex-1 bg-white" />
+   693→            <div className="flex-1" style={{ background: '#138808' }} />
+   694→          </div>
+   695→
+   696→          {/* Village & Title Banner */}
+   697→          <div className="p-3 text-center border-b" style={{ background: catColor + '08' }}>
+   698→            <p className="text-sm font-bold" style={{ color: catColor }}>
+   699→              {reportData.villageName || 'ग्रामपंचायत'}
+   700→              {reportData.taluka ? ` | ता. ${reportData.taluka}` : ''}
+   701→              {reportData.district ? ` | जि. ${reportData.district}` : ''}
+   702→            </p>
+   703→            <p className="text-xs text-muted-foreground mt-0.5">
+   704→              वित्तीय वर्ष: {reportData.financialYear || financialYear}
+   705→            </p>
+   706→          </div>
+   707→
+   708→          {filteredRows.length === 0 ? (
+   709→            /* Empty State */
+   710→            <CardContent className="p-12 text-center">
+   711→              <div className={`h-20 w-20 rounded-2xl mx-auto mb-4 flex items-center justify-center ${currentNamuna?.bg || 'bg-gray-50'}`}>
+   712→                {currentNamuna ? (
+   713→                  <currentNamuna.icon className={`h-10 w-10 ${currentNamuna.color} opacity-40`} />
+   714→                ) : (
+   715→                  <FileText className="h-10 w-10 text-gray-300" />
+   716→                )}
+   717→              </div>
+   718→              <h3 className="text-lg font-semibold text-muted-foreground mb-1">
+   719→                {searchQuery ? 'शोध निकाल सापडले नाहीत' : 'या नमुन्यासाठी डेटा उपलब्ध नाही'}
+   720→              </h3>
+   721→              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+   722→                {searchQuery
+   723→                  ? `'${searchQuery}' या शोधाशी जुळणारे नोंदी सापडल्या नाहीत. कृपया वेगळा शब्द वापरा.`
+   724→                  : 'या नमुन्यासाठी डेटा तयार करण्याकरिता कृपया संबंधित पावती/पेमेंट एंट्री किंवा मास्टर डेटा जोडा.'
+   725→                }
+   726→              </p>
+   727→              {!searchQuery && (
+   728→                <div className="mt-4 flex items-center justify-center gap-4 text-xs text-muted-foreground">
+   729→                  <span>💡 पावती एंट्री → नमुना ३, ११, १२</span>
+   730→                  <span>💡 कर आकारणी → नमुना ८, ९</span>
+   731→                </div>
+   732→              )}
+   733→            </CardContent>
+   734→          ) : (
+   735→            /* Data Table */
+   736→            <div className="max-h-[70vh] overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+   737→              <style>{`
+   738→                .report-table::-webkit-scrollbar { width: 6px; height: 6px; }
+   739→                .report-table::-webkit-scrollbar-track { background: #f1f5f9; }
+   740→                .report-table::-webkit-scrollbar-thumb { background: ${catColor}40; border-radius: 3px; }
+   741→                .report-table::-webkit-scrollbar-thumb:hover { background: ${catColor}80; }
+   742→              `}</style>
+   743→              <Table className="report-table">
+   744→                <TableHeader>
+   745→                  <TableRow style={{ background: catColor }}>
+   746→                    {reportData.headers.map(h => (
+   747→                      <TableHead
+   748→                        key={h}
+   749→                        className="text-white text-xs font-semibold py-3 whitespace-nowrap"
+   750→                        style={{ background: catColor }}
+   751→                      >
+   752→                        {h}
+   753→                      </TableHead>
+   754→                    ))}
+   755→                  </TableRow>
+   756→                </TableHeader>
+   757→                <TableBody>
+   758→                  {filteredRows.map((row, rowIdx) => (
+   759→                    <TableRow
+   760→                      key={rowIdx}
+   761→                      className={`hover:bg-gray-50/80 transition-colors ${rowIdx % 2 === 0 ? 'bg-white' : ''}`}
+   762→                      style={rowIdx % 2 !== 0 ? { background: catColor + '06' } : {}}
+   763→                    >
+   764→                      {reportData.headers.map(h => {
+   765→                        const key = h.replace(/\s+/g, '_').replace(/[().]/g, '');
+   766→                        const val = row[key] ?? row[h] ?? '-';
+   767→                        const isCurr = isCurrencyKey(key);
+   768→                        const isNum = isNumberKey(key);
+   769→                        const isRightAlign = isCurr || isNum;
+   770→
+   771→                        let display: string;
+   772→                        if (isCurr && typeof val === 'number') {
+   773→                          display = formatCurrency(val);
+   774→                        } else if (typeof val === 'number') {
+   775→                          display = val.toLocaleString('en-IN');
+   776→                        } else {
+   777→                          display = String(val);
+   778→                        }
+   779→
+   780→                        return (
+   781→                          <TableCell
+   782→                            key={h}
+   783→                            className={`text-xs py-2.5 whitespace-nowrap ${isRightAlign ? 'text-right font-medium' : ''} ${isCurr ? 'font-semibold' : ''}`}
+   784→                          >
+   785→                            {display}
+   786→                          </TableCell>
+   787→                        );
+   788→                      })}
+   789→                    </TableRow>
+   790→                  ))}
+   791→                </TableBody>
+   792→              </Table>
+   793→            </div>
+   794→          )}
+   795→
+   796→          {/* Totals Footer */}
+   797→          {reportData.totals && filteredRows.length > 0 && (
+   798→            <div className="border-t p-3" style={{ background: `linear-gradient(90deg, ${catColor}08, ${catColor}04)` }}>
+   799→              <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+   800→                {Object.entries(reportData.totals).map(([key, val]) => {
+   801→                  const isCurr = isCurrencyKey(key);
+   802→                  const display = isCurr && typeof val === 'number' ? formatCurrency(val) : String(val);
+   803→                  return (
+   804→                    <div key={key} className="flex items-center gap-1.5">
+   805→                      <span className="text-xs text-muted-foreground">{key.replace(/_/g, ' ')}:</span>
+   806→                      <span className="text-sm font-bold" style={{ color: isCurr ? catColor : 'inherit' }}>
+   807→                        {display}
+   808→                      </span>
+   809→                    </div>
+   810→                  );
+   811→                })}
+   812→              </div>
+   813→            </div>
+   814→          )}
+   815→
+   816→          {/* Record count footer */}
+   817→          {filteredRows.length > 0 && (
+   818→            <div className="border-t px-3 py-2 flex items-center justify-between" style={{ background: catColor + '06' }}>
+   819→              <span className="text-xs text-muted-foreground">
+   820→                एकूण {filteredRows.length} नोंदी
+   821→                {searchQuery && reportData.rows && filteredRows.length !== reportData.rows.length && (
+   822→                  <span> (शोध: {reportData.rows.length} पैकी)</span>
+   823→                )}
+   824→              </span>
+   825→              {searchQuery && (
+   826→                <button
+   827→                  onClick={() => setSearchQuery('')}
+   828→                  className="text-xs text-muted-foreground hover:text-foreground underline"
+   829→                >
+   830→                  शोध साफ करा
+   831→                </button>
+   832→              )}
+   833→            </div>
+   834→          )}
+   835→        </Card>
+   836→      )}
+   837→
+   838→      {/* Quick Navigation to other Namunas */}
+   839→      {!loading && currentNamuna && (
+   840→        <Card className="border-0 shadow-sm">
+   841→          <CardContent className="p-3">
+   842→            <div className="flex items-center gap-2 mb-2">
+   843→              <span className="text-xs font-medium text-muted-foreground">इतर नमुने:</span>
+   844→            </div>
+   845→            <div className="flex flex-wrap gap-1.5">
+   846→              {NAMUNA_DEFS.filter(n => n.num !== selectedNamuna).map(n => {
+   847→                const nCatInfo = CATEGORIES[n.category];
+   848→                return (
+   849→                  <button
+   850→                    key={n.num}
+   851→                    onClick={() => { setSelectedNamuna(n.num); setSearchQuery(''); }}
+   852→                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all hover:shadow-sm ${n.bg} ${n.color}`}
+   853→                  >
+   854→                    <n.icon className="h-3 w-3" />
+   855→                    {formatNamunaNum(n.num)}
+   856→                  </button>
+   857→                );
+   858→              })}
+   859→            </div>
+   860→          </CardContent>
+   861→        </Card>
+   862→      )}
+   863→    </div>
+   864→  );
+   865→}
+   866→

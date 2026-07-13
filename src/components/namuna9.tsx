@@ -39,14 +39,17 @@ interface PropertyInfo {
   ward?: { wardNameMr: string; wardName: string; wardNumber: string };
   road?: { roadNameMr: string };
   owners: OwnerInfo[];
-  taxRates: { taxMasterId: string; rate: number; taxMaster: { name: string; nameMarathi: string } }[];
-  namuna9s: { totalDemand: number; payments: { amountPaid: number }[] }[];
+  taxRates: { taxMasterId: string; rate: number; taxMaster: { name: string; nameMarathi: string; isEnabled: boolean } }[];
+  demands: { totalDemand: number; payments: { amountPaid: number }[] }[];
   payments: { amountPaid: number }[];
+  totalPaid?: number;
+  totalDemand?: number;
+  outstandingBalance?: number;
 }
 
 interface Payment {
   id: string; amountPaid: number; balance: number;
-  receiptNumber: string; paymentDate: string; paymentMethod: string;
+  receiptNo: string; paymentDate: string; paymentMode: string;
 }
 
 interface Namuna9Record {
@@ -84,7 +87,7 @@ const getMobile = (prop: PropertyInfo) => {
 };
 
 const getBalance = (r: Namuna9Record) => {
-  const totalPaid = r.payments.reduce((s, p) => s + p.amountPaid, 0);
+  const totalPaid = (r.payments || []).reduce((s, p) => s + p.amountPaid, 0);
   return r.totalDemand - totalPaid;
 };
 
@@ -97,6 +100,7 @@ export default function Namuna9Component() {
   const [properties, setProperties] = useState<PropertyInfo[]>([]);
   const [village, setVillage] = useState<VillageInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   /* search */
   const [searchQuery, setSearchQuery] = useState('');
@@ -124,6 +128,7 @@ export default function Namuna9Component() {
   /* ---- fetch data ---- */
   const fetchData = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const [n9Res, propRes, vilRes] = await Promise.all([
         fetch('/api/namuna9'),
@@ -137,6 +142,9 @@ export default function Namuna9Component() {
       const vData = await vilRes.json();
       setVillage(Array.isArray(vData) ? vData[0] : vData);
     } catch {
+      setError('डेटा लोड करताना त्रुटी आली. कृपया पुन्हा प्रयत्न करा.');
+      setRecords([]);
+      setProperties([]);
       toast({ title: 'त्रुटी', description: 'डेटा लोड करताना त्रुटी', variant: 'destructive' });
     } finally {
       setLoading(false);
@@ -151,14 +159,20 @@ export default function Namuna9Component() {
     setSearching(true);
     try {
       const res = await fetch(`/api/namuna9?search=${encodeURIComponent(searchQuery)}`);
-      const data: PropertyInfo[] = await res.json();
-      setSearchResults(data);
-      if (data.length > 0) {
-        handleSelectProperty(data[0]);
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setSearchResults(data);
+        if (data.length > 0) {
+          handleSelectProperty(data[0]);
+        } else {
+          toast({ title: 'शोध निकाल', description: 'कोणतीही मालमत्ता सापडली नाही', variant: 'destructive' });
+        }
       } else {
-        toast({ title: 'शोध निकाल', description: 'कोणतीही मालमत्ता सापडली नाही', variant: 'destructive' });
+        setSearchResults([]);
+        toast({ title: 'त्रुटी', description: 'शोध परिणाम लोड करता आले नाहीत', variant: 'destructive' });
       }
     } catch {
+      setSearchResults([]);
       toast({ title: 'त्रुटी', description: 'शोधताना त्रुटी', variant: 'destructive' });
     } finally {
       setSearching(false);
@@ -170,7 +184,7 @@ export default function Namuna9Component() {
     setSelectedProperty(prop);
     /* auto-calculate previous balance from outstanding */
     const totalPaid = prop.payments?.reduce((s: number, pm: { amountPaid: number }) => s + pm.amountPaid, 0) || 0;
-    const totalDemand = prop.namuna9s?.reduce((s: number, n9: { totalDemand: number }) => s + n9.totalDemand, 0) || 0;
+    const totalDemand = prop.demands?.reduce((s: number, n9: { totalDemand: number }) => s + n9.totalDemand, 0) || 0;
     const outstanding = totalDemand - totalPaid;
     setPreviousBalance(outstanding > 0 ? Math.round(outstanding * 100) / 100 : 0);
     setPenalty(0);
@@ -214,7 +228,7 @@ export default function Namuna9Component() {
   /* ---- print handler ---- */
   const handlePrint = (record: Namuna9Record) => {
     const prop = record.property;
-    const totalPaid = record.payments.reduce((s, p) => s + p.amountPaid, 0);
+    const totalPaid = (record.payments || []).reduce((s, p) => s + p.amountPaid, 0);
     const balance = record.totalDemand - totalPaid;
     const ownerName = getOwnerName(prop);
     const mobileNo = getMobile(prop);
@@ -300,12 +314,12 @@ export default function Namuna9Component() {
   </tbody>
 </table>
 
-${record.payments.length > 0 ? `
+${record.payments && record.payments.length > 0 ? `
 <h3 style="font-size:13px;margin:14px 0 6px;color:#92400e;">भरलेली पावत्या</h3>
 <table>
   <thead><tr><th>पावती क्र.</th><th>तारीख</th><th>रक्कम (₹)</th><th>पद्धत</th><th>शिल्लक (₹)</th></tr></thead>
   <tbody>
-    ${record.payments.map(p => `<tr><td>${p.receiptNumber}</td><td>${new Date(p.paymentDate).toLocaleDateString('mr-IN')}</td><td class="amount">₹${fmt(p.amountPaid)}</td><td>${p.paymentMethod}</td><td class="amount">₹${fmt(p.balance)}</td></tr>`).join('')}
+    ${record.payments.map(p => `<tr><td>${p.receiptNo || '-'}</td><td>${new Date(p.paymentDate).toLocaleDateString('mr-IN')}</td><td class="amount">₹${fmt(p.amountPaid)}</td><td>${p.paymentMode || '-'}</td><td class="amount">₹${fmt(p.balance)}</td></tr>`).join('')}
   </tbody>
 </table>` : ''}
 
@@ -328,7 +342,7 @@ ${record.payments.length > 0 ? `
 
   /* ---- summary stats ---- */
   const totalDemandAll = records.reduce((s, r) => s + r.totalDemand, 0);
-  const totalPaidAll = records.reduce((s, r) => s + r.payments.reduce((ps, p) => ps + p.amountPaid, 0), 0);
+  const totalPaidAll = records.reduce((s, r) => s + (r.payments || []).reduce((ps, p) => ps + p.amountPaid, 0), 0);
   const totalOutstanding = totalDemandAll - totalPaidAll;
 
   /* ================================================================ */
@@ -407,6 +421,21 @@ ${record.payments.length > 0 ? `
         </Card>
       </div>
 
+      {/* ===== ERROR STATE ===== */}
+      {error && (
+        <Card className="border-2 border-red-200 shadow-sm">
+          <CardContent className="p-4 flex items-center gap-3">
+            <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={fetchData} className="border-red-300 text-red-700 hover:bg-red-50">
+              <RefreshCw className="h-4 w-4 mr-1" />पुन्हा प्रयत्न करा
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* ===== SEARCH SECTION ===== */}
       <Card className="border-0 shadow-md overflow-hidden">
         <div className="h-1" style={{ background: 'linear-gradient(90deg, #f59e0b, #d97706, #b45309)' }} />
@@ -470,7 +499,7 @@ ${record.payments.length > 0 ? `
                 {searchResults.map(prop => {
                   const isSelected = selectedPropertyId === prop.id;
                   const totalPaid = prop.payments?.reduce((s: number, pm: { amountPaid: number }) => s + pm.amountPaid, 0) || 0;
-                  const totalDem = prop.namuna9s?.reduce((s: number, n9: { totalDemand: number }) => s + n9.totalDemand, 0) || 0;
+                  const totalDem = prop.demands?.reduce((s: number, n9: { totalDemand: number }) => s + n9.totalDemand, 0) || 0;
                   const outstanding = totalDem - totalPaid;
                   return (
                     <button
@@ -721,10 +750,10 @@ ${record.payments.length > 0 ? `
                         <TableCell>
                           <div className="flex items-center gap-1.5">
                             <Home className="h-3.5 w-3.5 text-amber-500" />
-                            <span className="font-semibold text-amber-800">{r.property.propertyNumber}</span>
+                            <span className="font-semibold text-amber-800">{r.property?.propertyNumber || '-'}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="font-medium">{getOwnerName(r.property)}</TableCell>
+                        <TableCell className="font-medium">{r.property ? getOwnerName(r.property) : '-'}</TableCell>
                         <TableCell>
                           <Badge variant="outline" className="text-xs border-amber-300 text-amber-700">
                             {r.financialYear}

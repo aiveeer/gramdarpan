@@ -14,7 +14,7 @@ function simpleHash(str: string): string {
 
 const COOKIE_OPTS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
+  secure: false, // Allow cookies over HTTP for local development
   sameSite: 'lax' as const,
   maxAge: 60 * 60 * 24, // 24 hours
   path: '/',

@@ -1,6 +1,16 @@
 import { db } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 
+// Helper: safe try/catch wrapper that returns empty data on failure
+async function safeQuery<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    console.error('Query error:', error);
+    return fallback;
+  }
+}
+
 // GET - auto-generated register data
 export async function GET(request: NextRequest) {
   try {
@@ -18,14 +28,20 @@ export async function GET(request: NextRequest) {
       case 'cash-book': {
         // Namuna 3: Cash book - all receipt + payment entries combined
         const [receipts, payments] = await Promise.all([
-          db.receiptEntry.findMany({
-            where: fyFilter as Parameters<typeof db.receiptEntry.findMany>[0]['where'],
-            orderBy: { receiptDate: 'asc' },
-          }),
-          db.paymentEntry.findMany({
-            where: fyFilter as Parameters<typeof db.paymentEntry.findMany>[0]['where'],
-            orderBy: { paymentDate: 'asc' },
-          }),
+          safeQuery(
+            () => db.receiptEntry.findMany({
+              where: fyFilter as Parameters<typeof db.receiptEntry.findMany>[0]['where'],
+              orderBy: { receiptDate: 'asc' },
+            }),
+            []
+          ),
+          safeQuery(
+            () => db.paymentEntry.findMany({
+              where: fyFilter as Parameters<typeof db.paymentEntry.findMany>[0]['where'],
+              orderBy: { paymentDate: 'asc' },
+            }),
+            []
+          ),
         ]);
 
         // Calculate running balance
@@ -65,7 +81,11 @@ export async function GET(request: NextRequest) {
         }
 
         // Sort by date
-        entries.sort((a, b) => a.date.localeCompare(b.date));
+        entries.sort((a, b) => {
+          const dateA = a.date instanceof Date ? a.date.toISOString() : String(a.date);
+          const dateB = b.date instanceof Date ? b.date.toISOString() : String(b.date);
+          return dateA.localeCompare(dateB);
+        });
 
         // Recalculate running balance in date order
         let runningBalance = 0;
@@ -100,16 +120,20 @@ export async function GET(request: NextRequest) {
         };
 
         const [bankReceipts, bankPayments] = await Promise.all([
-          db.receiptEntry.findMany({
-            where: bankFilter as Parameters<typeof db.receiptEntry.findMany>[0]['where'],
-            orderBy: { receiptDate: 'asc' },
-            include: { bankAccountId: true } as never,
-          }),
-          db.paymentEntry.findMany({
-            where: bankFilter as Parameters<typeof db.paymentEntry.findMany>[0]['where'],
-            orderBy: { paymentDate: 'asc' },
-            include: { bankAccountId: true } as never,
-          }),
+          safeQuery(
+            () => db.receiptEntry.findMany({
+              where: bankFilter as Parameters<typeof db.receiptEntry.findMany>[0]['where'],
+              orderBy: { receiptDate: 'asc' },
+            }),
+            []
+          ),
+          safeQuery(
+            () => db.paymentEntry.findMany({
+              where: bankFilter as Parameters<typeof db.paymentEntry.findMany>[0]['where'],
+              orderBy: { paymentDate: 'asc' },
+            }),
+            []
+          ),
         ]);
 
         // Get bank account details
@@ -120,9 +144,14 @@ export async function GET(request: NextRequest) {
           ]),
         ];
 
-        const bankAccounts = await db.bankAccount.findMany({
-          where: { id: { in: bankAccountIds } },
-        });
+        const bankAccounts = bankAccountIds.length > 0
+          ? await safeQuery(
+              () => db.bankAccount.findMany({
+                where: { id: { in: bankAccountIds } },
+              }),
+              []
+            )
+          : [];
 
         const bankMap = Object.fromEntries(bankAccounts.map(b => [b.id, b]));
 
@@ -162,7 +191,11 @@ export async function GET(request: NextRequest) {
           });
         }
 
-        entries.sort((a, b) => a.date.localeCompare(b.date));
+        entries.sort((a, b) => {
+          const dateA = a.date instanceof Date ? a.date.toISOString() : String(a.date);
+          const dateB = b.date instanceof Date ? b.date.toISOString() : String(b.date);
+          return dateA.localeCompare(dateB);
+        });
 
         let runningBalance = 0;
         for (const entry of entries) {
@@ -191,10 +224,13 @@ export async function GET(request: NextRequest) {
 
       case 'receipt-register': {
         // Receipt entries grouped by head of account
-        const receipts = await db.receiptEntry.findMany({
-          where: fyFilter as Parameters<typeof db.receiptEntry.findMany>[0]['where'],
-          orderBy: { receiptDate: 'asc' },
-        });
+        const receipts = await safeQuery(
+          () => db.receiptEntry.findMany({
+            where: fyFilter as Parameters<typeof db.receiptEntry.findMany>[0]['where'],
+            orderBy: { receiptDate: 'asc' },
+          }),
+          []
+        );
 
         // Group by head of account
         const grouped: Record<string, { headOfAccount: string; headOfAccountMr: string; entries: typeof receipts; total: number }> = {};
@@ -223,10 +259,13 @@ export async function GET(request: NextRequest) {
 
       case 'payment-register': {
         // Payment entries grouped by head of account
-        const payments = await db.paymentEntry.findMany({
-          where: fyFilter as Parameters<typeof db.paymentEntry.findMany>[0]['where'],
-          orderBy: { paymentDate: 'asc' },
-        });
+        const payments = await safeQuery(
+          () => db.paymentEntry.findMany({
+            where: fyFilter as Parameters<typeof db.paymentEntry.findMany>[0]['where'],
+            orderBy: { voucherDate: 'asc' },
+          }),
+          []
+        );
 
         const grouped: Record<string, { headOfAccount: string; headOfAccountMr: string; entries: typeof payments; total: number }> = {};
         for (const p of payments) {
@@ -254,41 +293,54 @@ export async function GET(request: NextRequest) {
 
       case 'demand-register': {
         // Namuna 9 data with property info
-        const demands = await db.namuna9.findMany({
-          where: financialYear ? { financialYear } : {},
-          include: {
-            property: {
-              include: {
-                ward: true,
-                owners: { include: { owner: true } },
+        const demands = await safeQuery(
+          () => db.namuna9.findMany({
+            where: financialYear ? { financialYear } : {},
+            include: {
+              property: {
+                include: {
+                  ward: true,
+                  owner: true,
+                  owners: { include: { owner: true } },
+                },
               },
+              payments: true,
             },
-          },
-          orderBy: { createdAt: 'desc' },
-        });
+            orderBy: { createdAt: 'desc' },
+          }),
+          []
+        );
 
         const formattedDemands = demands.map(d => {
-          const primaryOwner = d.property.owners.find(o => o.ownershipType === 'मालक') || d.property.owners[0];
+          const prop = d.property;
+          const primaryOwner = prop?.owners?.find(o => o.ownershipType === 'मालक') || prop?.owners?.[0];
+          const ownerName = primaryOwner?.owner ? `${primaryOwner.owner.firstName} ${primaryOwner.owner.lastName}` : (prop?.ownerName || '');
+          const ownerNameMr = primaryOwner?.owner ? `${primaryOwner.owner.firstNameMr || primaryOwner.owner.firstName} ${primaryOwner.owner.lastNameMr || primaryOwner.owner.lastName}` : (prop?.ownerNameMr || '');
+          const totalPaid = Array.isArray(d.payments) ? d.payments.reduce((sum: number, p: { amountPaid: number }) => sum + (p.amountPaid || 0), 0) : 0;
+
           return {
             id: d.id,
-            propertyNumber: d.property.propertyNumber,
-            ownerName: primaryOwner?.owner ? `${primaryOwner.owner.firstName} ${primaryOwner.owner.lastName}` : '',
-            ownerNameMr: primaryOwner?.owner ? `${primaryOwner.owner.firstNameMr || primaryOwner.owner.firstName} ${primaryOwner.owner.lastNameMr || primaryOwner.owner.lastName}` : '',
-            wardName: d.property.ward?.wardName || '',
-            wardNameMr: d.property.ward?.wardNameMr || '',
+            propertyNo: prop?.propertyNo || '',
+            ownerName,
+            ownerNameMr,
+            wardName: prop?.ward?.wardName || '',
+            wardNameMr: prop?.ward?.wardNameMr || '',
             financialYear: d.financialYear,
             currentTax: d.currentTax,
             previousBalance: d.previousBalance,
             penalty: d.penalty,
             interest: d.interest,
             totalDemand: d.totalDemand,
-            totalPaid: d.payments?.reduce((sum: number, p: { amountPaid: number }) => sum + p.amountPaid, 0) || 0,
-            outstanding: d.totalDemand - (d.payments?.reduce((sum: number, p: { amountPaid: number }) => sum + p.amountPaid, 0) || 0),
+            totalPaid,
+            outstanding: d.totalDemand - totalPaid,
           };
         });
 
         const totalDemand = demands.reduce((sum, d) => sum + d.totalDemand, 0);
-        const totalPaid = demands.reduce((sum, d) => sum + (d.payments?.reduce((s: number, p: { amountPaid: number }) => s + p.amountPaid, 0) || 0), 0);
+        const totalPaid = demands.reduce((sum, d) => {
+          const paid = Array.isArray(d.payments) ? d.payments.reduce((s: number, p: { amountPaid: number }) => s + (p.amountPaid || 0), 0) : 0;
+          return sum + paid;
+        }, 0);
 
         return NextResponse.json({
           type: 'demand-register',
@@ -306,20 +358,29 @@ export async function GET(request: NextRequest) {
 
       case 'collection-register': {
         // Collection entries with property info
-        const collections = await db.collectionEntry.findMany({
-          where: fyFilter as Parameters<typeof db.collectionEntry.findMany>[0]['where'],
-          orderBy: { collectionDate: 'asc' },
-        });
+        const collections = await safeQuery(
+          () => db.collectionEntry.findMany({
+            where: fyFilter as Parameters<typeof db.collectionEntry.findMany>[0]['where'],
+            orderBy: { collectionDate: 'asc' },
+          }),
+          []
+        );
 
         // Get property details for collections that have propertyId
         const propertyIds = collections.map(c => c.propertyId).filter(Boolean) as string[];
-        const properties = await db.propertyMaster.findMany({
-          where: { id: { in: propertyIds } },
-          include: {
-            ward: true,
-            owners: { include: { owner: true } },
-          },
-        });
+        const properties = propertyIds.length > 0
+          ? await safeQuery(
+              () => db.propertyMaster.findMany({
+                where: { id: { in: propertyIds } },
+                include: {
+                  ward: true,
+                  owner: true,
+                  owners: { include: { owner: true } },
+                },
+              }),
+              []
+            )
+          : [];
 
         const propMap = Object.fromEntries(properties.map(p => [p.id, p]));
 
@@ -329,9 +390,9 @@ export async function GET(request: NextRequest) {
           return {
             id: c.id,
             collectionNumber: c.collectionNumber,
-            propertyNumber: prop?.propertyNumber || '',
-            ownerName: primaryOwner?.owner ? `${primaryOwner.owner.firstName} ${primaryOwner.owner.lastName}` : '',
-            ownerNameMr: primaryOwner?.owner ? `${primaryOwner.owner.firstNameMr || primaryOwner.owner.firstName} ${primaryOwner.owner.lastNameMr || primaryOwner.owner.lastName}` : '',
+            propertyNo: prop?.propertyNo || '',
+            ownerName: primaryOwner?.owner ? `${primaryOwner.owner.firstName} ${primaryOwner.owner.lastName}` : (prop?.ownerName || ''),
+            ownerNameMr: primaryOwner?.owner ? `${primaryOwner.owner.firstNameMr || primaryOwner.owner.firstName} ${primaryOwner.owner.lastNameMr || primaryOwner.owner.lastName}` : (prop?.ownerNameMr || ''),
             wardName: prop?.ward?.wardName || '',
             wardNameMr: prop?.ward?.wardNameMr || '',
             collectionDate: c.collectionDate,
@@ -366,9 +427,13 @@ export async function GET(request: NextRequest) {
 
       case 'asset-register': {
         // Namuna 5: Asset register
-        const assets = await db.assetEntry.findMany({
-          orderBy: { assetNumber: 'asc' },
-        });
+        const assets = await safeQuery(
+          () => db.assetEntry.findMany({
+            where: fyFilter as Parameters<typeof db.assetEntry.findMany>[0]['where'],
+            orderBy: { assetNumber: 'asc' },
+          }),
+          []
+        );
 
         const totalPurchaseCost = assets.reduce((sum, a) => sum + a.purchaseCost, 0);
         const totalCurrentValue = assets.reduce((sum, a) => sum + a.currentValue, 0);
@@ -408,9 +473,13 @@ export async function GET(request: NextRequest) {
 
       case 'stock-register': {
         // Namuna 6: Stock register
-        const stocks = await db.stockEntry.findMany({
-          orderBy: { stockNumber: 'asc' },
-        });
+        const stocks = await safeQuery(
+          () => db.stockEntry.findMany({
+            where: fyFilter as Parameters<typeof db.stockEntry.findMany>[0]['where'],
+            orderBy: { stockNumber: 'asc' },
+          }),
+          []
+        );
 
         const totalValue = stocks.reduce((sum, s) => sum + s.totalValue, 0);
         const inStock = stocks.filter(s => s.status === 'In Stock');
@@ -449,16 +518,24 @@ export async function GET(request: NextRequest) {
 
       case 'grant-register': {
         // Namuna 10: Grant register from SchemeFundEntry
-        const schemeFunds = await db.schemeFundEntry.findMany({
-          where: fyFilter as Parameters<typeof db.schemeFundEntry.findMany>[0]['where'],
-          orderBy: { entryDate: 'asc' },
-        });
+        const schemeFunds = await safeQuery(
+          () => db.schemeFundEntry.findMany({
+            where: fyFilter as Parameters<typeof db.schemeFundEntry.findMany>[0]['where'],
+            orderBy: { entryDate: 'asc' },
+          }),
+          []
+        );
 
         // Get scheme details
         const schemeIds = schemeFunds.map(s => s.schemeId).filter(Boolean) as string[];
-        const schemes = await db.schemeInfo.findMany({
-          where: { id: { in: schemeIds } },
-        });
+        const schemes = schemeIds.length > 0
+          ? await safeQuery(
+              () => db.schemeInfo.findMany({
+                where: { id: { in: schemeIds } },
+              }),
+              []
+            )
+          : [];
 
         const schemeMap = Object.fromEntries(schemes.map(s => [s.id, s]));
 

@@ -1,0 +1,1193 @@
+     1→     1→'use client';
+     2→     2→
+     3→     3→import React, { useState, useEffect, useCallback } from 'react';
+     4→     4→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+     5→     5→import { Button } from '@/components/ui/button';
+     6→     6→import { Input } from '@/components/ui/input';
+     7→     7→import { Label } from '@/components/ui/label';
+     8→     8→import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+     9→     9→import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+    10→    10→import { Badge } from '@/components/ui/badge';
+    11→    11→import { Separator } from '@/components/ui/separator';
+    12→    12→import { Skeleton } from '@/components/ui/skeleton';
+    13→    13→import { toast } from '@/hooks/use-toast';
+    14→    14→import {
+    15→    15→  ClipboardList, Printer, RefreshCw, Search, Building2, Users,
+    16→    16→  MapPin, ArrowRight, CheckCircle2, FileText, Landmark, ChevronRight,
+    17→    17→  Database, Hash, Ruler, Compass, IndianRupee, Loader2, AlertCircle,
+    18→    18→  User, Home, Calendar, Layers, Route, Zap
+    19→    19→} from 'lucide-react';
+    20→    20→
+    21→    21→// Types
+    22→    22→interface OwnerInfo {
+    23→    23→  owner: {
+    24→    24→    id: string;
+    25→    25→    firstName: string;
+    26→    26→    lastName: string;
+    27→    27→    firstNameMr: string;
+    28→    28→    lastNameMr: string;
+    29→    29→    address: string | null;
+    30→    30→    addressMr: string | null;
+    31→    31→    mobileNumber: string | null;
+    32→    32→  };
+    33→    33→  ownershipType: string;
+    34→    34→}
+    35→    35→
+    36→    36→interface PropertyInfo {
+    37→    37→  id: string;
+    38→    38→  propertyNumber: string;
+    39→    39→  citySurveyNo: string | null;
+    40→    40→  area: number | null;
+    41→    41→  builtUpArea: number | null;
+    42→    42→  constructionType: string | null;
+    43→    43→  usageType: string | null;
+    44→    44→  floorInfo: string | null;
+    45→    45→  yearBuilt: string | null;
+    46→    46→  boundaries: string | null;
+    47→    47→  propertyStatus: string;
+    48→    48→  ward?: {
+    49→    49→    wardNumber: string;
+    50→    50→    wardNameMr: string;
+    51→    51→    wardName: string;
+    52→    52→  };
+    53→    53→  road?: {
+    54→    54→    roadNameMr: string;
+    55→    55→    roadName: string;
+    56→    56→  };
+    57→    57→  owners: OwnerInfo[];
+    58→    58→  taxRates: {
+    59→    59→    taxMasterId: string;
+    60→    60→    rate: number;
+    61→    61→    taxMaster: {
+    62→    62→      name: string;
+    63→    63→      nameMarathi: string;
+    64→    64→      isEnabled: boolean;
+    65→    65→      order: number;
+    66→    66→      category: string;
+    67→    67→    };
+    68→    68→  }[];
+    69→    69→}
+    70→    70→
+    71→    71→interface VillageInfo {
+    72→    72→  id: string;
+    73→    73→  gramPanchayatName: string;
+    74→    74→  gramPanchayatNameMr: string;
+    75→    75→  taluka: string;
+    76→    76→  district: string;
+    77→    77→  state: string;
+    78→    78→  pinCode: string | null;
+    79→    79→  sarpanchName: string | null;
+    80→    80→  sarpanchNameMr: string | null;
+    81→    81→  secretaryName: string | null;
+    82→    82→  secretaryNameMr: string | null;
+    83→    83→}
+    84→    84→
+    85→    85→// Section header component with colored left border
+    86→    86→function SectionHeader({
+    87→    87→  number,
+    88→    88→  title,
+    89→    89→  titleEn,
+    90→    90→  icon: Icon,
+    91→    91→  color,
+    92→    92→  bgColor,
+    93→    93→}: {
+    94→    94→  number: string;
+    95→    95→  title: string;
+    96→    96→  titleEn: string;
+    97→    97→  icon: React.ElementType;
+    98→    98→  color: string;
+    99→    99→  bgColor: string;
+   100→   100→}) {
+   101→   101→  return (
+   102→   102→    <div
+   103→   103→      className="flex items-center gap-3 py-3 px-4 rounded-lg mb-4"
+   104→   104→      style={{
+   105→   105→        background: bgColor,
+   106→   106→        borderLeft: `4px solid ${color}`,
+   107→   107→      }}
+   108→   108→    >
+   109→   109→      <div
+   110→   110→        className="h-9 w-9 rounded-lg flex items-center justify-center shadow-sm flex-shrink-0"
+   111→   111→        style={{ background: color }}
+   112→   112→      >
+   113→   113→        <Icon className="h-4.5 w-4.5 text-white" />
+   114→   114→      </div>
+   115→   115→      <div>
+   116→   116→        <div className="flex items-center gap-2">
+   117→   117→          <span
+   118→   118→            className="text-xs font-bold px-2 py-0.5 rounded-full text-white"
+   119→   119→            style={{ background: color }}
+   120→   120→          >
+   121→   121→            {number}
+   122→   122→          </span>
+   123→   123→          <span className="font-bold text-sm" style={{ color }}>
+   124→   124→            {title}
+   125→   125→          </span>
+   126→   126→        </div>
+   127→   127→        <span className="text-xs text-muted-foreground">{titleEn}</span>
+   128→   128→      </div>
+   129→   129→    </div>
+   130→   130→  );
+   131→   131→}
+   132→   132→
+   133→   133→// Auto-fill badge with green styling and checkmark
+   134→   134→function AutoFillBadge() {
+   135→   135→  return (
+   136→   136→    <Badge
+   137→   137→      variant="outline"
+   138→   138→      className="ml-2 text-[10px] px-1.5 py-0 border-green-400 text-green-700 bg-green-50 font-semibold"
+   139→   139→    >
+   140→   140→      <CheckCircle2 className="h-3 w-3 mr-0.5 text-green-600" />
+   141→   141→      ऑटो-फिल
+   142→   142→    </Badge>
+   143→   143→  );
+   144→   144→}
+   145→   145→
+   146→   146→// Auto-filled input field with green tint
+   147→   147→function AutoFilledField({ label, value, icon: Icon }: { label: string; value: string; icon?: React.ElementType }) {
+   148→   148→  const IconComp = Icon;
+   149→   149→  return (
+   150→   150→    <div>
+   151→   151→      <Label className="flex items-center text-xs font-semibold text-cyan-800 mb-1">
+   152→   152→        {IconComp && <IconComp className="h-3 w-3 mr-1 text-cyan-600" />}
+   153→   153→        {label}
+   154→   154→        <AutoFillBadge />
+   155→   155→      </Label>
+   156→   156→      <Input
+   157→   157→        value={value}
+   158→   158→        readOnly
+   159→   159→        className="bg-green-50/70 border-green-200 text-green-900 font-medium focus:ring-0 text-sm h-9"
+   160→   160→      />
+   161→   161→    </div>
+   162→   162→  );
+   163→   163→}
+   164→   164→
+   165→   165→// Process Flow step type
+   166→   166→type ProcessStep = 'select' | 'fetch' | 'autofill' | 'form';
+   167→   167→
+   168→   168→export default function Namuna1Component() {
+   169→   169→  const [properties, setProperties] = useState<PropertyInfo[]>([]);
+   170→   170→  const [villageInfo, setVillageInfo] = useState<VillageInfo | null>(null);
+   171→   171→  const [loading, setLoading] = useState(true);
+   172→   172→  const [selectedPropertyId, setSelectedPropertyId] = useState('');
+   173→   173→  const [searchTerm, setSearchTerm] = useState('');
+   174→   174→  const [searchResults, setSearchResults] = useState<PropertyInfo[]>([]);
+   175→   175→  const [searching, setSearching] = useState(false);
+   176→   176→  const [selectedProperty, setSelectedProperty] = useState<PropertyInfo | null>(null);
+   177→   177→  const [activeStep, setActiveStep] = useState<ProcessStep>('select');
+   178→   178→
+   179→   179→  const fetchData = useCallback(async () => {
+   180→   180→    setLoading(true);
+   181→   181→    try {
+   182→   182→      const [propRes, villageRes] = await Promise.all([
+   183→   183→        fetch('/api/master?table=property'),
+   184→   184→        fetch('/api/master?table=village'),
+   185→   185→      ]);
+   186→   186→      const propData = await propRes.json();
+   187→   187→      setProperties(Array.isArray(propData) ? propData : []);
+   188→   188→      const village = await villageRes.json();
+   189→   189→      setVillageInfo(village);
+   190→   190→    } catch {
+   191→   191→      toast({ title: 'त्रुटी', description: 'डेटा लोड अयशस्वी', variant: 'destructive' });
+   192→   192→    } finally {
+   193→   193→      setLoading(false);
+   194→   194→    }
+   195→   195→  }, []);
+   196→   196→
+   197→   197→  useEffect(() => { fetchData(); }, [fetchData]);
+   198→   198→
+   199→   199→  // Auto-fill when property is selected
+   200→   200→  useEffect(() => {
+   201→   201→    if (selectedPropertyId) {
+   202→   202→      const prop = properties.find(p => p.id === selectedPropertyId);
+   203→   203→      setSelectedProperty(prop || null);
+   204→   204→      setActiveStep('autofill');
+   205→   205→      setTimeout(() => setActiveStep('form'), 800);
+   206→   206→    } else {
+   207→   207→      setSelectedProperty(null);
+   208→   208→      setActiveStep('select');
+   209→   209→    }
+   210→   210→  }, [selectedPropertyId, properties]);
+   211→   211→
+   212→   212→  const handleSearch = async () => {
+   213→   213→    if (!searchTerm.trim()) return;
+   214→   214→    setSearching(true);
+   215→   215→    try {
+   216→   216→      const res = await fetch(`/api/namuna9?search=${encodeURIComponent(searchTerm)}`);
+   217→   217→      const data = await res.json();
+   218→   218→      setSearchResults(data);
+   219→   219→      if (data.length > 0) {
+   220→   220→        setSelectedPropertyId(data[0].id);
+   221→   221→        toast({
+   222→   222→          title: '✅ शोध यशस्वी',
+   223→   223→          description: `${data.length} मालमत्ता सापडल्या`,
+   224→   224→          className: 'border-cyan-300 bg-cyan-50',
+   225→   225→        });
+   226→   226→      } else {
+   227→   227→        toast({ title: 'शोध निकाल', description: 'कोणतीही मालमत्ता सापडली नाही', variant: 'destructive' });
+   228→   228→      }
+   229→   229→    } catch {
+   230→   230→      toast({ title: 'त्रुटी', description: 'शोध अयशस्वी', variant: 'destructive' });
+   231→   231→    } finally {
+   232→   232→      setSearching(false);
+   233→   233→    }
+   234→   234→  };
+   235→   235→
+   236→   236→  const getOwnerName = (prop: PropertyInfo) => {
+   237→   237→    const owner = prop.owners?.find(o => o.ownershipType === 'मालक');
+   238→   238→    if (!owner) return prop.owners?.[0]
+   239→   239→      ? `${prop.owners[0].owner.firstNameMr || prop.owners[0].owner.firstName} ${prop.owners[0].owner.lastNameMr || prop.owners[0].owner.lastName}`
+   240→   240→      : '-';
+   241→   241→    return `${owner.owner.firstNameMr || owner.owner.firstName} ${owner.owner.lastNameMr || owner.owner.lastName}`;
+   242→   242→  };
+   243→   243→
+   244→   244→  const getOwnerAddress = (prop: PropertyInfo) => {
+   245→   245→    const owner = prop.owners?.find(o => o.ownershipType === 'मालक');
+   246→   246→    if (!owner && prop.owners?.[0]) {
+   247→   247→      return prop.owners[0].owner.addressMr || prop.owners[0].owner.address || '-';
+   248→   248→    }
+   249→   249→    return owner?.owner.addressMr || owner?.owner.address || '-';
+   250→   250→  };
+   251→   251→
+   252→   252→  const getOccupantName = (prop: PropertyInfo) => {
+   253→   253→    const occupant = prop.owners?.find(o => o.ownershipType === 'भोगवटादार');
+   254→   254→    if (!occupant) return '-';
+   255→   255→    return `${occupant.owner.firstNameMr || occupant.owner.firstName} ${occupant.owner.lastNameMr || occupant.owner.lastName}`;
+   256→   256→  };
+   257→   257→
+   258→   258→  const getBoundaries = (prop: PropertyInfo) => {
+   259→   259→    if (!prop.boundaries) return { east: '-', west: '-', north: '-', south: '-' };
+   260→   260→    try {
+   261→   261→      const parsed = JSON.parse(prop.boundaries);
+   262→   262→      return {
+   263→   263→        east: parsed.east || parsed['पूर्व'] || '-',
+   264→   264→        west: parsed.west || parsed['पश्चिम'] || '-',
+   265→   265→        north: parsed.north || parsed['उत्तर'] || '-',
+   266→   266→        south: parsed.south || parsed['दक्षिण'] || '-',
+   267→   267→      };
+   268→   268→    } catch {
+   269→   269→      return { east: prop.boundaries, west: '-', north: '-', south: '-' };
+   270→   270→    }
+   271→   271→  };
+   272→   272→
+   273→   273→  // Print template - Government format with Indian flag colors
+   274→   274→  const handlePrint = () => {
+   275→   275→    if (!selectedProperty) {
+   276→   276→      toast({ title: 'त्रुटी', description: 'कृपया मालमत्ता निवडा', variant: 'destructive' });
+   277→   277→      return;
+   278→   278→    }
+   279→   279→
+   280→   280→    const prop = selectedProperty;
+   281→   281→    const boundaries = getBoundaries(prop);
+   282→   282→    const ownerName = getOwnerName(prop);
+   283→   283→    const ownerAddress = getOwnerAddress(prop);
+   284→   284→    const occupantName = getOccupantName(prop);
+   285→   285→
+   286→   286→    const printContent = `<!DOCTYPE html><html lang="mr"><head><meta charset="UTF-8"><title>नमुना १ - मालमत्ता नोंदणी पत्र</title>
+   287→   287→<style>
+   288→   288→  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap');
+   289→   289→  * { margin: 0; padding: 0; box-sizing: border-box; }
+   290→   290→  body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; padding: 15px; font-size: 11px; color: #1a1a1a; }
+   291→   291→
+   292→   292→  /* Indian Flag Header */
+   293→   293→  .flag-bar { display: flex; height: 6px; width: 100%; }
+   294→   294→  .flag-saffron { flex: 1; background: #FF9933; }
+   295→   295→  .flag-white { flex: 1; background: #FFFFFF; border-bottom: 1px solid #e0e0e0; border-top: 1px solid #e0e0e0; }
+   296→   296→  .flag-green { flex: 1; background: #138808; }
+   297→   297→
+   298→   298→  .header-section { text-align: center; padding: 12px 0 8px; border-bottom: 2px solid #0d7377; margin-bottom: 12px; }
+   299→   299→  .gp-name { font-size: 16px; font-weight: 700; color: #0d7377; margin-bottom: 2px; }
+   300→   300→  .gp-name-en { font-size: 11px; color: #555; margin-bottom: 4px; }
+   301→   301→  .gp-details { font-size: 11px; color: #666; margin-bottom: 6px; }
+   302→   302→  .form-title { font-size: 15px; font-weight: 700; color: #1a1a1a; margin: 8px 0 2px; padding: 6px; border: 2px solid #0d7377; background: #e8f8f5; display: inline-block; }
+   303→   303→  .form-title-en { font-size: 10px; color: #777; margin-bottom: 4px; }
+   304→   304→
+   305→   305→  /* Section */
+   306→   306→  .section-title { font-weight: 700; font-size: 12px; margin: 14px 0 8px; padding: 5px 8px; border-left: 4px solid #0d7377; background: #f0fafa; color: #0d7377; }
+   307→   307→  .section-num { display: inline-block; background: #0d7377; color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 3px; margin-right: 6px; }
+   308→   308→
+   309→   309→  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 20px; margin-bottom: 10px; }
+   310→   310→  .info-item { font-size: 11px; padding: 3px 0; border-bottom: 1px dotted #ccc; }
+   311→   311→  .info-item strong { display: inline-block; min-width: 160px; color: #333; }
+   312→   312→
+   313→   313→  table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+   314→   314→  th, td { border: 1px solid #555; padding: 5px 8px; font-size: 11px; text-align: left; vertical-align: middle; }
+   315→   315→  th { background: #0d7377; color: white; font-weight: 600; text-align: center; font-size: 10px; }
+   316→   316→
+   317→   317→  .row-even { background: #e8f8f5; }
+   318→   318→  .row-odd { background: #ffffff; }
+   319→   319→
+   320→   320→  .footer { margin-top: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
+   321→   321→  .signature-block { text-align: center; min-width: 130px; }
+   322→   322→  .signature-line { border-top: 1px solid #333; padding-top: 4px; margin-top: 35px; font-size: 10px; font-weight: 600; }
+   323→   323→  .watermark { position: fixed; bottom: 50%; right: 50%; transform: translate(50%, 50%); font-size: 60px; color: rgba(0,0,0,0.03); font-weight: 700; pointer-events: none; }
+   324→   324→
+   325→   325→  @media print {
+   326→   326→    body { padding: 5px; }
+   327→   327→    .flag-bar, th, .row-even { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+   328→   328→    .form-title, .section-title { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+   329→   329→  }
+   330→   330→</style></head><body>
+   331→   331→<div class="watermark">नमुना १</div>
+   332→   332→
+   333→   333→<!-- Indian Flag Bar -->
+   334→   334→<div class="flag-bar">
+   335→   335→  <div class="flag-saffron"></div>
+   336→   336→  <div class="flag-white"></div>
+   337→   337→  <div class="flag-green"></div>
+   338→   338→</div>
+   339→   339→
+   340→   340→<!-- Header -->
+   341→   341→<div class="header-section">
+   342→   342→  <div class="gp-name">${villageInfo?.gramPanchayatNameMr || 'ग्रामपंचायत'}</div>
+   343→   343→  <div class="gp-name-en">${villageInfo?.gramPanchayatName || 'Gram Panchayat'}</div>
+   344→   344→  <div class="gp-details">तालुका: ${villageInfo?.taluka || '-'} | जिल्हा: ${villageInfo?.district || '-'} | राज्य: ${villageInfo?.state || '-'}${villageInfo?.pinCode ? ` | पिन कोड: ${villageInfo.pinCode}` : ''}</div>
+   345→   345→  <div class="form-title">नमुना १ — मालमत्ता नोंदणी पत्र</div>
+   346→   346→  <div class="form-title-en">Property Registration Form</div>
+   347→   347→</div>
+   348→   348→
+   349→   349→<!-- Section 1 -->
+   350→   350→<div class="section-title"><span class="section-num">१</span>मालमत्तेची साधारण माहिती / General Property Information</div>
+   351→   351→<div class="info-grid">
+   352→   352→  <div class="info-item"><strong>मालमत्ता क्रमांक:</strong> ${prop.propertyNumber}</div>
+   353→   353→  <div class="info-item"><strong>शहर सर्वेक्षण क्रमांक:</strong> ${prop.citySurveyNo || '-'}</div>
+   354→   354→  <div class="info-item"><strong>वार्ड क्रमांक व नाव:</strong> ${prop.ward ? `${prop.ward.wardNumber} - ${prop.ward.wardNameMr}` : '-'}</div>
+   355→   355→  <div class="info-item"><strong>रस्ता नाव:</strong> ${prop.road?.roadNameMr || '-'}</div>
+   356→   356→  <div class="info-item"><strong>मालमत्तेचा वापर:</strong> ${prop.usageType || '-'}</div>
+   357→   357→  <div class="info-item"><strong>बांधकाम प्रकार:</strong> ${prop.constructionType || '-'}</div>
+   358→   358→  <div class="info-item"><strong>मालमत्ता स्थिती:</strong> ${prop.propertyStatus}</div>
+   359→   359→  <div class="info-item"><strong>बांधणी वर्ष:</strong> ${prop.yearBuilt || '-'}</div>
+   360→   360→</div>
+   361→   361→
+   362→   362→<!-- Section 2 -->
+   363→   363→<div class="section-title"><span class="section-num">२</span>क्षेत्रफळ माहिती / Area Information</div>
+   364→   364→<div class="info-grid">
+   365→   365→  <div class="info-item"><strong>एकूण क्षेत्रफळ:</strong> ${prop.area || '-'} चौ.फूट</div>
+   366→   366→  <div class="info-item"><strong>बांधलेले क्षेत्रफळ:</strong> ${prop.builtUpArea || '-'} चौ.फूट</div>
+   367→   367→  <div class="info-item"><strong>मजला माहिती:</strong> ${prop.floorInfo || '-'}</div>
+   368→   368→</div>
+   369→   369→
+   370→   370→<!-- Section 3 -->
+   371→   371→<div class="section-title"><span class="section-num">३</span>मालक व भोगवटादार माहिती / Owner & Occupant Information</div>
+   372→   372→<div class="info-grid">
+   373→   373→  <div class="info-item"><strong>मालकाचे नाव:</strong> ${ownerName}</div>
+   374→   374→  <div class="info-item"><strong>मालकाचा पत्ता:</strong> ${ownerAddress}</div>
+   375→   375→  <div class="info-item"><strong>भोगवटादाराचे नाव:</strong> ${occupantName}</div>
+   376→   376→</div>
+   377→   377→${prop.owners && prop.owners.length > 1 ? `
+   378→   378→<table>
+   379→   379→  <thead><tr><th>क्र.</th><th>नाव</th><th>मालकी प्रकार</th><th>मोबाईल</th></tr></thead>
+   380→   380→  <tbody>
+   381→   381→    ${prop.owners.map((o, i) => `<tr class="${i % 2 === 0 ? 'row-even' : 'row-odd'}"><td style="text-align:center">${i + 1}</td><td>${o.owner.firstNameMr || o.owner.firstName} ${o.owner.lastNameMr || o.owner.lastName}</td><td style="text-align:center">${o.ownershipType}</td><td>${o.owner.mobileNumber || '-'}</td></tr>`).join('')}
+   382→   382→  </tbody>
+   383→   383→</table>
+   384→   384→` : ''}
+   385→   385→
+   386→   386→<!-- Section 4 -->
+   387→   387→<div class="section-title"><span class="section-num">४</span>सीमा माहिती / Boundary Information</div>
+   388→   388→<table>
+   389→   389→  <thead><tr><th style="width:120px">दिशा / Direction</th><th>शेजारी मालमत्ता / वर्णन</th></tr></thead>
+   390→   390→  <tbody>
+   391→   391→    <tr class="row-even"><td style="text-align:center; font-weight:600">पूर्व (East)</td><td>${boundaries.east}</td></tr>
+   392→   392→    <tr class="row-odd"><td style="text-align:center; font-weight:600">पश्चिम (West)</td><td>${boundaries.west}</td></tr>
+   393→   393→    <tr class="row-even"><td style="text-align:center; font-weight:600">उत्तर (North)</td><td>${boundaries.north}</td></tr>
+   394→   394→    <tr class="row-odd"><td style="text-align:center; font-weight:600">दक्षिण (South)</td><td>${boundaries.south}</td></tr>
+   395→   395→  </tbody>
+   396→   396→</table>
+   397→   397→
+   398→   398→${prop.taxRates && prop.taxRates.length > 0 ? `
+   399→   399→<!-- Section 5 -->
+   400→   400→<div class="section-title"><span class="section-num">५</span>लागू कर दर / Applicable Tax Rates</div>
+   401→   401→<table>
+   402→   402→  <thead><tr><th style="width:30px">क्र.</th><th>कराचे नाव / Tax Name</th><th style="width:80px">कर प्रकार</th><th style="width:90px">दर (₹/चौ.फूट)</th><th style="width:70px">स्थिती</th></tr></thead>
+   403→   403→  <tbody>
+   404→   404→    ${prop.taxRates.map((tr, i) => `<tr class="${i % 2 === 0 ? 'row-even' : 'row-odd'}"><td style="text-align:center">${i + 1}</td><td>${tr.taxMaster.nameMarathi} (${tr.taxMaster.name})</td><td style="text-align:center">${tr.taxMaster.category || '-'}</td><td style="text-align:right; font-weight:600">₹${tr.rate}</td><td style="text-align:center; color: ${tr.taxMaster.isEnabled ? '#138808' : '#c0392b'}; font-weight:600">${tr.taxMaster.isEnabled ? 'सक्षम' : 'अक्षम'}</td></tr>`).join('')}
+   405→   405→  </tbody>
+   406→   406→</table>
+   407→   407→` : ''}
+   408→   408→
+   409→   409→<!-- Footer Signatures -->
+   410→   410→<div class="footer">
+   411→   411→  <div class="signature-block">
+   412→   412→    <div>दिनांक: ${new Date().toLocaleDateString('mr-IN')}</div>
+   413→   413→  </div>
+   414→   414→  <div class="signature-block">
+   415→   415→    <div class="signature-line">मालकाची सही<br/>Owner Signature</div>
+   416→   416→  </div>
+   417→   417→  <div class="signature-block">
+   418→   418→    <div class="signature-line">ग्रामसेवक सही<br/>Gram Sevak Signature</div>
+   419→   419→  </div>
+   420→   420→  <div class="signature-block">
+   421→   421→    <div class="signature-line">सरपंच सही व मुद्रा<br/>Sarpanch Signature & Seal</div>
+   422→   422→  </div>
+   423→   423→</div>
+   424→   424→
+   425→   425→<div style="text-align:center; margin-top:15px; font-size:9px; color:#999;">
+   426→   426→  नमुना १ - मालमत्ता नोंदणी पत्र | ${villageInfo?.gramPanchayatNameMr || 'ग्रामपंचायत'} | दिनांक: ${new Date().toLocaleDateString('mr-IN')}
+   427→   427→</div>
+   428→   428→</body></html>`;
+   429→   429→
+   430→   430→    const w = window.open('', '_blank');
+   431→   431→    if (w) {
+   432→   432→      w.document.write(printContent);
+   433→   433→      w.document.close();
+   434→   434→      w.focus();
+   435→   435→      setTimeout(() => w.print(), 500);
+   436→   436→    }
+   437→   437→  };
+   438→   438→
+   439→   439→  const filteredProperties = searchTerm
+   440→   440→    ? properties.filter(p =>
+   441→   441→        p.propertyNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+   442→   442→        getOwnerName(p).toLowerCase().includes(searchTerm.toLowerCase())
+   443→   443→      )
+   444→   444→    : properties;
+   445→   445→
+   446→   446→  // Process flow steps
+   447→   447→  const processSteps: { key: ProcessStep; label: string; labelEn: string; icon: React.ReactNode; color: string }[] = [
+   448→   448→    { key: 'select', label: 'मालमत्ता निवडा', labelEn: 'Select Property', icon: <Building2 className="h-4 w-4" />, color: '#0d7377' },
+   449→   449→    { key: 'fetch', label: 'मास्टर डेटा', labelEn: 'Master Data', icon: <Database className="h-4 w-4" />, color: '#16a085' },
+   450→   450→    { key: 'autofill', label: 'ऑटो फिल', labelEn: 'Auto Fill', icon: <CheckCircle2 className="h-4 w-4" />, color: '#27ae60' },
+   451→   451→    { key: 'form', label: 'नमुना १ तयार', labelEn: 'Form Ready', icon: <ClipboardList className="h-4 w-4" />, color: '#0d7377' },
+   452→   452→  ];
+   453→   453→
+   454→   454→  const getStepIndex = (step: ProcessStep) => processSteps.findIndex(s => s.key === step);
+   455→   455→  const currentStepIndex = getStepIndex(activeStep);
+   456→   456→
+   457→   457→  // Construction & Usage type badge helpers
+   458→   458→  const CONSTRUCTION_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+   459→   459→    'पक्के': { bg: 'bg-emerald-100', text: 'text-emerald-800', border: 'border-emerald-300' },
+   460→   460→    'अर्धपक्के': { bg: 'bg-amber-100', text: 'text-amber-800', border: 'border-amber-300' },
+   461→   461→    'कच्चे': { bg: 'bg-orange-100', text: 'text-orange-800', border: 'border-orange-300' },
+   462→   462→    'इतर': { bg: 'bg-slate-100', text: 'text-slate-800', border: 'border-slate-300' },
+   463→   463→  };
+   464→   464→
+   465→   465→  const USAGE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+   466→   466→    'राहणीमान': { bg: 'bg-sky-100', text: 'text-sky-800', border: 'border-sky-300' },
+   467→   467→    'व्यावसायिक': { bg: 'bg-violet-100', text: 'text-violet-800', border: 'border-violet-300' },
+   468→   468→    'औद्योगिक': { bg: 'bg-rose-100', text: 'text-rose-800', border: 'border-rose-300' },
+   469→   469→    'शेती': { bg: 'bg-lime-100', text: 'text-lime-800', border: 'border-lime-300' },
+   470→   470→  };
+   471→   471→
+   472→   472→  const getConstructionBadge = (type: string | null) => {
+   473→   473→    if (!type) return <Badge variant="outline" className="text-xs">-</Badge>;
+   474→   474→    const colors = CONSTRUCTION_COLORS[type] || { bg: 'bg-gray-100', text: 'text-gray-800', border: 'border-gray-300' };
+   475→   475→    return <Badge className={`${colors.bg} ${colors.text} ${colors.border} border text-xs font-semibold`}>{type}</Badge>;
+   476→   476→  };
+   477→   477→
+   478→   478→  const getUsageBadge = (type: string | null) => {
+   479→   479→    if (!type) return <Badge variant="outline" className="text-xs">-</Badge>;
+   480→   480→    const colors = USAGE_COLORS[type] || { bg: 'bg-gray-100', text: 'text-gray-800', border: 'border-gray-300' };
+   481→   481→    return <Badge className={`${colors.bg} ${colors.text} ${colors.border} border text-xs font-semibold`}>{type}</Badge>;
+   482→   482→  };
+   483→   483→
+   484→   484→  return (
+   485→   485→    <div className="space-y-5">
+   486→   486→      {/* ===== HEADER CARD WITH CYAN/TEAL GRADIENT ===== */}
+   487→   487→      <Card className="border-0 shadow-lg overflow-hidden">
+   488→   488→        <div
+   489→   489→          className="relative"
+   490→   490→          style={{
+   491→   491→            background: 'linear-gradient(135deg, #0d7377 0%, #16a085 40%, #1abc9c 70%, #0d7377 100%)',
+   492→   492→          }}
+   493→   493→        >
+   494→   494→          {/* Decorative pattern overlay */}
+   495→   495→          <div
+   496→   496→            className="absolute inset-0 opacity-10"
+   497→   497→            style={{
+   498→   498→              backgroundImage:
+   499→   499→                'repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,255,255,0.1) 35px, rgba(255,255,255,0.1) 70px)',
+   500→   500→            }}
+   501→   501→          />
+   502→   502→          {/* Decorative circles */}
+   503→   503→          <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full" style={{ background: 'rgba(255,255,255,0.05)' }} />
+   504→   504→          <div className="absolute -bottom-8 -left-8 h-32 w-32 rounded-full" style={{ background: 'rgba(255,255,255,0.05)' }} />
+   505→   505→
+   506→   506→          <div className="relative p-5 sm:p-6">
+   507→   507→            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+   508→   508→              <div className="flex items-center gap-3">
+   509→   509→                <div
+   510→   510→                  className="h-14 w-14 rounded-xl flex items-center justify-center shadow-lg"
+   511→   511→                  style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)' }}
+   512→   512→                >
+   513→   513→                  <ClipboardList className="h-7 w-7 text-white" />
+   514→   514→                </div>
+   515→   515→                <div>
+   516→   516→                  <h1 className="text-2xl font-bold text-white leading-tight">नमुना १</h1>
+   517→   517→                  <p className="text-cyan-100 text-sm font-medium">मालमत्ता नोंदणी पत्र</p>
+   518→   518→                  <p className="text-cyan-200/70 text-xs">Property Registration Form</p>
+   519→   519→                </div>
+   520→   520→              </div>
+   521→   521→              <div className="flex items-center gap-2">
+   522→   522→                <Badge className="bg-white/20 text-white border-white/30 backdrop-blur text-xs px-3 py-1">
+   523→   523→                  <Hash className="h-3 w-3 mr-1" />
+   524→   524→                  {properties.length} मालमत्ता
+   525→   525→                </Badge>
+   526→   526→                <Button
+   527→   527→                  variant="ghost"
+   528→   528→                  size="sm"
+   529→   529→                  onClick={fetchData}
+   530→   530→                  disabled={loading}
+   531→   531→                  className="text-white hover:bg-white/20 h-9"
+   532→   532→                >
+   533→   533→                  <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
+   534→   534→                  रिफ्रेश
+   535→   535→                </Button>
+   536→   536→              </div>
+   537→   537→            </div>
+   538→   538→
+   539→   539→            {/* Process Flow Indicator */}
+   540→   540→            <div className="mt-5 bg-white/10 backdrop-blur-sm rounded-xl p-4">
+   541→   541→              <div className="flex items-center justify-between mb-2">
+   542→   542→                <span className="text-white/80 text-xs font-medium">प्रक्रिया प्रवाह / Process Flow</span>
+   543→   543→                <Badge className="bg-white/20 text-white border-0 text-xs">
+   544→   544→                  Step {currentStepIndex + 1} / {processSteps.length}
+   545→   545→                </Badge>
+   546→   546→              </div>
+   547→   547→              <div className="flex items-center gap-1 sm:gap-2">
+   548→   548→                {processSteps.map((step, i) => {
+   549→   549→                  const isActive = i === currentStepIndex;
+   550→   550→                  const isCompleted = i < currentStepIndex;
+   551→   551→                  return (
+   552→   552→                    <React.Fragment key={step.key}>
+   553→   553→                      <div
+   554→   554→                        className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg transition-all"
+   555→   555→                        style={{
+   556→   556→                          background: isActive
+   557→   557→                            ? 'rgba(255,255,255,0.3)'
+   558→   558→                            : isCompleted
+   559→   559→                              ? 'rgba(255,255,255,0.15)'
+   560→   560→                              : 'rgba(255,255,255,0.05)',
+   561→   561→                          border: isActive ? '1.5px solid rgba(255,255,255,0.5)' : '1.5px solid transparent',
+   562→   562→                        }}
+   563→   563→                      >
+   564→   564→                        <div
+   565→   565→                          className="h-6 w-6 rounded-full flex items-center justify-center text-xs"
+   566→   566→                          style={{
+   567→   567→                            background: isCompleted
+   568→   568→                              ? '#2ecc71'
+   569→   569→                              : isActive
+   570→   570→                                ? 'rgba(255,255,255,0.3)'
+   571→   571→                                : 'rgba(255,255,255,0.1)',
+   572→   572→                          }}
+   573→   573→                        >
+   574→   574→                          {isCompleted ? (
+   575→   575→                            <CheckCircle2 className="h-3.5 w-3.5 text-white" />
+   576→   576→                          ) : (
+   577→   577→                            <span className="text-white font-semibold">{i + 1}</span>
+   578→   578→                          )}
+   579→   579→                        </div>
+   580→   580→                        <div className="hidden sm:block">
+   581→   581→                          <div className="text-white text-xs font-semibold leading-tight">{step.label}</div>
+   582→   582→                          <div className="text-white/50 text-[10px] leading-tight">{step.labelEn}</div>
+   583→   583→                        </div>
+   584→   584→                      </div>
+   585→   585→                      {i < processSteps.length - 1 && (
+   586→   586→                        <ChevronRight className="h-4 w-4 text-white/30 flex-shrink-0" />
+   587→   587→                      )}
+   588→   588→                    </React.Fragment>
+   589→   589→                  );
+   590→   590→                })}
+   591→   591→              </div>
+   592→   592→            </div>
+   593→   593→
+   594→   594→            {/* Master → Auto Fill → नमुना १ Flow */}
+   595→   595→            <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs">
+   596→   596→              <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm rounded-lg px-3 py-1.5">
+   597→   597→                <Building2 className="h-3.5 w-3.5 text-cyan-200" />
+   598→   598→                <span className="text-white/90 font-medium">Property Master</span>
+   599→   599→              </div>
+   600→   600→              <span className="text-white/40">+</span>
+   601→   601→              <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm rounded-lg px-3 py-1.5">
+   602→   602→                <Users className="h-3.5 w-3.5 text-cyan-200" />
+   603→   603→                <span className="text-white/90 font-medium">Owner Master</span>
+   604→   604→              </div>
+   605→   605→              <span className="text-white/40">+</span>
+   606→   606→              <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm rounded-lg px-3 py-1.5">
+   607→   607→                <MapPin className="h-3.5 w-3.5 text-cyan-200" />
+   608→   608→                <span className="text-white/90 font-medium">Ward Master</span>
+   609→   609→              </div>
+   610→   610→              <ArrowRight className="h-4 w-4 text-white/40" />
+   611→   611→              <div className="flex items-center gap-1.5 bg-green-500/20 border border-green-400/30 backdrop-blur-sm rounded-lg px-3 py-1.5">
+   612→   612→                <CheckCircle2 className="h-3.5 w-3.5 text-green-300" />
+   613→   613→                <span className="text-green-200 font-semibold">Auto Fill</span>
+   614→   614→              </div>
+   615→   615→              <ArrowRight className="h-4 w-4 text-white/40" />
+   616→   616→              <div className="flex items-center gap-1.5 bg-cyan-500/20 border border-cyan-400/30 backdrop-blur-sm rounded-lg px-3 py-1.5">
+   617→   617→                <ClipboardList className="h-3.5 w-3.5 text-cyan-200" />
+   618→   618→                <span className="text-cyan-100 font-bold">नमुना १</span>
+   619→   619→              </div>
+   620→   620→            </div>
+   621→   621→          </div>
+   622→   622→        </div>
+   623→   623→      </Card>
+   624→   624→
+   625→   625→      {/* ===== VILLAGE INFO + SEARCH + SELECT CARD ===== */}
+   626→   626→      <Card className="border-0 shadow-md overflow-hidden">
+   627→   627→        <div className="h-1" style={{ background: 'linear-gradient(90deg, #0d7377, #16a085, #1abc9c)' }} />
+   628→   628→        <CardContent className="p-5 space-y-4">
+   629→   629→          {/* Village Info Banner */}
+   630→   630→          {villageInfo && (
+   631→   631→            <div
+   632→   632→              className="rounded-xl p-4 border border-cyan-200"
+   633→   633→              style={{ background: 'linear-gradient(135deg, #e8f8f5, #f0fafa)' }}
+   634→   634→            >
+   635→   635→              <div className="flex items-center gap-3 mb-2">
+   636→   636→                <div className="h-10 w-10 rounded-lg flex items-center justify-center shadow-sm" style={{ background: 'linear-gradient(135deg, #0d7377, #16a085)' }}>
+   637→   637→                  <Landmark className="h-5 w-5 text-white" />
+   638→   638→                </div>
+   639→   639→                <div>
+   640→   640→                  <div className="font-bold text-cyan-900 text-base">{villageInfo.gramPanchayatNameMr}</div>
+   641→   641→                  <div className="text-xs text-cyan-600">{villageInfo.gramPanchayatName}</div>
+   642→   642→                </div>
+   643→   643→              </div>
+   644→   644→              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+   645→   645→                <div className="text-xs">
+   646→   646→                  <span className="text-cyan-600 font-semibold">तालुका:</span>
+   647→   647→                  <span className="ml-1 text-cyan-900 font-medium">{villageInfo.taluka}</span>
+   648→   648→                </div>
+   649→   649→                <div className="text-xs">
+   650→   650→                  <span className="text-cyan-600 font-semibold">जिल्हा:</span>
+   651→   651→                  <span className="ml-1 text-cyan-900 font-medium">{villageInfo.district}</span>
+   652→   652→                </div>
+   653→   653→                <div className="text-xs">
+   654→   654→                  <span className="text-cyan-600 font-semibold">राज्य:</span>
+   655→   655→                  <span className="ml-1 text-cyan-900 font-medium">{villageInfo.state}</span>
+   656→   656→                </div>
+   657→   657→                {villageInfo.pinCode && (
+   658→   658→                  <div className="text-xs">
+   659→   659→                    <span className="text-cyan-600 font-semibold">पिन कोड:</span>
+   660→   660→                    <span className="ml-1 text-cyan-900 font-medium">{villageInfo.pinCode}</span>
+   661→   661→                  </div>
+   662→   662→                )}
+   663→   663→              </div>
+   664→   664→              {(villageInfo.sarpanchNameMr || villageInfo.secretaryNameMr) && (
+   665→   665→                <div className="grid grid-cols-2 gap-3 mt-2 pt-2 border-t border-cyan-200">
+   666→   666→                  {villageInfo.sarpanchNameMr && (
+   667→   667→                    <div className="text-xs">
+   668→   668→                      <span className="text-cyan-600 font-semibold">सरपंच:</span>
+   669→   669→                      <span className="ml-1 text-cyan-900 font-medium">{villageInfo.sarpanchNameMr}</span>
+   670→   670→                    </div>
+   671→   671→                  )}
+   672→   672→                  {villageInfo.secretaryNameMr && (
+   673→   673→                    <div className="text-xs">
+   674→   674→                      <span className="text-cyan-600 font-semibold">सचिव:</span>
+   675→   675→                      <span className="ml-1 text-cyan-900 font-medium">{villageInfo.secretaryNameMr}</span>
+   676→   676→                    </div>
+   677→   677→                  )}
+   678→   678→                </div>
+   679→   679→              )}
+   680→   680→            </div>
+   681→   681→          )}
+   682→   682→
+   683→   683→          {/* Search Bar with Cyan Theme */}
+   684→   684→          <div className="space-y-2">
+   685→   685→            <Label className="text-sm font-semibold text-cyan-800 flex items-center gap-1.5">
+   686→   686→              <Search className="h-3.5 w-3.5" />
+   687→   687→              मालमत्ता शोधा
+   688→   688→            </Label>
+   689→   689→            <div className="flex gap-2">
+   690→   690→              <div className="relative flex-1">
+   691→   691→                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-cyan-400" />
+   692→   692→                <Input
+   693→   693→                  placeholder="मालमत्ता क्रमांक / मालक नाव / मोबाईल नंबर..."
+   694→   694→                  value={searchTerm}
+   695→   695→                  onChange={e => setSearchTerm(e.target.value)}
+   696→   696→                  onKeyDown={e => e.key === 'Enter' && handleSearch()}
+   697→   697→                  className="pl-10 border-cyan-200 focus:ring-cyan-500/20 focus:border-cyan-400 h-10"
+   698→   698→                />
+   699→   699→                {searchTerm && (
+   700→   700→                  <button
+   701→   701→                    onClick={() => { setSearchTerm(''); setSearchResults([]); }}
+   702→   702→                    className="absolute right-3 top-1/2 -translate-y-1/2 text-cyan-400 hover:text-cyan-600"
+   703→   703→                  >
+   704→   704→                    ✕
+   705→   705→                  </button>
+   706→   706→                )}
+   707→   707→              </div>
+   708→   708→              <Button
+   709→   709→                onClick={handleSearch}
+   710→   710→                disabled={searching}
+   711→   711→                className="h-10 px-4 font-semibold shadow-md"
+   712→   712→                style={{ background: searching ? undefined : 'linear-gradient(135deg, #0d7377, #16a085)' }}
+   713→   713→              >
+   714→   714→                {searching ? (
+   715→   715→                  <Loader2 className="h-4 w-4 animate-spin" />
+   716→   716→                ) : (
+   717→   717→                  <>
+   718→   718→                    <Search className="h-4 w-4 mr-1.5" />
+   719→   719→                    शोधा
+   720→   720→                  </>
+   721→   721→                )}
+   722→   722→              </Button>
+   723→   723→            </div>
+   724→   724→            <div className="flex flex-wrap gap-1.5">
+   725→   725→              {[
+   726→   726→                { label: 'मालमत्ता क्रमांक', icon: Hash },
+   727→   727→                { label: 'मालकाचे नाव', icon: User },
+   728→   728→                { label: 'मोबाईल नंबर', icon: Building2 },
+   729→   729→              ].map((hint) => (
+   730→   730→                <Badge key={hint.label} variant="outline" className="text-[10px] px-2 py-0.5 border-cyan-200 text-cyan-600 bg-cyan-50/50">
+   731→   731→                  <hint.icon className="h-2.5 w-2.5 mr-0.5" />
+   732→   732→                  {hint.label}
+   733→   733→                </Badge>
+   734→   734→              ))}
+   735→   735→            </div>
+   736→   736→          </div>
+   737→   737→
+   738→   738→          {/* Search Results as selectable cards */}
+   739→   739→          {searchResults.length > 0 && (
+   740→   740→            <div className="space-y-2">
+   741→   741→              <Label className="text-xs font-semibold text-cyan-700">शोध निकाल ({searchResults.length})</Label>
+   742→   742→              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-40 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+   743→   743→                {searchResults.map((prop) => (
+   744→   744→                  <button
+   745→   745→                    key={prop.id}
+   746→   746→                    onClick={() => setSelectedPropertyId(prop.id)}
+   747→   747→                    className={`text-left p-3 rounded-lg border-2 transition-all ${
+   748→   748→                      selectedPropertyId === prop.id
+   749→   749→                        ? 'border-cyan-400 bg-cyan-50 shadow-sm'
+   750→   750→                        : 'border-gray-200 bg-white hover:border-cyan-200 hover:bg-cyan-50/50'
+   751→   751→                    }`}
+   752→   752→                  >
+   753→   753→                    <div className="flex items-center gap-2">
+   754→   754→                      <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${selectedPropertyId === prop.id ? 'bg-cyan-500' : 'bg-cyan-100'}`}>
+   755→   755→                        <Building2 className={`h-4 w-4 ${selectedPropertyId === prop.id ? 'text-white' : 'text-cyan-600'}`} />
+   756→   756→                      </div>
+   757→   757→                      <div className="min-w-0">
+   758→   758→                        <div className="font-semibold text-sm truncate">{prop.propertyNumber}</div>
+   759→   759→                        <div className="text-xs text-muted-foreground truncate">{getOwnerName(prop)}</div>
+   760→   760→                      </div>
+   761→   761→                    </div>
+   762→   762→                  </button>
+   763→   763→                ))}
+   764→   764→              </div>
+   765→   765→            </div>
+   766→   766→          )}
+   767→   767→
+   768→   768→          {/* Property Selection */}
+   769→   769→          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   770→   770→            <div>
+   771→   771→              <Label className="text-sm font-semibold text-cyan-800 mb-1.5 flex items-center gap-1.5">
+   772→   772→                <Building2 className="h-3.5 w-3.5" />
+   773→   773→                मालमत्ता निवडा
+   774→   774→              </Label>
+   775→   775→              <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
+   776→   776→                <SelectTrigger className="border-cyan-200 focus:ring-cyan-500/20 focus:border-cyan-400 h-10">
+   777→   777→                  <SelectValue placeholder="मालमत्ता निवडा..." />
+   778→   778→                </SelectTrigger>
+   779→   779→                <SelectContent>
+   780→   780→                  {filteredProperties.map(p => (
+   781→   781→                    <SelectItem key={p.id} value={p.id}>
+   782→   782→                      <span className="font-semibold">{p.propertyNumber}</span>
+   783→   783→                      <span className="text-muted-foreground"> — {getOwnerName(p)}</span>
+   784→   784→                    </SelectItem>
+   785→   785→                  ))}
+   786→   786→                </SelectContent>
+   787→   787→              </Select>
+   788→   788→            </div>
+   789→   789→            <div className="flex items-end">
+   790→   790→              <Button
+   791→   791→                onClick={handlePrint}
+   792→   792→                disabled={!selectedProperty}
+   793→   793→                className="w-full sm:w-auto h-10 px-6 font-semibold shadow-md"
+   794→   794→                style={{
+   795→   795→                  background: !selectedProperty ? undefined : 'linear-gradient(135deg, #0d7377, #16a085)',
+   796→   796→                }}
+   797→   797→              >
+   798→   798→                <Printer className="h-4 w-4 mr-1.5" />
+   799→   799→                प्रिंट करा
+   800→   800→              </Button>
+   801→   801→            </div>
+   802→   802→          </div>
+   803→   803→
+   804→   804→          {/* Selected Property Preview */}
+   805→   805→          {selectedProperty && (
+   806→   806→            <div
+   807→   807→              className="p-4 rounded-xl border border-cyan-200"
+   808→   808→              style={{ background: 'linear-gradient(135deg, #e8f8f5, #f0fdfa)' }}
+   809→   809→            >
+   810→   810→              <div className="flex items-start gap-3">
+   811→   811→                <div className="h-11 w-11 rounded-lg flex items-center justify-center shadow-sm flex-shrink-0" style={{ background: 'linear-gradient(135deg, #0d7377, #16a085)' }}>
+   812→   812→                  <Building2 className="h-5 w-5 text-white" />
+   813→   813→                </div>
+   814→   814→                <div className="flex-1 min-w-0">
+   815→   815→                  <div className="flex items-center gap-2 flex-wrap">
+   816→   816→                    <span className="font-bold text-cyan-900 text-sm">{selectedProperty.propertyNumber}</span>
+   817→   817→                    {getConstructionBadge(selectedProperty.constructionType)}
+   818→   818→                    {getUsageBadge(selectedProperty.usageType)}
+   819→   819→                    <Badge className="bg-cyan-100 text-cyan-800 border border-cyan-300 text-xs">
+   820→   820→                      <MapPin className="h-3 w-3 mr-0.5" />
+   821→   821→                      {selectedProperty.ward?.wardNameMr || '-'}
+   822→   822→                    </Badge>
+   823→   823→                    <Badge className={`text-xs border ${selectedProperty.propertyStatus === 'Active' ? 'bg-green-100 text-green-800 border-green-300' : 'bg-red-100 text-red-800 border-red-300'}`}>
+   824→   824→                      {selectedProperty.propertyStatus}
+   825→   825→                    </Badge>
+   826→   826→                  </div>
+   827→   827→                  <div className="flex items-center gap-4 mt-1.5 text-xs text-cyan-700">
+   828→   828→                    <span className="flex items-center gap-1">
+   829→   829→                      <Users className="h-3 w-3" />
+   830→   830→                      {getOwnerName(selectedProperty)}
+   831→   831→                    </span>
+   832→   832→                    <span className="flex items-center gap-1">
+   833→   833→                      <Route className="h-3 w-3" />
+   834→   834→                      {selectedProperty.road?.roadNameMr || '-'}
+   835→   835→                    </span>
+   836→   836→                    <span className="flex items-center gap-1">
+   837→   837→                      <Ruler className="h-3 w-3" />
+   838→   838→                      {selectedProperty.area || 0} चौ.फूट
+   839→   839→                    </span>
+   840→   840→                    {selectedProperty.taxRates.length > 0 && (
+   841→   841→                      <span className="flex items-center gap-1">
+   842→   842→                        <IndianRupee className="h-3 w-3" />
+   843→   843→                        {selectedProperty.taxRates.filter(t => t.taxMaster.isEnabled).length} कर दर
+   844→   844→                      </span>
+   845→   845→                    )}
+   846→   846→                  </div>
+   847→   847→                </div>
+   848→   848→              </div>
+   849→   849→            </div>
+   850→   850→          )}
+   851→   851→        </CardContent>
+   852→   852→      </Card>
+   853→   853→
+   854→   854→      {/* ===== LOADING STATE ===== */}
+   855→   855→      {loading ? (
+   856→   856→        <Card className="border-0 shadow-md overflow-hidden">
+   857→   857→          <div className="h-1" style={{ background: 'linear-gradient(90deg, #0d7377, #16a085, #1abc9c)' }} />
+   858→   858→          <CardContent className="p-8 space-y-4">
+   859→   859→            <div className="flex items-center gap-3 justify-center mb-4">
+   860→   860→              <Loader2 className="h-6 w-6 animate-spin text-cyan-600" />
+   861→   861→              <span className="text-cyan-700 font-semibold">डेटा लोड होत आहे...</span>
+   862→   862→            </div>
+   863→   863→            <div className="space-y-3">
+   864→   864→              {[1, 2, 3].map(i => (
+   865→   865→                <div key={i} className="flex items-center gap-4">
+   866→   866→                  <Skeleton className="h-4 w-8" />
+   867→   867→                  <Skeleton className="h-4 w-32" />
+   868→   868→                  <Skeleton className="h-4 w-24" />
+   869→   869→                  <Skeleton className="h-4 w-20" />
+   870→   870→                </div>
+   871→   871→              ))}
+   872→   872→            </div>
+   873→   873→          </CardContent>
+   874→   874→        </Card>
+   875→   875→      ) : !selectedProperty ? (
+   876→   876→        /* ===== EMPTY STATE ===== */
+   877→   877→        <Card className="border-0 shadow-md overflow-hidden">
+   878→   878→          <div className="h-1" style={{ background: 'linear-gradient(90deg, #0d7377, #16a085, #1abc9c)' }} />
+   879→   879→          <CardContent className="p-12 text-center">
+   880→   880→            <div
+   881→   881→              className="h-20 w-20 rounded-2xl flex items-center justify-center mx-auto mb-5"
+   882→   882→              style={{ background: 'linear-gradient(135deg, #e8f8f5, #d5f5e3)' }}
+   883→   883→            >
+   884→   884→              <ClipboardList className="h-10 w-10 text-cyan-300" />
+   885→   885→            </div>
+   886→   886→            <p className="text-lg font-bold text-cyan-900">मालमत्ता निवडा</p>
+   887→   887→            <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
+   888→   888→              वरील ड्रॉपडाउनमधून किंवा शोध बारद्वारे मालमत्ता निवडल्यावर नमुना १ ऑटोमॅटिक भरला जाईल
+   889→   889→            </p>
+   890→   890→            <div className="flex items-center justify-center gap-3 mt-4 text-xs text-muted-foreground">
+   891→   891→              <div className="flex items-center gap-1 bg-cyan-50 px-2.5 py-1 rounded-full border border-cyan-200">
+   892→   892→                <Building2 className="h-3 w-3 text-cyan-500" />
+   893→   893→                Property Master
+   894→   894→              </div>
+   895→   895→              <ArrowRight className="h-3 w-3" />
+   896→   896→              <div className="flex items-center gap-1 bg-green-50 px-2.5 py-1 rounded-full border border-green-200">
+   897→   897→                <CheckCircle2 className="h-3 w-3 text-green-500" />
+   898→   898→                Auto Fill
+   899→   899→              </div>
+   900→   900→              <ArrowRight className="h-3 w-3" />
+   901→   901→              <div className="flex items-center gap-1 bg-cyan-50 px-2.5 py-1 rounded-full border border-cyan-200">
+   902→   902→                <ClipboardList className="h-3 w-3 text-cyan-500" />
+   903→   903→                नमुना १
+   904→   904→              </div>
+   905→   905→            </div>
+   906→   906→          </CardContent>
+   907→   907→        </Card>
+   908→   908→      ) : (
+   909→   909→        /* ===== FORM DISPLAY — नमुना १ ===== */
+   910→   910→        <Card className="border-0 shadow-lg overflow-hidden">
+   911→   911→          <div className="h-1.5" style={{ background: 'linear-gradient(90deg, #FF9933, #FFFFFF, #138808)' }} />
+   912→   912→
+   913→   913→          {/* Form Title Header */}
+   914→   914→          <div
+   915→   915→            className="p-5 text-center"
+   916→   916→            style={{ background: 'linear-gradient(135deg, #e8f8f5, #f0fafa)' }}
+   917→   917→          >
+   918→   918→            <div className="flex items-center justify-center gap-2 mb-2">
+   919→   919→              <div className="h-9 w-9 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0d7377, #16a085)' }}>
+   920→   920→                <Landmark className="h-4.5 w-4.5 text-white" />
+   921→   921→              </div>
+   922→   922→              <div>
+   923→   923→                <div className="font-bold text-cyan-900 text-lg">{villageInfo?.gramPanchayatNameMr || 'ग्रामपंचायत'}</div>
+   924→   924→                <div className="text-xs text-cyan-600">{villageInfo?.gramPanchayatName || ''}</div>
+   925→   925→              </div>
+   926→   926→            </div>
+   927→   927→            <div className="text-xs text-muted-foreground">
+   928→   928→              तालुका: {villageInfo?.taluka || '-'} | जिल्हा: {villageInfo?.district || '-'} | राज्य: {villageInfo?.state || '-'}
+   929→   929→            </div>
+   930→   930→            <Separator className="my-3" />
+   931→   931→            <div
+   932→   932→              className="inline-block border-2 border-cyan-500 rounded-xl px-6 py-3"
+   933→   933→              style={{ background: 'linear-gradient(135deg, rgba(13,115,119,0.08), rgba(22,160,133,0.08))' }}
+   934→   934→            >
+   935→   935→              <h3 className="text-2xl font-bold text-cyan-800">नमुना १</h3>
+   936→   936→              <p className="text-sm font-semibold text-cyan-700">मालमत्ता नोंदणी पत्र</p>
+   937→   937→              <p className="text-xs text-cyan-600">Property Registration Form</p>
+   938→   938→            </div>
+   939→   939→          </div>
+   940→   940→
+   941→   941→          <CardContent className="space-y-1 px-4 sm:px-6 pb-6">
+   942→   942→            {/* Section 1: मालमत्तेची साधारण माहिती */}
+   943→   943→            <SectionHeader
+   944→   944→              number="१"
+   945→   945→              title="मालमत्तेची साधारण माहिती"
+   946→   946→              titleEn="General Property Information"
+   947→   947→              icon={Home}
+   948→   948→              color="#0d7377"
+   949→   949→              bgColor="#e8f8f5"
+   950→   950→            />
+   951→   951→            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 px-1">
+   952→   952→              <AutoFilledField label="मालमत्ता क्रमांक" value={selectedProperty.propertyNumber} icon={Hash} />
+   953→   953→              <AutoFilledField label="शहर सर्वेक्षण क्रमांक" value={selectedProperty.citySurveyNo || '-'} icon={FileText} />
+   954→   954→              <AutoFilledField
+   955→   955→                label="वार्ड क्रमांक व नाव"
+   956→   956→                value={selectedProperty.ward ? `${selectedProperty.ward.wardNumber} - ${selectedProperty.ward.wardNameMr}` : '-'}
+   957→   957→                icon={MapPin}
+   958→   958→              />
+   959→   959→              <AutoFilledField label="रस्ता नाव" value={selectedProperty.road?.roadNameMr || '-'} icon={Route} />
+   960→   960→              <AutoFilledField label="मालमत्तेचा वापर" value={selectedProperty.usageType || '-'} icon={Layers} />
+   961→   961→              <AutoFilledField label="बांधकाम प्रकार" value={selectedProperty.constructionType || '-'} icon={Building2} />
+   962→   962→              <div>
+   963→   963→                <Label className="flex items-center text-xs font-semibold text-cyan-800 mb-1">
+   964→   964→                  <CheckCircle2 className="h-3 w-3 mr-1 text-cyan-600" />
+   965→   965→                  मालमत्ता स्थिती
+   966→   966→                  <AutoFillBadge />
+   967→   967→                </Label>
+   968→   968→                <div className="mt-0.5">
+   969→   969→                  <Badge className={`text-sm px-3 py-1 border ${selectedProperty.propertyStatus === 'Active' ? 'bg-green-100 text-green-800 border-green-300' : 'bg-red-100 text-red-800 border-red-300'}`}>
+   970→   970→                    {selectedProperty.propertyStatus === 'Active' ? (
+   971→   971→                      <><CheckCircle2 className="h-3.5 w-3.5 mr-1" /> {selectedProperty.propertyStatus}</>
+   972→   972→                    ) : (
+   973→   973→                      <><AlertCircle className="h-3.5 w-3.5 mr-1" /> {selectedProperty.propertyStatus}</>
+   974→   974→                    )}
+   975→   975→                  </Badge>
+   976→   976→                </div>
+   977→   977→              </div>
+   978→   978→              <AutoFilledField label="बांधणी वर्ष" value={selectedProperty.yearBuilt || '-'} icon={Calendar} />
+   979→   979→            </div>
+   980→   980→
+   981→   981→            <Separator className="my-3" />
+   982→   982→
+   983→   983→            {/* Section 2: क्षेत्रफळ माहिती */}
+   984→   984→            <SectionHeader
+   985→   985→              number="२"
+   986→   986→              title="क्षेत्रफळ माहिती"
+   987→   987→              titleEn="Area Information"
+   988→   988→              icon={Ruler}
+   989→   989→              color="#16a085"
+   990→   990→              bgColor="#e8f8f5"
+   991→   991→            />
+   992→   992→            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 px-1">
+   993→   993→              <AutoFilledField label="एकूण क्षेत्रफळ (चौ.फूट)" value={String(selectedProperty.area || '-')} icon={Ruler} />
+   994→   994→              <AutoFilledField label="बांधलेले क्षेत्रफळ (चौ.फूट)" value={String(selectedProperty.builtUpArea || '-')} icon={Building2} />
+   995→   995→              <AutoFilledField label="मजला माहिती" value={selectedProperty.floorInfo || '-'} icon={Layers} />
+   996→   996→            </div>
+   997→   997→
+   998→   998→            <Separator className="my-3" />
+   999→   999→
+  1000→  1000→            {/* Section 3: मालक व भोगवटादार */}
+  1001→  1001→            <SectionHeader
+  1002→  1002→              number="३"
+  1003→  1003→              title="मालक व भोगवटादार माहिती"
+  1004→  1004→              titleEn="Owner & Occupant Information"
+  1005→  1005→              icon={Users}
+  1006→  1006→              color="#0d7377"
+  1007→  1007→              bgColor="#e8f8f5"
+  1008→  1008→            />
+  1009→  1009→            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 px-1">
+  1010→  1010→              <AutoFilledField label="मालकाचे नाव" value={getOwnerName(selectedProperty)} icon={User} />
+  1011→  1011→              <AutoFilledField label="मालकाचा पत्ता" value={getOwnerAddress(selectedProperty)} icon={MapPin} />
+  1012→  1012→              <AutoFilledField label="भोगवटादाराचे नाव" value={getOccupantName(selectedProperty)} icon={Users} />
+  1013→  1013→            </div>
+  1014→  1014→
+  1015→  1015→            {/* All Owners Table */}
+  1016→  1016→            {selectedProperty.owners && selectedProperty.owners.length > 0 && (
+  1017→  1017→              <div className="mt-4 px-1">
+  1018→  1018→                <Label className="mb-2 block text-xs font-semibold text-cyan-800 flex items-center gap-1.5">
+  1019→  1019→                  <Users className="h-3.5 w-3.5" />
+  1020→  1020→                  सर्व मालक / भोगवटादार यादी
+  1021→  1021→                </Label>
+  1022→  1022→                <div className="overflow-x-auto rounded-lg border border-cyan-200">
+  1023→  1023→                  <Table>
+  1024→  1024→                    <TableHeader>
+  1025→  1025→                      <TableRow style={{ background: 'linear-gradient(90deg, #0d7377, #16a085)' }}>
+  1026→  1026→                        <TableHead className="text-white font-semibold w-12 text-center">क्र.</TableHead>
+  1027→  1027→                        <TableHead className="text-white font-semibold">नाव</TableHead>
+  1028→  1028→                        <TableHead className="text-white font-semibold text-center">मालकी प्रकार</TableHead>
+  1029→  1029→                        <TableHead className="text-white font-semibold">मोबाईल</TableHead>
+  1030→  1030→                      </TableRow>
+  1031→  1031→                    </TableHeader>
+  1032→  1032→                    <TableBody>
+  1033→  1033→                      {selectedProperty.owners.map((o, i) => (
+  1034→  1034→                        <TableRow key={o.owner.id} className={i % 2 === 0 ? 'bg-cyan-50/30' : 'bg-white'}>
+  1035→  1035→                          <TableCell className="text-center font-medium text-sm">{i + 1}</TableCell>
+  1036→  1036→                          <TableCell className="font-medium text-sm">
+  1037→  1037→                            {o.owner.firstNameMr || o.owner.firstName} {o.owner.lastNameMr || o.owner.lastName}
+  1038→  1038→                          </TableCell>
+  1039→  1039→                          <TableCell className="text-center">
+  1040→  1040→                            <Badge className={`text-xs border ${
+  1041→  1041→                              o.ownershipType === 'मालक'
+  1042→  1042→                                ? 'bg-cyan-100 text-cyan-800 border-cyan-300'
+  1043→  1043→                                : o.ownershipType === 'भोगवटादार'
+  1044→  1044→                                  ? 'bg-amber-100 text-amber-800 border-amber-300'
+  1045→  1045→                                  : 'bg-purple-100 text-purple-800 border-purple-300'
+  1046→  1046→                            }`}>
+  1047→  1047→                              {o.ownershipType}
+  1048→  1048→                            </Badge>
+  1049→  1049→                          </TableCell>
+  1050→  1050→                          <TableCell className="text-sm text-muted-foreground">{o.owner.mobileNumber || '-'}</TableCell>
+  1051→  1051→                        </TableRow>
+  1052→  1052→                      ))}
+  1053→  1053→                    </TableBody>
+  1054→  1054→                  </Table>
+  1055→  1055→                </div>
+  1056→  1056→              </div>
+  1057→  1057→            )}
+  1058→  1058→
+  1059→  1059→            <Separator className="my-3" />
+  1060→  1060→
+  1061→  1061→            {/* Section 4: सीमा माहिती */}
+  1062→  1062→            <SectionHeader
+  1063→  1063→              number="४"
+  1064→  1064→              title="सीमा माहिती"
+  1065→  1065→              titleEn="Boundary Information"
+  1066→  1066→              icon={Compass}
+  1067→  1067→              color="#16a085"
+  1068→  1068→              bgColor="#e8f8f5"
+  1069→  1069→            />
+  1070→  1070→            <div className="overflow-x-auto rounded-lg border border-teal-200 px-1">
+  1071→  1071→              <Table>
+  1072→  1072→                <TableHeader>
+  1073→  1073→                  <TableRow style={{ background: 'linear-gradient(90deg, #16a085, #1abc9c)' }}>
+  1074→  1074→                    <TableHead className="text-white font-semibold w-36 text-center">दिशा / Direction</TableHead>
+  1075→  1075→                    <TableHead className="text-white font-semibold">शेजारी मालमत्ता / वर्णन</TableHead>
+  1076→  1076→                  </TableRow>
+  1077→  1077→                </TableHeader>
+  1078→  1078→                <TableBody>
+  1079→  1079→                  {(() => {
+  1080→  1080→                    const b = getBoundaries(selectedProperty);
+  1081→  1081→                    const directions = [
+  1082→  1082→                      { mr: 'पूर्व', en: 'East', value: b.east, icon: '→', color: 'text-orange-600' },
+  1083→  1083→                      { mr: 'पश्चिम', en: 'West', value: b.west, icon: '←', color: 'text-blue-600' },
+  1084→  1084→                      { mr: 'उत्तर', en: 'North', value: b.north, icon: '↑', color: 'text-green-600' },
+  1085→  1085→                      { mr: 'दक्षिण', en: 'South', value: b.south, icon: '↓', color: 'text-red-600' },
+  1086→  1086→                    ];
+  1087→  1087→                    return directions.map((d, i) => (
+  1088→  1088→                      <TableRow key={d.en} className={i % 2 === 0 ? 'bg-teal-50/30' : 'bg-white'}>
+  1089→  1089→                        <TableCell className="font-semibold text-center">
+  1090→  1090→                          <span className={`text-lg mr-1 ${d.color}`}>{d.icon}</span>
+  1091→  1091→                          <span className="text-sm">{d.mr}</span>
+  1092→  1092→                          <span className="text-xs text-muted-foreground ml-1">({d.en})</span>
+  1093→  1093→                        </TableCell>
+  1094→  1094→                        <TableCell className="text-sm">{d.value}</TableCell>
+  1095→  1095→                      </TableRow>
+  1096→  1096→                    ));
+  1097→  1097→                  })()}
+  1098→  1098→                </TableBody>
+  1099→  1099→              </Table>
+  1100→  1100→            </div>
+  1101→  1101→
+  1102→  1102→            {/* Section 5: Tax Rates */}
+  1103→  1103→            {selectedProperty.taxRates && selectedProperty.taxRates.length > 0 && (
+  1104→  1104→              <>
+  1105→  1105→                <Separator className="my-3" />
+  1106→  1106→                <SectionHeader
+  1107→  1107→                  number="५"
+  1108→  1108→                  title="लागू कर दर"
+  1109→  1109→                  titleEn="Applicable Tax Rates"
+  1110→  1110→                  icon={IndianRupee}
+  1111→  1111→                  color="#0d7377"
+  1112→  1112→                  bgColor="#e8f8f5"
+  1113→  1113→                />
+  1114→  1114→                <div className="overflow-x-auto rounded-lg border border-cyan-200 px-1">
+  1115→  1115→                  <Table>
+  1116→  1116→                    <TableHeader>
+  1117→  1117→                      <TableRow style={{ background: 'linear-gradient(90deg, #0d7377, #16a085)' }}>
+  1118→  1118→                        <TableHead className="text-white font-semibold w-12 text-center">क्र.</TableHead>
+  1119→  1119→                        <TableHead className="text-white font-semibold">कराचे नाव</TableHead>
+  1120→  1120→                        <TableHead className="text-white font-semibold text-center">कर प्रकार</TableHead>
+  1121→  1121→                        <TableHead className="text-white font-semibold text-right">दर (₹/चौ.फूट)</TableHead>
+  1122→  1122→                        <TableHead className="text-white font-semibold text-center">स्थिती</TableHead>
+  1123→  1123→                      </TableRow>
+  1124→  1124→                    </TableHeader>
+  1125→  1125→                    <TableBody>
+  1126→  1126→                      {selectedProperty.taxRates.map((tr, i) => (
+  1127→  1127→                        <TableRow key={tr.taxMasterId} className={`${i % 2 === 0 ? 'bg-cyan-50/30' : 'bg-white'} ${!tr.taxMaster.isEnabled ? 'opacity-60' : ''}`}>
+  1128→  1128→                          <TableCell className="text-center font-medium text-sm">{i + 1}</TableCell>
+  1129→  1129→                          <TableCell className="font-medium text-sm">{tr.taxMaster.nameMarathi}</TableCell>
+  1130→  1130→                          <TableCell className="text-center">
+  1131→  1131→                            <Badge variant="outline" className="text-xs">
+  1132→  1132→                              {tr.taxMaster.category === 'general' ? 'सामान्य' : tr.taxMaster.category === 'penalty' ? 'दंड' : tr.taxMaster.category === 'interest' ? 'व्याज' : tr.taxMaster.category || '-'}
+  1133→  1133→                            </Badge>
+  1134→  1134→                          </TableCell>
+  1135→  1135→                          <TableCell className="text-right font-semibold text-sm">₹{tr.rate}</TableCell>
+  1136→  1136→                          <TableCell className="text-center">
+  1137→  1137→                            <Badge className={`text-xs border ${tr.taxMaster.isEnabled ? 'bg-green-100 text-green-800 border-green-300' : 'bg-red-100 text-red-800 border-red-300'}`}>
+  1138→  1138→                              {tr.taxMaster.isEnabled ? 'सक्षम' : 'अक्षम'}
+  1139→  1139→                            </Badge>
+  1140→  1140→                          </TableCell>
+  1141→  1141→                        </TableRow>
+  1142→  1142→                      ))}
+  1143→  1143→                    </TableBody>
+  1144→  1144→                  </Table>
+  1145→  1145→                </div>
+  1146→  1146→              </>
+  1147→  1147→            )}
+  1148→  1148→
+  1149→  1149→            <Separator className="my-4" />
+  1150→  1150→
+  1151→  1151→            {/* Signature Footer */}
+  1152→  1152→            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 mt-6">
+  1153→  1153→              <div className="text-center">
+  1154→  1154→                <p className="text-xs text-muted-foreground mb-1 flex items-center justify-center gap-1">
+  1155→  1155→                  <Calendar className="h-3 w-3" />
+  1156→  1156→                  दिनांक
+  1157→  1157→                </p>
+  1158→  1158→                <p className="border-t pt-2 text-sm mt-8 font-medium">
+  1159→  1159→                  {new Date().toLocaleDateString('mr-IN')}
+  1160→  1160→                </p>
+  1161→  1161→              </div>
+  1162→  1162→              <div className="text-center">
+  1163→  1163→                <p className="text-xs text-muted-foreground mb-1">मालकाची सही</p>
+  1164→  1164→                <div className="border-t pt-2 mt-8 text-xs text-muted-foreground">&nbsp;</div>
+  1165→  1165→              </div>
+  1166→  1166→              <div className="text-center">
+  1167→  1167→                <p className="text-xs text-muted-foreground mb-1">ग्रामसेवक सही</p>
+  1168→  1168→                <div className="border-t pt-2 mt-8 text-xs text-muted-foreground">&nbsp;</div>
+  1169→  1169→              </div>
+  1170→  1170→              <div className="text-center">
+  1171→  1171→                <p className="text-xs text-muted-foreground mb-1">सरपंच सही व मुद्रा</p>
+  1172→  1172→                <div className="border-t pt-2 mt-8 text-xs text-muted-foreground">&nbsp;</div>
+  1173→  1173→              </div>
+  1174→  1174→            </div>
+  1175→  1175→
+  1176→  1176→            {/* Print Button at bottom */}
+  1177→  1177→            <div className="flex justify-center pt-4">
+  1178→  1178→              <Button
+  1179→  1179→                onClick={handlePrint}
+  1180→  1180→                className="h-11 px-8 text-sm font-bold shadow-lg"
+  1181→  1181→                style={{ background: 'linear-gradient(135deg, #0d7377, #16a085)' }}
+  1182→  1182→              >
+  1183→  1183→                <Printer className="h-5 w-5 mr-2" />
+  1184→  1184→                नमुना १ प्रिंट करा
+  1185→  1185→              </Button>
+  1186→  1186→            </div>
+  1187→  1187→          </CardContent>
+  1188→  1188→        </Card>
+  1189→  1189→      )}
+  1190→  1190→    </div>
+  1191→  1191→  );
+  1192→  1192→}
+  1193→  1193→

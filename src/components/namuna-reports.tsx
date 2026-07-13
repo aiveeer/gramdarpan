@@ -116,18 +116,30 @@ interface NamunaReportsProps {
   onNavigate?: (viewId: string) => void;
 }
 
+interface VillageData {
+  gramPanchayatName?: string;
+  gramPanchayatNameMr?: string;
+  taluka?: string;
+  district?: string;
+  state?: string;
+  sarpanchNameMr?: string;
+  secretaryNameMr?: string;
+}
+
 interface ReportData {
+  namuna?: number;
   title: string;
   titleEn: string;
+  village?: VillageData | null;
+  financialYear?: string;
   headers: string[];
   rows: Array<Record<string, unknown>>;
   totals: Record<string, unknown>;
   meta?: Record<string, unknown>;
+  // Legacy fields for backward compatibility
   villageName?: string;
   taluka?: string;
   district?: string;
-  financialYear?: string;
-  namuna?: number;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -220,20 +232,53 @@ export default function NamunaReports({ initialNamuna, onNavigate }: NamunaRepor
     return items;
   }, [categoryFilter]);
 
+  // Helper to get village display name from report data
+  const getVillageName = (data: ReportData): string => {
+    if (data.village?.gramPanchayatNameMr) return data.village.gramPanchayatNameMr;
+    if (data.village?.gramPanchayatName) return data.village.gramPanchayatName;
+    return data.villageName || 'ग्रामपंचायत';
+  };
+
+  const getVillageTaluka = (data: ReportData): string => {
+    return data.village?.taluka || data.taluka || '';
+  };
+
+  const getVillageDistrict = (data: ReportData): string => {
+    return data.village?.district || data.district || '';
+  };
+
   // Fetch report data
   const fetchReport = useCallback(async (namunaNum: number, fy: string) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/auto-generate?namuna=${namunaNum}&financialYear=${fy}`);
+      const res = await fetch(`/api/namuna-reports?namuna=${namunaNum}&financialYear=${fy}`);
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || `HTTP ${res.status}`);
+        throw new Error(errData.error || 'डेटा लोड करताना त्रुटी आली');
       }
       const data = await res.json();
-      setReportData(data);
+      // Check if API returned an error object
+      if (data && data.error && !data.headers) {
+        throw new Error('डेटा लोड करताना त्रुटी आली');
+      }
+      // Ensure rows and headers are arrays
+      if (data && Array.isArray(data.headers) && Array.isArray(data.rows)) {
+        setReportData(data);
+      } else {
+        setReportData({
+          title: data?.title || `नमुना ${namunaNum}`,
+          titleEn: data?.titleEn || '',
+          headers: [],
+          rows: [],
+          totals: {},
+          village: data?.village || null,
+          financialYear: fy,
+          namuna: namunaNum,
+        });
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load report');
+      setError(err instanceof Error ? err.message : 'डेटा लोड करताना त्रुटी आली');
       setReportData(null);
     } finally {
       setLoading(false);
@@ -246,15 +291,35 @@ export default function NamunaReports({ initialNamuna, onNavigate }: NamunaRepor
     const controller = new AbortController();
     setLoading(true);
     setError(null);
-    fetch(`/api/auto-generate?namuna=${selectedNamuna}&financialYear=${financialYear}`, { signal: controller.signal })
+    fetch(`/api/namuna-reports?namuna=${selectedNamuna}&financialYear=${financialYear}`, { signal: controller.signal })
       .then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) throw new Error('डेटा लोड करताना त्रुटी आली');
         return res.json();
       })
-      .then(data => setReportData(data))
+      .then(data => {
+        // Check if API returned an error object
+        if (data && data.error && !data.headers) {
+          throw new Error('डेटा लोड करताना त्रुटी आली');
+        }
+        // Ensure rows and headers are arrays
+        if (data && Array.isArray(data.headers) && Array.isArray(data.rows)) {
+          setReportData(data);
+        } else {
+          setReportData({
+            title: data?.title || `नमुना ${selectedNamuna}`,
+            titleEn: data?.titleEn || '',
+            headers: [],
+            rows: [],
+            totals: {},
+            village: data?.village || null,
+            financialYear: financialYear,
+            namuna: selectedNamuna,
+          });
+        }
+      })
       .catch(err => {
         if (err.name !== 'AbortError') {
-          setError(err.message);
+          setError(err instanceof Error ? err.message : 'डेटा लोड करताना त्रुटी आली');
           setReportData(null);
         }
       })
@@ -324,8 +389,8 @@ export default function NamunaReports({ initialNamuna, onNavigate }: NamunaRepor
       </style></head><body>
       <div class="flag-bar"><div style="background:#FF9933"></div><div style="background:white"></div><div style="background:#138808"></div></div>
       <div class="header-info">
-        <div class="village">${reportData.villageName || 'ग्रामपंचायत'}</div>
-        <div class="meta">${reportData.taluka ? `ता. ${reportData.taluka}` : ''} ${reportData.district ? `जि. ${reportData.district}` : ''}</div>
+        <div class="village">${getVillageName(reportData)}</div>
+        <div class="meta">${getVillageTaluka(reportData) ? `ता. ${getVillageTaluka(reportData)}` : ''} ${getVillageDistrict(reportData) ? `जि. ${getVillageDistrict(reportData)}` : ''}</div>
         <h1>${reportData.title}</h1>
         <h2>${reportData.titleEn}</h2>
         <div class="meta">वित्तीय वर्ष: ${reportData.financialYear || financialYear}</div>
@@ -541,11 +606,11 @@ export default function NamunaReports({ initialNamuna, onNavigate }: NamunaRepor
               <p className="text-sm text-muted-foreground mt-0.5">
                 {reportData?.titleEn || currentNamuna?.nameEn || ''}
               </p>
-              {reportData?.villageName && (
+              {(reportData?.village || reportData?.villageName) && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  📍 {reportData.villageName}
-                  {reportData.taluka ? ` | ता. ${reportData.taluka}` : ''}
-                  {reportData.district ? ` | जि. ${reportData.district}` : ''}
+                  📍 {getVillageName(reportData)}
+                  {getVillageTaluka(reportData) ? ` | ता. ${getVillageTaluka(reportData)}` : ''}
+                  {getVillageDistrict(reportData) ? ` | जि. ${getVillageDistrict(reportData)}` : ''}
                 </p>
               )}
             </div>
@@ -646,7 +711,7 @@ export default function NamunaReports({ initialNamuna, onNavigate }: NamunaRepor
           <CardContent className="p-4 flex items-center gap-3">
             <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />
             <div>
-              <p className="text-sm font-medium text-red-800">अहवाल लोड करताना त्रुटी</p>
+              <p className="text-sm font-medium text-red-800">डेटा लोड करताना त्रुटी आली</p>
               <p className="text-xs text-red-600 mt-0.5">{error}</p>
             </div>
             <Button
@@ -696,9 +761,9 @@ export default function NamunaReports({ initialNamuna, onNavigate }: NamunaRepor
           {/* Village & Title Banner */}
           <div className="p-3 text-center border-b" style={{ background: catColor + '08' }}>
             <p className="text-sm font-bold" style={{ color: catColor }}>
-              {reportData.villageName || 'ग्रामपंचायत'}
-              {reportData.taluka ? ` | ता. ${reportData.taluka}` : ''}
-              {reportData.district ? ` | जि. ${reportData.district}` : ''}
+              {getVillageName(reportData)}
+              {getVillageTaluka(reportData) ? ` | ता. ${getVillageTaluka(reportData)}` : ''}
+              {getVillageDistrict(reportData) ? ` | जि. ${getVillageDistrict(reportData)}` : ''}
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">
               वित्तीय वर्ष: {reportData.financialYear || financialYear}
@@ -716,7 +781,7 @@ export default function NamunaReports({ initialNamuna, onNavigate }: NamunaRepor
                 )}
               </div>
               <h3 className="text-lg font-semibold text-muted-foreground mb-1">
-                {searchQuery ? 'शोध निकाल सापडले नाहीत' : 'या नमुन्यासाठी डेटा उपलब्ध नाही'}
+                {searchQuery ? 'शोध निकाल सापडले नाहीत' : 'माहिती उपलब्ध नाही'}
               </h3>
               <p className="text-sm text-muted-foreground max-w-md mx-auto">
                 {searchQuery

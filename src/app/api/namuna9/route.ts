@@ -20,14 +20,14 @@ export async function GET(request: NextRequest) {
           ward: true,
           road: true,
           owners: { include: { owner: true } },
-          namuna9s: { include: { payments: true } },
+          demands: { include: { payments: true } },
           taxRates: { include: { taxMaster: true } },
         },
       });
 
       const results = properties.map(p => {
         const totalPaid = p.payments.reduce((s, pm) => s + pm.amountPaid, 0);
-        const totalDemand = p.namuna9s.reduce((s, n9) => s + n9.totalDemand, 0);
+        const totalDemand = p.demands.reduce((s, n9) => s + n9.totalDemand, 0);
         return { ...p, totalPaid, totalDemand, outstandingBalance: totalDemand - totalPaid };
       });
       return NextResponse.json(results);
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     const records = await db.namuna9.findMany({
       where,
       include: {
-        property: { include: { ward: true, road: true, owners: { include: { owner: true } } } },
+        property: { include: { ward: true, owner: true, owners: { include: { owner: true } } } },
         payments: { orderBy: { paymentDate: 'desc' } },
       },
       orderBy: { createdAt: 'desc' },
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(records);
   } catch (error) {
     console.error('Error fetching Namuna 9:', error);
-    return NextResponse.json({ error: 'Failed' }, { status: 500 });
+    return NextResponse.json([]);
   }
 }
 
@@ -59,13 +59,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Property ID and Financial Year required' }, { status: 400 });
     }
 
+    const includeClause = {
+      property: { include: { ward: true, owner: true, owners: { include: { owner: true } } } },
+      payments: true,
+    };
+
     const namuna8 = await db.namuna8.findFirst({ where: { propertyId, financialYear } });
     const currentTax = namuna8 ? namuna8.totalTax : 0;
 
     if (!namuna8) {
       const property = await db.propertyMaster.findUnique({
         where: { id: propertyId },
-        include: { taxRates: { include: { taxMaster: true }, orderBy: { taxMaster: { order: 'asc' } } } },
+        include: { taxRates: { include: { taxMaster: true } } },
       });
       if (property) {
         let calcTax = 0;
@@ -75,24 +80,67 @@ export async function POST(request: NextRequest) {
         const totalDemand = calcTax + (previousBalance || 0) + (penalty || 0) + (interest || 0);
         const existing = await db.namuna9.findFirst({ where: { propertyId, financialYear } });
         if (existing) {
-          return NextResponse.json(await db.namuna9.update({ where: { id: existing.id }, data: { currentTax: Math.round(calcTax * 100) / 100, previousBalance: previousBalance || 0, penalty: penalty || 0, interest: interest || 0, totalDemand: Math.round(totalDemand * 100) / 100 }, include: { property: { include: { ward: true, owners: { include: { owner: true } } } }, payments: true } }));
+          const updated = await db.namuna9.update({
+            where: { id: existing.id },
+            data: {
+              currentTax: Math.round(calcTax * 100) / 100,
+              previousBalance: previousBalance || 0,
+              penalty: penalty || 0,
+              interest: interest || 0,
+              totalDemand: Math.round(totalDemand * 100) / 100,
+            },
+            include: includeClause,
+          });
+          return NextResponse.json(updated);
         }
-        return NextResponse.json(await db.namuna9.create({ data: { propertyId, financialYear, currentTax: Math.round(calcTax * 100) / 100, previousBalance: previousBalance || 0, penalty: penalty || 0, interest: interest || 0, totalDemand: Math.round(totalDemand * 100) / 100 }, include: { property: { include: { ward: true, owners: { include: { owner: true } } } }, payments: true } }), { status: 201 });
+        const created = await db.namuna9.create({
+          data: {
+            propertyId,
+            financialYear,
+            currentTax: Math.round(calcTax * 100) / 100,
+            previousBalance: previousBalance || 0,
+            penalty: penalty || 0,
+            interest: interest || 0,
+            totalDemand: Math.round(totalDemand * 100) / 100,
+          },
+          include: includeClause,
+        });
+        return NextResponse.json(created, { status: 201 });
       }
     }
 
     const totalDemand = currentTax + (previousBalance || 0) + (penalty || 0) + (interest || 0);
     const existing = await db.namuna9.findFirst({ where: { propertyId, financialYear } });
     if (existing) {
-      return NextResponse.json(await db.namuna9.update({ where: { id: existing.id }, data: { currentTax, previousBalance: previousBalance || 0, penalty: penalty || 0, interest: interest || 0, totalDemand: Math.round(totalDemand * 100) / 100 }, include: { property: { include: { ward: true, owners: { include: { owner: true } } } }, payments: true } }));
+      const updated = await db.namuna9.update({
+        where: { id: existing.id },
+        data: {
+          currentTax,
+          previousBalance: previousBalance || 0,
+          penalty: penalty || 0,
+          interest: interest || 0,
+          totalDemand: Math.round(totalDemand * 100) / 100,
+        },
+        include: includeClause,
+      });
+      return NextResponse.json(updated);
     }
 
-    return NextResponse.json(
-      await db.namuna9.create({ data: { propertyId, financialYear, currentTax, previousBalance: previousBalance || 0, penalty: penalty || 0, interest: interest || 0, totalDemand: Math.round(totalDemand * 100) / 100 }, include: { property: { include: { ward: true, owners: { include: { owner: true } } } }, payments: true } }),
-      { status: 201 }
-    );
+    const created = await db.namuna9.create({
+      data: {
+        propertyId,
+        financialYear,
+        currentTax,
+        previousBalance: previousBalance || 0,
+        penalty: penalty || 0,
+        interest: interest || 0,
+        totalDemand: Math.round(totalDemand * 100) / 100,
+      },
+      include: includeClause,
+    });
+    return NextResponse.json(created, { status: 201 });
   } catch (error) {
     console.error('Error generating Namuna 9:', error);
-    return NextResponse.json({ error: 'Failed' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to generate Namuna 9 record' }, { status: 500 });
   }
 }

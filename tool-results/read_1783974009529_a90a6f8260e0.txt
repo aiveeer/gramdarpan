@@ -1,0 +1,771 @@
+     1→'use client';
+     2→
+     3→import React, { useState, useEffect, useCallback } from 'react';
+     4→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+     5→import { Button } from '@/components/ui/button';
+     6→import { Input } from '@/components/ui/input';
+     7→import { Label } from '@/components/ui/label';
+     8→import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+     9→import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+    10→import { Badge } from '@/components/ui/badge';
+    11→import { Separator } from '@/components/ui/separator';
+    12→import { toast } from '@/hooks/use-toast';
+    13→import {
+    14→  Printer, RefreshCw, Search, Receipt, BookOpen,
+    15→  IndianRupee, ArrowRight, Plus, Calculator, FileText,
+    16→  CheckCircle2, AlertCircle, Home, User, Phone, MapPin,
+    17→  ChevronDown, X, Loader2
+    18→} from 'lucide-react';
+    19→
+    20→/* ------------------------------------------------------------------ */
+    21→/*  Types                                                              */
+    22→/* ------------------------------------------------------------------ */
+    23→
+    24→interface OwnerInfo {
+    25→  owner: {
+    26→    firstName: string; lastName: string;
+    27→    firstNameMr: string; lastNameMr: string;
+    28→    mobileNumber: string | null;
+    29→  };
+    30→  ownershipType: string;
+    31→}
+    32→
+    33→interface PropertyInfo {
+    34→  id: string;
+    35→  propertyNumber: string;
+    36→  area: number | null;
+    37→  constructionType: string | null;
+    38→  usageType: string | null;
+    39→  ward?: { wardNameMr: string; wardName: string; wardNumber: string };
+    40→  road?: { roadNameMr: string };
+    41→  owners: OwnerInfo[];
+    42→  taxRates: { taxMasterId: string; rate: number; taxMaster: { name: string; nameMarathi: string } }[];
+    43→  namuna9s: { totalDemand: number; payments: { amountPaid: number }[] }[];
+    44→  payments: { amountPaid: number }[];
+    45→}
+    46→
+    47→interface Payment {
+    48→  id: string; amountPaid: number; balance: number;
+    49→  receiptNumber: string; paymentDate: string; paymentMethod: string;
+    50→}
+    51→
+    52→interface Namuna9Record {
+    53→  id: string; propertyId: string; financialYear: string;
+    54→  currentTax: number; previousBalance: number; penalty: number;
+    55→  interest: number; totalDemand: number;
+    56→  payments: Payment[];
+    57→  property: PropertyInfo;
+    58→}
+    59→
+    60→interface VillageInfo {
+    61→  gramPanchayatNameMr?: string; gramPanchayatName?: string;
+    62→  taluka?: string; district?: string;
+    63→  sarpanchNameMr?: string; secretaryNameMr?: string;
+    64→}
+    65→
+    66→/* ------------------------------------------------------------------ */
+    67→/*  Helpers                                                            */
+    68→/* ------------------------------------------------------------------ */
+    69→
+    70→const fmt = (n: number) => n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    71→
+    72→const getOwnerName = (prop: PropertyInfo) => {
+    73→  const owner = prop.owners?.find(o => o.ownershipType === 'मालक');
+    74→  if (!owner && prop.owners?.[0]) {
+    75→    const o = prop.owners[0];
+    76→    return `${o.owner.firstNameMr || o.owner.firstName} ${o.owner.lastNameMr || o.owner.lastName}`;
+    77→  }
+    78→  return owner ? `${owner.owner.firstNameMr || owner.owner.firstName} ${owner.owner.lastNameMr || owner.owner.lastName}` : '-';
+    79→};
+    80→
+    81→const getMobile = (prop: PropertyInfo) => {
+    82→  const owner = prop.owners?.find(o => o.ownershipType === 'मालक') || prop.owners?.[0];
+    83→  return owner?.owner.mobileNumber || '-';
+    84→};
+    85→
+    86→const getBalance = (r: Namuna9Record) => {
+    87→  const totalPaid = r.payments.reduce((s, p) => s + p.amountPaid, 0);
+    88→  return r.totalDemand - totalPaid;
+    89→};
+    90→
+    91→/* ------------------------------------------------------------------ */
+    92→/*  Component                                                          */
+    93→/* ------------------------------------------------------------------ */
+    94→
+    95→export default function Namuna9Component() {
+    96→  const [records, setRecords] = useState<Namuna9Record[]>([]);
+    97→  const [properties, setProperties] = useState<PropertyInfo[]>([]);
+    98→  const [village, setVillage] = useState<VillageInfo | null>(null);
+    99→  const [loading, setLoading] = useState(true);
+   100→
+   101→  /* search */
+   102→  const [searchQuery, setSearchQuery] = useState('');
+   103→  const [searching, setSearching] = useState(false);
+   104→  const [searchResults, setSearchResults] = useState<PropertyInfo[]>([]);
+   105→  const [selectedProperty, setSelectedProperty] = useState<PropertyInfo | null>(null);
+   106→  const [selectedPropertyId, setSelectedPropertyId] = useState('');
+   107→
+   108→  /* generate */
+   109→  const [financialYear, setFinancialYear] = useState('2024-25');
+   110→  const [previousBalance, setPreviousBalance] = useState(0);
+   111→  const [penalty, setPenalty] = useState(0);
+   112→  const [interest, setInterest] = useState(0);
+   113→  const [generating, setGenerating] = useState(false);
+   114→
+   115→  /* computed current tax */
+   116→  const computedCurrentTax = selectedProperty
+   117→    ? selectedProperty.taxRates
+   118→        ?.filter(tr => tr.taxMaster?.isEnabled)
+   119→        .reduce((s, tr) => s + (selectedProperty.area || 0) * tr.rate, 0) || 0
+   120→    : 0;
+   121→
+   122→  const totalDemandPreview = computedCurrentTax + previousBalance + penalty + interest;
+   123→
+   124→  /* ---- fetch data ---- */
+   125→  const fetchData = useCallback(async () => {
+   126→    setLoading(true);
+   127→    try {
+   128→      const [n9Res, propRes, vilRes] = await Promise.all([
+   129→        fetch('/api/namuna9'),
+   130→        fetch('/api/master?table=property'),
+   131→        fetch('/api/master?table=village'),
+   132→      ]);
+   133→      const n9Data = await n9Res.json();
+   134→      setRecords(Array.isArray(n9Data) ? n9Data : []);
+   135→      const propData = await propRes.json();
+   136→      setProperties(Array.isArray(propData) ? propData : []);
+   137→      const vData = await vilRes.json();
+   138→      setVillage(Array.isArray(vData) ? vData[0] : vData);
+   139→    } catch {
+   140→      toast({ title: 'त्रुटी', description: 'डेटा लोड करताना त्रुटी', variant: 'destructive' });
+   141→    } finally {
+   142→      setLoading(false);
+   143→    }
+   144→  }, []);
+   145→
+   146→  useEffect(() => { fetchData(); }, [fetchData]);
+   147→
+   148→  /* ---- search handler ---- */
+   149→  const handleSearch = async () => {
+   150→    if (!searchQuery.trim()) return;
+   151→    setSearching(true);
+   152→    try {
+   153→      const res = await fetch(`/api/namuna9?search=${encodeURIComponent(searchQuery)}`);
+   154→      const data: PropertyInfo[] = await res.json();
+   155→      setSearchResults(data);
+   156→      if (data.length > 0) {
+   157→        handleSelectProperty(data[0]);
+   158→      } else {
+   159→        toast({ title: 'शोध निकाल', description: 'कोणतीही मालमत्ता सापडली नाही', variant: 'destructive' });
+   160→      }
+   161→    } catch {
+   162→      toast({ title: 'त्रुटी', description: 'शोधताना त्रुटी', variant: 'destructive' });
+   163→    } finally {
+   164→      setSearching(false);
+   165→    }
+   166→  };
+   167→
+   168→  const handleSelectProperty = (prop: PropertyInfo) => {
+   169→    setSelectedPropertyId(prop.id);
+   170→    setSelectedProperty(prop);
+   171→    /* auto-calculate previous balance from outstanding */
+   172→    const totalPaid = prop.payments?.reduce((s: number, pm: { amountPaid: number }) => s + pm.amountPaid, 0) || 0;
+   173→    const totalDemand = prop.namuna9s?.reduce((s: number, n9: { totalDemand: number }) => s + n9.totalDemand, 0) || 0;
+   174→    const outstanding = totalDemand - totalPaid;
+   175→    setPreviousBalance(outstanding > 0 ? Math.round(outstanding * 100) / 100 : 0);
+   176→    setPenalty(0);
+   177→    setInterest(0);
+   178→  };
+   179→
+   180→  /* ---- generate handler ---- */
+   181→  const handleGenerate = async () => {
+   182→    if (!selectedPropertyId) {
+   183→      toast({ title: 'त्रुटी', description: 'कृपया मालमत्ता निवडा', variant: 'destructive' });
+   184→      return;
+   185→    }
+   186→    setGenerating(true);
+   187→    try {
+   188→      const res = await fetch('/api/namuna9', {
+   189→        method: 'POST',
+   190→        headers: { 'Content-Type': 'application/json' },
+   191→        body: JSON.stringify({ propertyId: selectedPropertyId, financialYear, previousBalance, penalty, interest }),
+   192→      });
+   193→      if (res.ok) {
+   194→        toast({ title: '✅ यशस्वी', description: 'नमुना ९ मागणी नोंदवही तयार झाली' });
+   195→        fetchData();
+   196→        setSearchQuery('');
+   197→        setSearchResults([]);
+   198→        setSelectedProperty(null);
+   199→        setSelectedPropertyId('');
+   200→        setPreviousBalance(0);
+   201→        setPenalty(0);
+   202→        setInterest(0);
+   203→      } else {
+   204→        const err = await res.json();
+   205→        toast({ title: 'त्रुटी', description: err.error || 'नमुना ९ तयार करता आला नाही', variant: 'destructive' });
+   206→      }
+   207→    } catch {
+   208→      toast({ title: 'त्रुटी', description: 'सर्व्हर त्रुटी', variant: 'destructive' });
+   209→    } finally {
+   210→      setGenerating(false);
+   211→    }
+   212→  };
+   213→
+   214→  /* ---- print handler ---- */
+   215→  const handlePrint = (record: Namuna9Record) => {
+   216→    const prop = record.property;
+   217→    const totalPaid = record.payments.reduce((s, p) => s + p.amountPaid, 0);
+   218→    const balance = record.totalDemand - totalPaid;
+   219→    const ownerName = getOwnerName(prop);
+   220→    const mobileNo = getMobile(prop);
+   221→    const villageName = village?.gramPanchayatNameMr || village?.gramPanchayatName || '';
+   222→    const taluka = village?.taluka || '';
+   223→    const district = village?.district || '';
+   224→    const sarpanch = village?.sarpanchNameMr || '';
+   225→    const secretary = village?.secretaryNameMr || '';
+   226→
+   227→    const printContent = `<!DOCTYPE html><html lang="mr"><head><meta charset="UTF-8"><title>नमुना ९ - मागणी नोंदवही</title>
+   228→<style>
+   229→  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap');
+   230→  * { margin: 0; padding: 0; box-sizing: border-box; }
+   231→  body { font-family: 'Noto Sans Devanagari', 'Mangal', Arial, sans-serif; margin: 15px; color: #1a1a1a; font-size: 12px; }
+   232→  .flag-bar { height: 6px; background: linear-gradient(90deg, #FF9933 33%, #FFFFFF 33%, #FFFFFF 66%, #138808 66%); border-radius: 3px; margin-bottom: 12px; }
+   233→  .header { text-align: center; margin-bottom: 10px; }
+   234→  .header h1 { font-size: 16px; font-weight: 700; color: #b45309; }
+   235→  .header h2 { font-size: 13px; font-weight: 600; color: #92400e; margin-top: 2px; }
+   236→  .header .sub { font-size: 11px; color: #78350f; margin-top: 2px; }
+   237→  .village-info { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; margin: 10px 0; font-size: 12px; padding: 8px; border: 1px solid #d97706; border-radius: 6px; background: #fffbeb; }
+   238→  .village-info .item { display: flex; gap: 6px; }
+   239→  .village-info .label { font-weight: 600; min-width: 120px; color: #92400e; }
+   240→  table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+   241→  th, td { border: 1px solid #d97706; padding: 6px 10px; font-size: 12px; }
+   242→  th { background: #fef3c7; font-weight: 600; color: #92400e; text-align: left; }
+   243→  .amount { text-align: right; font-variant-numeric: tabular-nums; }
+   244→  .total-row td { background: #fffbeb; font-weight: 700; font-size: 13px; color: #92400e; }
+   245→  .demand-breakdown th { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+   246→  .outstanding-red { color: #dc2626; font-weight: 700; }
+   247→  .paid-green { color: #16a34a; font-weight: 700; }
+   248→  .formula-bar { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 12px 0; padding: 8px; background: #fef3c7; border-radius: 8px; border: 1px dashed #d97706; flex-wrap: wrap; }
+   249→  .formula-item { background: white; padding: 4px 10px; border-radius: 6px; border: 1px solid #fbbf24; font-size: 12px; text-align: center; }
+   250→  .formula-item .val { font-weight: 700; color: #b45309; display: block; margin-top: 2px; }
+   251→  .formula-plus { font-weight: 700; color: #d97706; font-size: 16px; }
+   252→  .formula-eq { font-weight: 700; color: #b45309; font-size: 16px; }
+   253→  .formula-total { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 6px 14px; border-radius: 6px; font-weight: 700; font-size: 14px; text-align: center; }
+   254→  .footer { margin-top: 30px; display: flex; justify-content: space-between; font-size: 11px; align-items: flex-end; }
+   255→  .footer .sign { text-align: center; min-width: 150px; }
+   256→  .footer .sign .line { border-top: 1px solid #333; margin-top: 30px; padding-top: 4px; }
+   257→  .watermark { position: fixed; bottom: 50%; right: 10%; font-size: 60px; color: rgba(217,119,6,0.04); transform: rotate(-30deg); font-weight: 700; pointer-events: none; z-index: -1; }
+   258→  @media print { body { margin: 10px; } .watermark { display: none; } }
+   259→</style></head><body>
+   260→<div class="watermark">नमुना ९</div>
+   261→<div class="flag-bar"></div>
+   262→<div class="header">
+   263→  <h1>नमुना ९ - मागणी नोंदवही</h1>
+   264→  <h2>Demand Register</h2>
+   265→  <div class="sub">वित्तीय वर्ष: ${record.financialYear} | दिनांक: ${new Date().toLocaleDateString('mr-IN')}</div>
+   266→</div>
+   267→<div class="village-info">
+   268→  <div class="item"><span class="label">ग्रामपंचायत:</span> ${villageName}</div>
+   269→  <div class="item"><span class="label">मालमत्ता क्र.:</span> ${prop.propertyNumber}</div>
+   270→  <div class="item"><span class="label">तालुका:</span> ${taluka}</div>
+   271→  <div class="item"><span class="label">मालक:</span> ${ownerName}</div>
+   272→  <div class="item"><span class="label">जिल्हा:</span> ${district}</div>
+   273→  <div class="item"><span class="label">मोबाईल:</span> ${mobileNo}</div>
+   274→  <div class="item"><span class="label">वार्ड:</span> ${prop.ward?.wardNameMr || '-'}</div>
+   275→  <div class="item"><span class="label">क्षेत्रफळ:</span> ${prop.area || '-'} चौ.फूट</div>
+   276→</div>
+   277→
+   278→<div class="formula-bar">
+   279→  <div class="formula-item">चालू वर्ष कर<span class="val">₹${fmt(record.currentTax)}</span></div>
+   280→  <span class="formula-plus">+</span>
+   281→  <div class="formula-item">मागील थकबाकी<span class="val">₹${fmt(record.previousBalance)}</span></div>
+   282→  <span class="formula-plus">+</span>
+   283→  <div class="formula-item">दंड<span class="val">₹${fmt(record.penalty)}</span></div>
+   284→  <span class="formula-plus">+</span>
+   285→  <div class="formula-item">व्याज<span class="val">₹${fmt(record.interest)}</span></div>
+   286→  <span class="formula-eq">=</span>
+   287→  <div class="formula-total">एकूण मागणी: ₹${fmt(record.totalDemand)}</div>
+   288→</div>
+   289→
+   290→<table class="demand-breakdown">
+   291→  <thead><tr><th>वर्णन</th><th style="text-align:right">रक्कम (₹)</th></tr></thead>
+   292→  <tbody>
+   293→    <tr><td>चालू वर्ष कर</td><td class="amount">₹${fmt(record.currentTax)}</td></tr>
+   294→    <tr><td>मागील थकबाकी</td><td class="amount">₹${fmt(record.previousBalance)}</td></tr>
+   295→    <tr><td>दंड</td><td class="amount">₹${fmt(record.penalty)}</td></tr>
+   296→    <tr><td>व्याज</td><td class="amount">₹${fmt(record.interest)}</td></tr>
+   297→    <tr class="total-row"><td>एकूण मागणी</td><td class="amount">₹${fmt(record.totalDemand)}</td></tr>
+   298→    <tr><td>भरलेली रक्कम</td><td class="amount paid-green">₹${fmt(totalPaid)}</td></tr>
+   299→    <tr class="total-row"><td>शिल्लक बक्की</td><td class="amount ${balance > 0 ? 'outstanding-red' : 'paid-green'}">₹${fmt(balance)}</td></tr>
+   300→  </tbody>
+   301→</table>
+   302→
+   303→${record.payments.length > 0 ? `
+   304→<h3 style="font-size:13px;margin:14px 0 6px;color:#92400e;">भरलेली पावत्या</h3>
+   305→<table>
+   306→  <thead><tr><th>पावती क्र.</th><th>तारीख</th><th>रक्कम (₹)</th><th>पद्धत</th><th>शिल्लक (₹)</th></tr></thead>
+   307→  <tbody>
+   308→    ${record.payments.map(p => `<tr><td>${p.receiptNumber}</td><td>${new Date(p.paymentDate).toLocaleDateString('mr-IN')}</td><td class="amount">₹${fmt(p.amountPaid)}</td><td>${p.paymentMethod}</td><td class="amount">₹${fmt(p.balance)}</td></tr>`).join('')}
+   309→  </tbody>
+   310→</table>` : ''}
+   311→
+   312→<div class="footer">
+   313→  <div class="sign"><div class="line">मालकाची सही</div></div>
+   314→  <div class="sign"><div class="line">ग्रामसेवक सही</div></div>
+   315→  <div class="sign"><div class="line">सरपंच सही व मुद्रा</div>${sarpanch ? `<div style="font-size:10px;margin-top:2px;color:#666;">(${sarpanch})</div>` : ''}</div>
+   316→  <div class="sign"><div class="line">सचिव सही व मुद्रा</div>${secretary ? `<div style="font-size:10px;margin-top:2px;color:#666;">(${secretary})</div>` : ''}</div>
+   317→</div>
+   318→</body></html>`;
+   319→
+   320→    const w = window.open('', '_blank');
+   321→    if (w) {
+   322→      w.document.write(printContent);
+   323→      w.document.close();
+   324→      w.focus();
+   325→      setTimeout(() => w.print(), 500);
+   326→    }
+   327→  };
+   328→
+   329→  /* ---- summary stats ---- */
+   330→  const totalDemandAll = records.reduce((s, r) => s + r.totalDemand, 0);
+   331→  const totalPaidAll = records.reduce((s, r) => s + r.payments.reduce((ps, p) => ps + p.amountPaid, 0), 0);
+   332→  const totalOutstanding = totalDemandAll - totalPaidAll;
+   333→
+   334→  /* ================================================================ */
+   335→  /*  RENDER                                                          */
+   336→  /* ================================================================ */
+   337→
+   338→  return (
+   339→    <div className="space-y-6">
+   340→      {/* ===== HEADER CARD ===== */}
+   341→      <Card className="border-0 shadow-lg overflow-hidden">
+   342→        <div className="relative" style={{ background: 'linear-gradient(135deg, #d97706 0%, #b45309 40%, #92400e 100%)' }}>
+   343→          {/* decorative circles */}
+   344→          <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #fbbf24, transparent)', transform: 'translate(30%, -30%)' }} />
+   345→          <div className="absolute bottom-0 left-0 w-32 h-32 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #f59e0b, transparent)', transform: 'translate(-30%, 30%)' }} />
+   346→          <CardContent className="relative p-6">
+   347→            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+   348→              <div className="h-16 w-16 rounded-2xl flex items-center justify-center shadow-lg" style={{ background: 'linear-gradient(135deg, #fbbf24, #f59e0b)' }}>
+   349→                <BookOpen className="h-8 w-8 text-white" />
+   350→              </div>
+   351→              <div className="flex-1">
+   352→                <h1 className="text-2xl font-bold text-white">नमुना ९ — मागणी नोंदवही</h1>
+   353→                <p className="text-amber-100/80 mt-1">Demand Register | ग्रामपंचायत मालमत्ता कर मागणी नोंदवही</p>
+   354→                <div className="flex flex-wrap items-center gap-3 mt-3">
+   355→                  <Badge className="bg-amber-400/30 text-amber-100 border border-amber-300/40 text-xs">
+   356→                    <Calculator className="h-3 w-3 mr-1" />
+   357→                    चालू कर + थकबाकी + दंड + व्याज = मागणी
+   358→                  </Badge>
+   359→                  <Badge className="bg-white/15 text-white border border-white/20 text-xs">
+   360→                    <FileText className="h-3 w-3 mr-1" />
+   361→                    वित्तीय वर्ष {financialYear}
+   362→                  </Badge>
+   363→                </div>
+   364→              </div>
+   365→            </div>
+   366→          </CardContent>
+   367→        </div>
+   368→      </Card>
+   369→
+   370→      {/* ===== SUMMARY STATS ===== */}
+   371→      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+   372→        <Card className="border-0 shadow-sm overflow-hidden">
+   373→          <div className="h-1 bg-amber-400" />
+   374→          <CardContent className="p-4 flex items-center gap-3" style={{ background: 'linear-gradient(135deg, #fffbeb, #fef3c7)' }}>
+   375→            <div className="h-11 w-11 rounded-xl bg-amber-500 flex items-center justify-center shadow-sm">
+   376→              <IndianRupee className="h-5 w-5 text-white" />
+   377→            </div>
+   378→            <div>
+   379→              <div className="text-xs text-amber-700">एकूण मागणी</div>
+   380→              <div className="text-xl font-bold text-amber-800">₹{fmt(totalDemandAll)}</div>
+   381→            </div>
+   382→          </CardContent>
+   383→        </Card>
+   384→        <Card className="border-0 shadow-sm overflow-hidden">
+   385→          <div className="h-1 bg-green-400" />
+   386→          <CardContent className="p-4 flex items-center gap-3" style={{ background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)' }}>
+   387→            <div className="h-11 w-11 rounded-xl bg-green-500 flex items-center justify-center shadow-sm">
+   388→              <CheckCircle2 className="h-5 w-5 text-white" />
+   389→            </div>
+   390→            <div>
+   391→              <div className="text-xs text-green-700">एकूण वसूल</div>
+   392→              <div className="text-xl font-bold text-green-800">₹{fmt(totalPaidAll)}</div>
+   393→            </div>
+   394→          </CardContent>
+   395→        </Card>
+   396→        <Card className="border-0 shadow-sm overflow-hidden">
+   397→          <div className="h-1 bg-red-400" />
+   398→          <CardContent className="p-4 flex items-center gap-3" style={{ background: 'linear-gradient(135deg, #fef2f2, #fee2e2)' }}>
+   399→            <div className="h-11 w-11 rounded-xl bg-red-500 flex items-center justify-center shadow-sm">
+   400→              <AlertCircle className="h-5 w-5 text-white" />
+   401→            </div>
+   402→            <div>
+   403→              <div className="text-xs text-red-700">एकूण बक्की</div>
+   404→              <div className="text-xl font-bold text-red-800">₹{fmt(totalOutstanding)}</div>
+   405→            </div>
+   406→          </CardContent>
+   407→        </Card>
+   408→      </div>
+   409→
+   410→      {/* ===== SEARCH SECTION ===== */}
+   411→      <Card className="border-0 shadow-md overflow-hidden">
+   412→        <div className="h-1" style={{ background: 'linear-gradient(90deg, #f59e0b, #d97706, #b45309)' }} />
+   413→        <CardHeader className="pb-3">
+   414→          <CardTitle className="text-lg flex items-center gap-2">
+   415→            <div className="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center">
+   416→              <Search className="h-4 w-4 text-amber-600" />
+   417→            </div>
+   418→            नागरिक शोधा
+   419→          </CardTitle>
+   420→          <p className="text-sm text-muted-foreground mt-1">
+   421→            मालमत्ता क्रमांक, मोबाईल नंबर किंवा मालकाचे नाव टाकून शोधा
+   422→          </p>
+   423→        </CardHeader>
+   424→        <CardContent className="space-y-4">
+   425→          {/* Search Bar */}
+   426→          <div className="flex gap-2">
+   427→            <div className="relative flex-1">
+   428→              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-500" />
+   429→              <Input
+   430→                placeholder="मालमत्ता क्रमांक / मोबाईल नंबर / मालकाचे नाव..."
+   431→                value={searchQuery}
+   432→                onChange={e => setSearchQuery(e.target.value)}
+   433→                onKeyDown={e => e.key === 'Enter' && handleSearch()}
+   434→                className="pl-10 border-amber-200 focus:border-amber-500 focus:ring-amber-500/20"
+   435→                style={{ background: '#fffbeb' }}
+   436→              />
+   437→              {searchQuery && (
+   438→                <button onClick={() => { setSearchQuery(''); setSearchResults([]); setSelectedProperty(null); setSelectedPropertyId(''); }} className="absolute right-3 top-1/2 -translate-y-1/2">
+   439→                  <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+   440→                </button>
+   441→              )}
+   442→            </div>
+   443→            <Button onClick={handleSearch} disabled={searching} className="bg-amber-600 hover:bg-amber-700 text-white shadow-sm">
+   444→              {searching ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Search className="h-4 w-4 mr-1" />}
+   445→              शोधा
+   446→            </Button>
+   447→          </div>
+   448→
+   449→          {/* Search result tags */}
+   450→          <div className="flex flex-wrap gap-2 text-xs">
+   451→            <Badge variant="outline" className="border-amber-300 text-amber-700 bg-amber-50">
+   452→              <Home className="h-3 w-3 mr-1" /> मालमत्ता क्रमांक
+   453→            </Badge>
+   454→            <Badge variant="outline" className="border-amber-300 text-amber-700 bg-amber-50">
+   455→              <Phone className="h-3 w-3 mr-1" /> मोबाईल नंबर
+   456→            </Badge>
+   457→            <Badge variant="outline" className="border-amber-300 text-amber-700 bg-amber-50">
+   458→              <User className="h-3 w-3 mr-1" /> मालकाचे नाव
+   459→            </Badge>
+   460→          </div>
+   461→
+   462→          {/* Search Results */}
+   463→          {searchResults.length > 0 && (
+   464→            <div className="space-y-3">
+   465→              <Label className="text-sm font-semibold text-amber-800">
+   466→                <ChevronDown className="h-4 w-4 inline mr-1" />
+   467→                शोध निकाल ({searchResults.length} सापडले) — मालमत्ता निवडा:
+   468→              </Label>
+   469→              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-1">
+   470→                {searchResults.map(prop => {
+   471→                  const isSelected = selectedPropertyId === prop.id;
+   472→                  const totalPaid = prop.payments?.reduce((s: number, pm: { amountPaid: number }) => s + pm.amountPaid, 0) || 0;
+   473→                  const totalDem = prop.namuna9s?.reduce((s: number, n9: { totalDemand: number }) => s + n9.totalDemand, 0) || 0;
+   474→                  const outstanding = totalDem - totalPaid;
+   475→                  return (
+   476→                    <button
+   477→                      key={prop.id}
+   478→                      onClick={() => handleSelectProperty(prop)}
+   479→                      className={`text-left p-4 rounded-xl border-2 transition-all ${
+   480→                        isSelected
+   481→                          ? 'border-amber-500 bg-amber-50 shadow-md ring-2 ring-amber-200'
+   482→                          : 'border-gray-200 bg-white hover:border-amber-300 hover:bg-amber-50/50'
+   483→                      }`}
+   484→                    >
+   485→                      <div className="flex items-start justify-between gap-2">
+   486→                        <div>
+   487→                          <div className="flex items-center gap-2">
+   488→                            <Home className="h-4 w-4 text-amber-600" />
+   489→                            <span className="font-bold text-amber-800">{prop.propertyNumber}</span>
+   490→                          </div>
+   491→                          <div className="text-sm text-gray-700 mt-1">{getOwnerName(prop)}</div>
+   492→                          <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+   493→                            {prop.ward && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{prop.ward.wardNameMr}</span>}
+   494→                            {getMobile(prop) !== '-' && <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{getMobile(prop)}</span>}
+   495→                          </div>
+   496→                        </div>
+   497→                        {outstanding > 0 ? (
+   498→                          <Badge className="bg-red-100 text-red-700 border-red-200 text-xs">₹{fmt(outstanding)} बक्की</Badge>
+   499→                        ) : (
+   500→                          <Badge className="bg-green-100 text-green-700 border-green-200 text-xs">भरलेले</Badge>
+   501→                        )}
+   502→                      </div>
+   503→                    </button>
+   504→                  );
+   505→                })}
+   506→              </div>
+   507→            </div>
+   508→          )}
+   509→        </CardContent>
+   510→      </Card>
+   511→
+   512→      {/* ===== GENERATE DEMAND ===== */}
+   513→      {selectedProperty && (
+   514→        <Card className="border-0 shadow-md overflow-hidden">
+   515→          <div className="h-1" style={{ background: 'linear-gradient(90deg, #fbbf24, #f59e0b, #d97706)' }} />
+   516→          <CardHeader className="pb-3">
+   517→            <CardTitle className="text-lg flex items-center gap-2">
+   518→              <div className="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center">
+   519→                <Receipt className="h-4 w-4 text-amber-600" />
+   520→              </div>
+   521→              मागणी नोंदवही तयार करा
+   522→            </CardTitle>
+   523→          </CardHeader>
+   524→          <CardContent className="space-y-6">
+   525→            {/* Selected property info */}
+   526→            <div className="p-4 rounded-xl border-2 border-amber-200" style={{ background: 'linear-gradient(135deg, #fffbeb, #fef3c7)' }}>
+   527→              <div className="flex items-center gap-2 mb-3">
+   528→                <Home className="h-5 w-5 text-amber-600" />
+   529→                <span className="font-bold text-amber-800 text-lg">{selectedProperty.propertyNumber}</span>
+   530→                <Badge className="bg-amber-500 text-white border-0 text-xs">निवडलेली मालमत्ता</Badge>
+   531→              </div>
+   532→              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+   533→                <div>
+   534→                  <span className="text-xs text-amber-600">मालक</span>
+   535→                  <div className="font-medium">{getOwnerName(selectedProperty)}</div>
+   536→                </div>
+   537→                <div>
+   538→                  <span className="text-xs text-amber-600">वार्ड</span>
+   539→                  <div className="font-medium">{selectedProperty.ward?.wardNameMr || '-'}</div>
+   540→                </div>
+   541→                <div>
+   542→                  <span className="text-xs text-amber-600">क्षेत्रफळ</span>
+   543→                  <div className="font-medium">{selectedProperty.area || '-'} चौ.फूट</div>
+   544→                </div>
+   545→                <div>
+   546→                  <span className="text-xs text-amber-600">वापर</span>
+   547→                  <div className="font-medium">{selectedProperty.usageType || '-'}</div>
+   548→                </div>
+   549→              </div>
+   550→            </div>
+   551→
+   552→            {/* Input fields */}
+   553→            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+   554→              <div>
+   555→                <Label className="text-sm font-semibold">वित्तीय वर्ष</Label>
+   556→                <Select value={financialYear} onValueChange={setFinancialYear}>
+   557→                  <SelectTrigger className="mt-1 border-amber-200" />
+   558→                  <SelectContent>
+   559→                    {['2022-23', '2023-24', '2024-25', '2025-26'].map(y => (
+   560→                      <SelectItem key={y} value={y}>{y}</SelectItem>
+   561→                    ))}
+   562→                  </SelectContent>
+   563→                </Select>
+   564→              </div>
+   565→              <div>
+   566→                <Label className="text-sm font-semibold flex items-center gap-1">
+   567→                  मागील थकबाकी (₹)
+   568→                  <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[10px] px-1 py-0">ऑटो</Badge>
+   569→                </Label>
+   570→                <Input
+   571→                  type="number"
+   572→                  value={previousBalance || ''}
+   573→                  onChange={e => setPreviousBalance(parseFloat(e.target.value) || 0)}
+   574→                  min={0}
+   575→                  className="mt-1 border-amber-200 focus:border-amber-500"
+   576→                  placeholder="0.00"
+   577→                />
+   578→              </div>
+   579→              <div>
+   580→                <Label className="text-sm font-semibold">दंड (₹)</Label>
+   581→                <Input
+   582→                  type="number"
+   583→                  value={penalty || ''}
+   584→                  onChange={e => setPenalty(parseFloat(e.target.value) || 0)}
+   585→                  min={0}
+   586→                  className="mt-1 border-amber-200 focus:border-amber-500"
+   587→                  placeholder="0.00"
+   588→                />
+   589→              </div>
+   590→              <div>
+   591→                <Label className="text-sm font-semibold">व्याज (₹)</Label>
+   592→                <Input
+   593→                  type="number"
+   594→                  value={interest || ''}
+   595→                  onChange={e => setInterest(parseFloat(e.target.value) || 0)}
+   596→                  min={0}
+   597→                  className="mt-1 border-amber-200 focus:border-amber-500"
+   598→                  placeholder="0.00"
+   599→                />
+   600→              </div>
+   601→            </div>
+   602→
+   603→            {/* ===== DEMAND FORMULA DISPLAY ===== */}
+   604→            <div className="p-5 rounded-xl border-2 border-dashed border-amber-300" style={{ background: 'linear-gradient(135deg, #fffbeb, #fef9e7)' }}>
+   605→              <div className="text-center text-sm font-semibold text-amber-800 mb-4">
+   606→                <Calculator className="h-4 w-4 inline mr-1" />
+   607→                मागणी सूत्र (Demand Formula)
+   608→              </div>
+   609→              <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+   610→                {/* चालू वर्ष कर */}
+   611→                <div className="flex flex-col items-center px-3 py-2 sm:px-4 sm:py-3 rounded-xl bg-white border-2 border-teal-200 shadow-sm min-w-[90px]">
+   612→                  <span className="text-[10px] sm:text-xs text-teal-600 font-medium">चालू वर्ष कर</span>
+   613→                  <span className="text-sm sm:text-lg font-bold text-teal-700">₹{fmt(computedCurrentTax)}</span>
+   614→                </div>
+   615→                <Plus className="h-5 w-5 text-amber-500 font-bold" />
+   616→                {/* मागील थकबाकी */}
+   617→                <div className="flex flex-col items-center px-3 py-2 sm:px-4 sm:py-3 rounded-xl bg-white border-2 border-orange-200 shadow-sm min-w-[90px]">
+   618→                  <span className="text-[10px] sm:text-xs text-orange-600 font-medium">मागील थकबाकी</span>
+   619→                  <span className="text-sm sm:text-lg font-bold text-orange-700">₹{fmt(previousBalance)}</span>
+   620→                </div>
+   621→                <Plus className="h-5 w-5 text-amber-500 font-bold" />
+   622→                {/* दंड */}
+   623→                <div className="flex flex-col items-center px-3 py-2 sm:px-4 sm:py-3 rounded-xl bg-white border-2 border-red-200 shadow-sm min-w-[90px]">
+   624→                  <span className="text-[10px] sm:text-xs text-red-600 font-medium">दंड</span>
+   625→                  <span className="text-sm sm:text-lg font-bold text-red-700">₹{fmt(penalty)}</span>
+   626→                </div>
+   627→                <Plus className="h-5 w-5 text-amber-500 font-bold" />
+   628→                {/* व्याज */}
+   629→                <div className="flex flex-col items-center px-3 py-2 sm:px-4 sm:py-3 rounded-xl bg-white border-2 border-purple-200 shadow-sm min-w-[90px]">
+   630→                  <span className="text-[10px] sm:text-xs text-purple-600 font-medium">व्याज</span>
+   631→                  <span className="text-sm sm:text-lg font-bold text-purple-700">₹{fmt(interest)}</span>
+   632→                </div>
+   633→                <ArrowRight className="h-5 w-5 text-amber-600 font-bold" />
+   634→                {/* एकूण मागणी */}
+   635→                <div className="flex flex-col items-center px-4 py-3 rounded-xl shadow-md min-w-[120px]" style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>
+   636→                  <span className="text-[10px] sm:text-xs text-amber-100 font-medium">एकूण मागणी</span>
+   637→                  <span className="text-lg sm:text-2xl font-bold text-white">₹{fmt(totalDemandPreview)}</span>
+   638→                </div>
+   639→              </div>
+   640→            </div>
+   641→
+   642→            {/* Generate button */}
+   643→            <div className="flex flex-col sm:flex-row items-center gap-3">
+   644→              <Button
+   645→                onClick={handleGenerate}
+   646→                disabled={generating || !selectedPropertyId}
+   647→                className="bg-amber-600 hover:bg-amber-700 text-white shadow-md px-8 py-3 text-base font-semibold"
+   648→              >
+   649→                {generating ? (
+   650→                  <><Loader2 className="h-5 w-5 animate-spin mr-2" />तयार होत आहे...</>
+   651→                ) : (
+   652→                  <><Receipt className="h-5 w-5 mr-2" />मागणी नोंदवही तयार करा</>
+   653→                )}
+   654→              </Button>
+   655→              <Button
+   656→                variant="outline"
+   657→                onClick={() => { setSelectedProperty(null); setSelectedPropertyId(''); setSearchResults([]); setSearchQuery(''); setPreviousBalance(0); setPenalty(0); setInterest(0); }}
+   658→                className="border-amber-300 text-amber-700 hover:bg-amber-50"
+   659→              >
+   660→                <X className="h-4 w-4 mr-1" />रद्द करा
+   661→              </Button>
+   662→            </div>
+   663→          </CardContent>
+   664→        </Card>
+   665→      )}
+   666→
+   667→      {/* ===== RECORDS TABLE ===== */}
+   668→      <Card className="border-0 shadow-md overflow-hidden">
+   669→        <div className="h-1" style={{ background: 'linear-gradient(90deg, #d97706, #b45309, #92400e)' }} />
+   670→        <CardHeader className="pb-3">
+   671→          <div className="flex items-center justify-between flex-wrap gap-4">
+   672→            <CardTitle className="text-lg flex items-center gap-2">
+   673→              <div className="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center">
+   674→                <BookOpen className="h-4 w-4 text-amber-600" />
+   675→              </div>
+   676→              नमुना ९ रेकॉर्ड्स
+   677→              <Badge className="bg-amber-100 text-amber-700 border-amber-200">{records.length}</Badge>
+   678→            </CardTitle>
+   679→            <Button variant="outline" size="sm" onClick={fetchData} className="border-amber-300 text-amber-700 hover:bg-amber-50">
+   680→              <RefreshCw className="h-4 w-4 mr-1" />रिफ्रेश
+   681→            </Button>
+   682→          </div>
+   683→        </CardHeader>
+   684→        <CardContent>
+   685→          {loading ? (
+   686→            <div className="text-center py-12">
+   687→              <Loader2 className="h-8 w-8 animate-spin mx-auto text-amber-500" />
+   688→              <p className="text-muted-foreground mt-3">लोड होत आहे...</p>
+   689→            </div>
+   690→          ) : records.length === 0 ? (
+   691→            <div className="text-center py-12">
+   692→              <BookOpen className="h-12 w-12 mx-auto text-amber-300 mb-3" />
+   693→              <p className="text-lg text-muted-foreground">नमुना ९ रेकॉर्ड नाहीत</p>
+   694→              <p className="text-sm text-muted-foreground mt-1">वर नागरिक शोधून मागणी नोंदवही तयार करा</p>
+   695→            </div>
+   696→          ) : (
+   697→            <div className="overflow-x-auto max-h-96 overflow-y-auto border-2 border-amber-100 rounded-xl">
+   698→              <Table>
+   699→                <TableHeader>
+   700→                  <TableRow className="bg-amber-50 hover:bg-amber-50">
+   701→                    <TableHead className="text-amber-800 font-semibold">क्र.</TableHead>
+   702→                    <TableHead className="text-amber-800 font-semibold">मालमत्ता क्र.</TableHead>
+   703→                    <TableHead className="text-amber-800 font-semibold">मालक</TableHead>
+   704→                    <TableHead className="text-amber-800 font-semibold">वित्तीय वर्ष</TableHead>
+   705→                    <TableHead className="text-right text-amber-800 font-semibold">चालू कर</TableHead>
+   706→                    <TableHead className="text-right text-amber-800 font-semibold">थकबाकी</TableHead>
+   707→                    <TableHead className="text-right text-amber-800 font-semibold">दंड</TableHead>
+   708→                    <TableHead className="text-right text-amber-800 font-semibold">व्याज</TableHead>
+   709→                    <TableHead className="text-right text-amber-800 font-semibold">एकूण मागणी</TableHead>
+   710→                    <TableHead className="text-right text-amber-800 font-semibold">शिल्लक</TableHead>
+   711→                    <TableHead className="text-center text-amber-800 font-semibold">क्रिया</TableHead>
+   712→                  </TableRow>
+   713→                </TableHeader>
+   714→                <TableBody>
+   715→                  {records.map((r, i) => {
+   716→                    const bal = getBalance(r);
+   717→                    const isPaidOff = bal <= 0;
+   718→                    return (
+   719→                      <TableRow key={r.id} className={i % 2 === 0 ? 'bg-white' : 'bg-amber-50/30'}>
+   720→                        <TableCell className="font-medium">{i + 1}</TableCell>
+   721→                        <TableCell>
+   722→                          <div className="flex items-center gap-1.5">
+   723→                            <Home className="h-3.5 w-3.5 text-amber-500" />
+   724→                            <span className="font-semibold text-amber-800">{r.property.propertyNumber}</span>
+   725→                          </div>
+   726→                        </TableCell>
+   727→                        <TableCell className="font-medium">{getOwnerName(r.property)}</TableCell>
+   728→                        <TableCell>
+   729→                          <Badge variant="outline" className="text-xs border-amber-300 text-amber-700">
+   730→                            {r.financialYear}
+   731→                          </Badge>
+   732→                        </TableCell>
+   733→                        <TableCell className="text-right font-mono text-sm">₹{fmt(r.currentTax)}</TableCell>
+   734→                        <TableCell className="text-right font-mono text-sm">₹{fmt(r.previousBalance)}</TableCell>
+   735→                        <TableCell className="text-right font-mono text-sm text-red-600">₹{fmt(r.penalty)}</TableCell>
+   736→                        <TableCell className="text-right font-mono text-sm text-purple-600">₹{fmt(r.interest)}</TableCell>
+   737→                        <TableCell className="text-right font-bold text-amber-700 font-mono">₹{fmt(r.totalDemand)}</TableCell>
+   738→                        <TableCell className="text-right">
+   739→                          {isPaidOff ? (
+   740→                            <Badge className="bg-green-100 text-green-700 border-green-300 border text-xs font-semibold">
+   741→                              <CheckCircle2 className="h-3 w-3 mr-1" />₹0.00
+   742→                            </Badge>
+   743→                          ) : (
+   744→                            <Badge className="bg-red-100 text-red-700 border-red-300 border text-xs font-semibold">
+   745→                              <AlertCircle className="h-3 w-3 mr-1" />₹{fmt(bal)}
+   746→                            </Badge>
+   747→                          )}
+   748→                        </TableCell>
+   749→                        <TableCell className="text-center">
+   750→                          <Button
+   751→                            variant="ghost"
+   752→                            size="sm"
+   753→                            onClick={() => handlePrint(r)}
+   754→                            className="text-amber-700 hover:text-amber-900 hover:bg-amber-50"
+   755→                          >
+   756→                            <Printer className="h-4 w-4 mr-1" />प्रिंट
+   757→                          </Button>
+   758→                        </TableCell>
+   759→                      </TableRow>
+   760→                    );
+   761→                  })}
+   762→                </TableBody>
+   763→              </Table>
+   764→            </div>
+   765→          )}
+   766→        </CardContent>
+   767→      </Card>
+   768→    </div>
+   769→  );
+   770→}
+   771→
