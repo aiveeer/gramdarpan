@@ -1,0 +1,22 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "महाराष्ट्र ग्रामपंचायत लेखा संहिता 2011 नुसार नमुना 1 ते 33 ची संपूर्ण यादी:\n\n१. नमुना १ - अर्थसंकल्प/अंदाजपत्रक (Budget Estimate)\n२. नमुना २ - अंतिम अर्थसंकल्प/अंतिम अंदाजपत्रक (Final Budget)\n३. नमुना ३ - खर्च अहवाल/महसूल विवरण (Expenditure Statement/Revenue Details)\n४. नमुना ४ - खर्च विवरण (Expenditure Details)\n५. नमुना ५ - रोजंदारी खाते (Daily Account)\n६. नमुना ६ - खर्च प्रपत्र/वितरण प्रमाणपत्र (Voucher/Distribution Certificate)\n७. नमुना ७ - बँक खात्याचे विवरण (Bank Account Statement)\n८. नमुना ८ - नगद खाते (Cash Account)\n९. नमुना ९ - बँक खाते नोंदवही (Bank Book)\n१०. नमुना १० - नगद नोंदवही (Cash Book)\n११. नमुना ११ - रोजंदारी नोंदवही (Muster Roll Book)\n१२. नमुना १२ - रोजंदारी तपासणी प्रमाणपत्र (Muster Roll Verification Certificate)\n१३. नमुना १३ - ग्राहकांची यादी (List of Beneficiaries)\n१४. नमुना १४ - कर्ज वितरण प्रमाणपत्र (Loan Disbursement Certificate)\n१५. नमुना १५ - कर्ज वसूली नोंदवही (Loan Recovery Book)\n१६. नमुना १६ - स्थायी आणि चल संपत्तीचे विवरण (Details of Fixed and Moving Assets)\n१७. नमुना १७ - स्थायी संपत्तीचे विवरण (Details of Fixed Assets)\n१८. नमुना १८ - चल संपत्तीचे विवरण (Details of Moving Assets)\n१९. नमुना १९ - घरे बांधण्याचे काम विवरण (House Construction Details)\n२०. नमुना २० - नागरी सुविधा विवरण (Civic Amenities Details)\n२१. नमुना २१ - पाणीपुरवठा विवरण (Water Supply Details)\n२२. नमुना २२ - स्वच्छता विवरण (Sanitation Details)\n२३. नमुना २३ - रस्ते विवरण (Road Details)\n२४. नमुना २४ - शिक्षण विवरण (Education Details)\n२५. नमुना २५ - सार्वजनिक आरोग्य विवरण (Public Health Details)\n२६. नमुना २६ - कृषी विवरण (Agriculture Details)\n२७. नमुना २७ - पशुपालन विवरण (Animal Husbandry Details)\n२८. नमुना २८ - सामाजिक कल्याण विवरण (Social Welfare Details)\n२९. नमुना २९ - उद्योग व व्यापार विवरण (Industry and Trade Details)\n३०. नमुना ३० - नागरी विकास विवरण (Urban Development Details)\n३१. नमुना ३१ - ग्रामसभा विवरण (Gram Sabha Details)\n३२. नमुना ३२ - पंचायत सभा विवरण (Panchayat Sabha Details)\n३३. नमुना ३३ - वार्षिक आरामशील खाते (Comfortable Annual Account)",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1783968955,
+  "id": "20260714025532c11559da403d4788",
+  "model": "glm-4-plus",
+  "object": "chat.completion",
+  "request_id": "20260714025532c11559da403d4788",
+  "usage": {
+    "completion_tokens": 1449,
+    "prompt_tokens": 274,
+    "total_tokens": 1723
+  }
+}

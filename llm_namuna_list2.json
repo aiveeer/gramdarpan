@@ -1,0 +1,22 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "I can provide the exact list of Namuna 1 to 33 as per Maharashtra Gram Panchayat Lekha Sanhita 2011. Here is the complete list with Marathi names and English translations:\n\n1. अर्थसंकल्प (Arthasankalp) - Budget\n2. रोकड वही (Rokad Vahi) - Cash Book\n3. कर आकारणी (Kar Akarni) - Tax Assessment\n4. मागणी (Magani) - Demand\n5. उत्पन्न वही (Utpanna Vahi) - Receipt Book\n6. खर्च वही (Kharcha Vahi) - Payment Book\n7. खर्च विवरण (Kharcha Vivaran) - Expenditure Details\n8. अकस्मात खर्च (Akasmat Kharcha) - Contingent Expenses\n9. कर्मचारी वर्ग (Karmachari Varg) - Employee Category\n10. वेतन वही (Vetan Vahi) - Salary Register\n11. निविड खर्च वही (Nivid Kharcha Vahi) - Special Expenditure Book\n12. स्थावर मालमत्ता (Sthavar Malmatta) - Immovable Property\n13. रस्ता नोंदवही (Rasta Nondwahi) - Road Register\n14. जमीन नोंदवही (Jamin Nondwahi) - Land Register\n15. बांधकाम वही (Bandhakam Vahi) - Construction Work Book\n16. देय वही (Dey Vahi) - Payable Book\n17. घेणे वही (Ghene Vahi) - Receivable Book\n18. बँक व्यवहार वही (Bank Vyavhar Vahi) - Bank Transaction Book\n19. बँक विवरण (Bank Vivaran) - Bank Statement\n20. तात्पुरते व्यवहार वही (Tatpurta Vyavhar Vahi) - Temporary Transaction Book\n21. खाते वही (Khatay Vahi) - Ledger Book\n22. निविड खाते वही (Nivid Khatay Vahi) - Special Ledger Book\n23. खर्च विश्लेषण (Kharcha Vishleshan) - Expenditure Analysis\n24. उत्पन्न विश्लेषण (Utpanna Vishleshan) - Income Analysis\n25. वार्षिक विश्लेषण (Varshik Vishleshan) - Annual Analysis\n26. समीक्षा वही (Samiksha Vahi) - Review Book\n27. तपासणी वही (Tapasni Vahi) - Inspection Book\n28. अहवाल वही (Ahval Vahi) - Report Book\n29. निरीक्षण वही (Nirikshan Vahi) - Audit Book\n30. विशेष अहवाल (Vishesh Ahval) - Special Report\n31. वार्षिक आर्थिक विश्लेषण (Varshik Arthik Vishleshan) - Annual Financial Analysis\n32. विकास योजना वही (Vikas Yojana Vahi) - Development Plan Book\n33. वृक्ष नोंदवही (Vriksh Nondwahi) - Tree Register\n\nThis is the complete list of all 33 Namuna formats as per the Maharashtra Gram Panchayat Lekha Sanhita 2011.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1783968986,
+  "id": "20260714025609f01079c112114d62",
+  "model": "glm-4-plus",
+  "object": "chat.completion",
+  "request_id": "20260714025609f01079c112114d62",
+  "usage": {
+    "completion_tokens": 988,
+    "prompt_tokens": 476,
+    "total_tokens": 1464
+  }
+}

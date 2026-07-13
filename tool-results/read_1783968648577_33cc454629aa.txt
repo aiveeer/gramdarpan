@@ -689,7 +689,7 @@
    689→
    690→  return (
    691→    <SidebarProvider>
-   692→      <div className="flex min-h-screen w-full flex-col" style={{ background: 'linear-gradient(180deg, #f0faf5 0%, #f8faf9 30%, #ffffff 100%)' }}>
+   692→      <div className="flex min-h-screen w-full flex-col overflow-hidden" style={{ background: 'linear-gradient(180deg, #f0faf5 0%, #f8faf9 30%, #ffffff 100%)' }}>
    693→        {/* ─── Indian Flag Tricolor Bar ──────────────────────────────── */}
    694→        <div className="flex h-1.5 w-full shrink-0">
    695→          <div className="flex-1" style={{ background: '#FF9933' }} />
@@ -783,7 +783,7 @@
    783→        </header>
    784→
    785→        {/* ─── Body: Sidebar + Main ──────────────────────────────────── */}
-   786→        <div className="flex flex-1">
+   786→        <div className="flex flex-1 min-h-0 overflow-hidden">
    787→          {/* Sidebar */}
    788→          <Sidebar collapsible="icon" className="border-r border-gray-200">
    789→            <SidebarHeader className="p-3">
@@ -1063,7 +1063,7 @@
   1063→          </Sidebar>
   1064→
   1065→          {/* Main Content Area */}
-  1066→          <SidebarInset>
+  1066→          <SidebarInset className="flex flex-col min-w-0 overflow-hidden">
   1067→            {/* Breadcrumb / Active View Indicator */}
   1068→            <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-sm border-b px-4 py-2">
   1069→              <div className="flex items-center gap-2 text-sm">
@@ -1086,12 +1086,12 @@
   1086→            </div>
   1087→
   1088→            {/* Content */}
-  1089→            <div className="flex-1 p-4 sm:p-6">
+  1089→            <div className="flex-1 p-4 sm:p-6 overflow-y-auto overflow-x-hidden">
   1090→              {renderMainContent()}
   1091→            </div>
   1092→
   1093→            {/* Footer */}
-  1094→            <footer className="mt-auto" style={{ background: 'linear-gradient(135deg, #0d7377, #1a5632)' }}>
+  1094→            <footer className="mt-auto shrink-0" style={{ background: 'linear-gradient(135deg, #0d7377, #1a5632)' }}>
   1095→              <div className="px-4 py-3">
   1096→                <div className="flex flex-col sm:flex-row items-center justify-between text-sm text-teal-100/70 gap-2">
   1097→                  <div className="flex items-center gap-2">
