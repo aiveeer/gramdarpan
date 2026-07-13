@@ -23,14 +23,14 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Printer, Download, RefreshCw, ArrowLeft, Search,
-  FileText, BookOpen, Receipt, Landmark, FolderArchive,
+  Printer, Download, RefreshCw, ArrowLeft,
+  FileText, BookOpen, Receipt, FolderArchive,
   PackageCheck, HandCoins, CircleDollarSign, BookCopy,
   FileBadge, FileCheck2, FileBarChart, FileLock2,
-  ScrollText, FileSpreadsheet, Gauge, Wrench, Users,
-  TrendingUp, TrendingDown, Droplets, Search as SearchIcon,
+  ScrollText, Gauge, Users,
+  TrendingUp, TrendingDown,
   IndianRupee, AlertCircle, CheckCircle2, Loader2,
-  HandCoinsIcon, Droplets as DropletsIcon,
+  Search as SearchIcon,
 } from 'lucide-react';
 
 // ─── Namuna Definitions ───────────────────────────────────────────────────
@@ -46,52 +46,67 @@ interface NamunaDef {
 }
 
 const NAMUNA_DEFS: NamunaDef[] = [
-  { num: 1, nameMr: 'अंदाजपत्रक मालमत्ता पत्र', nameEn: 'Budget Balance Sheet', category: 'budget', color: 'text-cyan-600', bg: 'bg-cyan-50', icon: FileBadge },
-  { num: 2, nameMr: 'अंदाजपत्रक उत्पन्न व खर्च', nameEn: 'Budget Income & Expenditure', category: 'budget', color: 'text-teal-600', bg: 'bg-teal-50', icon: FileCheck2 },
-  { num: 3, nameMr: 'रोकड वही', nameEn: 'Cash Book', category: 'accounts', color: 'text-green-600', bg: 'bg-green-50', icon: BookCopy },
-  { num: 4, nameMr: 'बँक वही', nameEn: 'Bank Book', category: 'accounts', color: 'text-teal-600', bg: 'bg-teal-50', icon: Landmark },
-  { num: 5, nameMr: 'मालमत्ता रजिस्टर', nameEn: 'Asset Register', category: 'asset', color: 'text-orange-600', bg: 'bg-orange-50', icon: FolderArchive },
-  { num: 6, nameMr: 'साठा रजिस्टर', nameEn: 'Stock Register', category: 'asset', color: 'text-indigo-600', bg: 'bg-indigo-50', icon: PackageCheck },
-  { num: 7, nameMr: 'अनुदान नोंदवही', nameEn: 'Grant Register', category: 'grant', color: 'text-purple-600', bg: 'bg-purple-50', icon: HandCoinsIcon },
-  { num: 8, nameMr: 'कर आकारणी', nameEn: 'Tax Assessment', category: 'tax', color: 'text-green-600', bg: 'bg-green-50', icon: FileText },
-  { num: 9, nameMr: 'मागणी नोंदवही', nameEn: 'Demand Register', category: 'tax', color: 'text-amber-600', bg: 'bg-amber-50', icon: BookOpen },
-  { num: 10, nameMr: 'DCB मागणी वसूल शिल्लक', nameEn: 'Demand Collection Balance', category: 'tax', color: 'text-red-600', bg: 'bg-red-50', icon: CircleDollarSign },
-  { num: 11, nameMr: 'दैनंदिन रोकड वही', nameEn: 'Daily Cash Book', category: 'accounts', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: BookCopy },
-  { num: 12, nameMr: 'जमा खाते रजिस्टर', nameEn: 'Credit Account Register', category: 'accounts', color: 'text-green-600', bg: 'bg-green-50', icon: TrendingUp },
-  { num: 13, nameMr: 'नामे खाते रजिस्टर', nameEn: 'Debit Account Register', category: 'accounts', color: 'text-red-600', bg: 'bg-red-50', icon: TrendingDown },
-  { num: 14, nameMr: 'खाते खत', nameEn: 'Ledger', category: 'accounts', color: 'text-purple-600', bg: 'bg-purple-50', icon: BookOpen },
-  { num: 15, nameMr: 'तपासणी पत्र', nameEn: 'Trial Balance', category: 'accounts', color: 'text-amber-600', bg: 'bg-amber-50', icon: Gauge },
-  { num: 16, nameMr: 'मालमत्ता वही', nameEn: 'Asset Book', category: 'asset', color: 'text-orange-600', bg: 'bg-orange-50', icon: FolderArchive },
-  { num: 17, nameMr: 'देताणी वही', nameEn: 'Liability Book', category: 'asset', color: 'text-rose-600', bg: 'bg-rose-50', icon: FileBarChart },
-  { num: 18, nameMr: 'आढावा मालमत्ता', nameEn: 'Asset Verification', category: 'asset', color: 'text-amber-600', bg: 'bg-amber-50', icon: FileCheck2 },
-  { num: 19, nameMr: 'कर वसूल वही', nameEn: 'Tax Collection Book', category: 'tax', color: 'text-orange-600', bg: 'bg-orange-50', icon: ScrollText },
-  { num: 20, nameMr: 'पाणीपट्टी वसूल वही', nameEn: 'Water Tax Collection', category: 'tax', color: 'text-sky-600', bg: 'bg-sky-50', icon: Droplets },
-  { num: 21, nameMr: 'वसूल तपासणी', nameEn: 'Collection Verification', category: 'tax', color: 'text-red-600', bg: 'bg-red-50', icon: FileBarChart },
-  { num: 22, nameMr: 'देणेदार यादी', nameEn: 'Debtor List', category: 'tax', color: 'text-red-600', bg: 'bg-red-50', icon: Users },
-  { num: 23, nameMr: 'फाळवणार यादी', nameEn: 'Creditor List', category: 'accounts', color: 'text-purple-600', bg: 'bg-purple-50', icon: Users },
-  { num: 24, nameMr: 'वसूल अहवाल', nameEn: 'Collection Report', category: 'tax', color: 'text-red-600', bg: 'bg-red-50', icon: FileBarChart },
-  { num: 25, nameMr: 'हिशेब तपासणी', nameEn: 'Audit Report', category: 'audit', color: 'text-red-600', bg: 'bg-red-50', icon: FileLock2 },
-  { num: 26, nameMr: 'चौकशी अहवाल', nameEn: 'Inquiry Report', category: 'audit', color: 'text-slate-600', bg: 'bg-slate-50', icon: Search },
-  { num: 27, nameMr: 'शेरा नोंद', nameEn: 'Remarks Register', category: 'audit', color: 'text-gray-600', bg: 'bg-gray-50', icon: FileText },
-  { num: 28, nameMr: 'योजना निधी वही', nameEn: 'Scheme Fund Book', category: 'scheme', color: 'text-rose-600', bg: 'bg-rose-50', icon: FileSpreadsheet },
-  { num: 29, nameMr: 'योजना कामे वही', nameEn: 'Scheme Works Book', category: 'scheme', color: 'text-orange-600', bg: 'bg-orange-50', icon: Wrench },
-  { num: 30, nameMr: 'योजना अहवाल', nameEn: 'Scheme Report', category: 'scheme', color: 'text-rose-600', bg: 'bg-rose-50', icon: FileBarChart },
-  { num: 31, nameMr: 'उत्पन्न व खर्च खाते', nameEn: 'Income & Expenditure', category: 'final', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: FileBadge },
-  { num: 32, nameMr: 'मालमत्ता व देणेदारीपत्र', nameEn: 'Balance Sheet', category: 'final', color: 'text-teal-600', bg: 'bg-teal-50', icon: FileBadge },
-  { num: 33, nameMr: 'वित्तीय अहवाल', nameEn: 'Financial Report', category: 'final', color: 'text-green-600', bg: 'bg-green-50', icon: FileBadge },
+  // अर्थसंकल्प व आर्थिक विवरण
+  { num: 1, nameMr: 'अर्थसंकल्प/अंदाजपत्रक', nameEn: 'Budget Estimate', category: 'budget', color: 'text-cyan-600', bg: 'bg-cyan-50', icon: FileBadge },
+  { num: 2, nameMr: 'पुनर्विनियोजन व नियत वाटप', nameEn: 'Re-appropriation & Allocation', category: 'budget', color: 'text-teal-600', bg: 'bg-teal-50', icon: FileCheck2 },
+  // आर्थिक स्थिती विवरण
+  { num: 3, nameMr: 'जमा खर्च विवरण', nameEn: 'Income & Expenditure Statement', category: 'financial', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: FileBarChart },
+  { num: 4, nameMr: 'मत्ता व दायित्वे', nameEn: 'Assets & Liabilities', category: 'financial', color: 'text-teal-600', bg: 'bg-teal-50', icon: Gauge },
+  // रोकड व पावती
+  { num: 5, nameMr: 'सामान्य रोकड वही', nameEn: 'General Cash Book', category: 'cash', color: 'text-green-600', bg: 'bg-green-50', icon: BookCopy },
+  { num: 5.1, nameMr: 'दैनिक रोकडवही (५ क)', nameEn: 'Daily Cash Book', category: 'cash', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: BookCopy },
+  { num: 6, nameMr: 'वर्गीकृत नोंदवही', nameEn: 'Classified Receipt Register', category: 'cash', color: 'text-indigo-600', bg: 'bg-indigo-50', icon: BookOpen },
+  { num: 7, nameMr: 'सामान्य पावती', nameEn: 'General Receipt', category: 'cash', color: 'text-green-600', bg: 'bg-green-50', icon: Receipt },
+  // कर आकारणी व मागणी
+  { num: 8, nameMr: 'कर आकारणी नोंदवही', nameEn: 'Tax Assessment Register', category: 'tax', color: 'text-green-600', bg: 'bg-green-50', icon: FileText },
+  { num: 9, nameMr: 'कर मागणी नोंदवही', nameEn: 'Tax Demand Register', category: 'tax', color: 'text-amber-600', bg: 'bg-amber-50', icon: BookOpen },
+  { num: 9.1, nameMr: 'कराची मागणी पावती (९ क)', nameEn: 'Tax Demand Bill', category: 'tax', color: 'text-rose-600', bg: 'bg-rose-50', icon: Receipt },
+  { num: 10, nameMr: 'कर व फी बाबत पावती', nameEn: 'Tax & Fee Receipt', category: 'tax', color: 'text-cyan-600', bg: 'bg-cyan-50', icon: CircleDollarSign },
+  { num: 11, nameMr: 'किरकोळ मागणी नोंदवही', nameEn: 'Miscellaneous Demand Register', category: 'tax', color: 'text-purple-600', bg: 'bg-purple-50', icon: ScrollText },
+  // खर्च व प्रमाणक
+  { num: 12, nameMr: 'आकस्मिक खर्चाचे प्रमाणक', nameEn: 'Contingent Expense Voucher', category: 'expense', color: 'text-red-600', bg: 'bg-red-50', icon: FileText },
+  { num: 18, nameMr: 'किरकोळ रोकडवही', nameEn: 'Petty Cash Book', category: 'expense', color: 'text-orange-600', bg: 'bg-orange-50', icon: BookCopy },
+  // कर्मचारी व वेतन
+  { num: 13, nameMr: 'कर्मचारी वर्ग व वेतनश्रेणी', nameEn: 'Employee Category & Pay Scale', category: 'employee', color: 'text-blue-600', bg: 'bg-blue-50', icon: Users },
+  { num: 14, nameMr: 'मुद्रांक हिशोब नोंदवही', nameEn: 'Stamp Account Register', category: 'employee', color: 'text-amber-600', bg: 'bg-amber-50', icon: FileText },
+  { num: 21, nameMr: 'कर्मचाऱ्याच्या देयकाची नोंदवही', nameEn: 'Employee Bill Register', category: 'employee', color: 'text-green-600', bg: 'bg-green-50', icon: IndianRupee },
+  { num: 31, nameMr: 'प्रवास भत्ता देयक', nameEn: 'Travel Allowance Bill', category: 'employee', color: 'text-teal-600', bg: 'bg-teal-50', icon: FileText },
+  // साठा व मालमत्ता
+  { num: 15, nameMr: 'उपभोग्य वस्तूंसाठी नोंदवही', nameEn: 'Consumable Stock Register', category: 'asset', color: 'text-indigo-600', bg: 'bg-indigo-50', icon: PackageCheck },
+  { num: 16, nameMr: 'जड वस्तू संग्रह व जंगल मालमत्ता', nameEn: 'Heavy Assets & Forest Property', category: 'asset', color: 'text-orange-600', bg: 'bg-orange-50', icon: FolderArchive },
+  { num: 17, nameMr: 'अग्रीम/अनामत रक्कम नोंदवही', nameEn: 'Advance & Deposit Register', category: 'asset', color: 'text-purple-600', bg: 'bg-purple-50', icon: HandCoins },
+  { num: 22, nameMr: 'स्थावर मालमत्ता नोंदवही', nameEn: 'Immovable Property Register', category: 'asset', color: 'text-orange-600', bg: 'bg-orange-50', icon: FolderArchive },
+  { num: 23, nameMr: 'ताब्यातील रस्त्यांची नोंदवही', nameEn: 'Road Register', category: 'asset', color: 'text-amber-600', bg: 'bg-amber-50', icon: FileText },
+  { num: 24, nameMr: 'जमिनीची नोंदवही', nameEn: 'Land Register', category: 'asset', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: FileText },
+  { num: 25, nameMr: 'गुंतवणूक वही', nameEn: 'Investment Register', category: 'asset', color: 'text-cyan-600', bg: 'bg-cyan-50', icon: TrendingUp },
+  { num: 33, nameMr: 'वृक्ष नोंदवही', nameEn: 'Tree Register', category: 'asset', color: 'text-green-600', bg: 'bg-green-50', icon: FileText },
+  // विकासकाम व देयक
+  { num: 19, nameMr: 'हजेरीपट (मजुरांची हजेरी)', nameEn: 'Muster Roll / Attendance', category: 'works', color: 'text-amber-600', bg: 'bg-amber-50', icon: FileText },
+  { num: 20, nameMr: 'कामाच्या अंदाजाची नोंदवही', nameEn: 'Estimate Register for Works', category: 'works', color: 'text-orange-600', bg: 'bg-orange-50', icon: FileText },
+  { num: 20.1, nameMr: 'मोजमाप वही (२० क)', nameEn: 'Measurement Book', category: 'works', color: 'text-rose-600', bg: 'bg-rose-50', icon: FileText },
+  { num: 20.2, nameMr: 'कामाचे देयक (२० ख)', nameEn: 'Work Bill', category: 'works', color: 'text-red-600', bg: 'bg-red-50', icon: FileText },
+  // मासिक विवरण व लेखापरीक्षण
+  { num: 26.1, nameMr: 'जमा मासिक विवरण (२६ क)', nameEn: 'Monthly Income Statement', category: 'audit', color: 'text-green-600', bg: 'bg-green-50', icon: TrendingUp },
+  { num: 26.2, nameMr: 'खर्चाचे मासिक विवरण (२६ ख)', nameEn: 'Monthly Expenditure Statement', category: 'audit', color: 'text-red-600', bg: 'bg-red-50', icon: TrendingDown },
+  { num: 27, nameMr: 'लेखा परीक्षण आक्षेप पूर्तता विवरण', nameEn: 'Audit Objection Compliance Statement', category: 'audit', color: 'text-slate-600', bg: 'bg-slate-50', icon: FileLock2 },
+  { num: 28, nameMr: 'मागासवर्गीय/महिला बालकल्याण खर्च विवरण', nameEn: 'SC/Women & Child Welfare Expenditure', category: 'audit', color: 'text-purple-600', bg: 'bg-purple-50', icon: FileBarChart },
+  { num: 29, nameMr: 'कर्जाची नोंदवही', nameEn: 'Loan Register', category: 'audit', color: 'text-rose-600', bg: 'bg-rose-50', icon: FileText },
+  { num: 30, nameMr: 'लेखा परीक्षण आक्षेप पूर्तता नोंदवही', nameEn: 'Audit Objection Compliance Register', category: 'audit', color: 'text-gray-600', bg: 'bg-gray-50', icon: FileLock2 },
+  { num: 32, nameMr: 'रक्कमेच्या परताव्यासाठीचा आदेश', nameEn: 'Refund Order', category: 'audit', color: 'text-red-600', bg: 'bg-red-50', icon: FileText },
 ];
 
 // ─── Category Definitions ────────────────────────────────────────────────
 
 const CATEGORIES: Record<string, { label: string; labelEn: string; color: string; gradient: string }> = {
-  budget:   { label: 'अंदाजपत्रक',   labelEn: 'Budget',          color: '#0891b2', gradient: 'from-cyan-600 to-teal-700' },
-  accounts: { label: 'वित्तीय वही',   labelEn: 'Financial Books', color: '#059669', gradient: 'from-green-600 to-emerald-700' },
-  asset:    { label: 'मालमत्ता व साठा', labelEn: 'Assets & Stock', color: '#ea580c', gradient: 'from-orange-600 to-amber-700' },
-  grant:    { label: 'अनुदान',        labelEn: 'Grants',          color: '#9333ea', gradient: 'from-purple-600 to-violet-700' },
-  tax:      { label: 'कर आकारणी व वसूल', labelEn: 'Tax & Collection', color: '#dc2626', gradient: 'from-red-600 to-rose-700' },
-  audit:    { label: 'हिशेब तपासणी',  labelEn: 'Audit',           color: '#475569', gradient: 'from-slate-600 to-gray-700' },
-  scheme:   { label: 'योजना',         labelEn: 'Schemes',         color: '#e11d48', gradient: 'from-rose-600 to-pink-700' },
-  final:    { label: 'अंतिम हिशेब',    labelEn: 'Final Accounts',  color: '#0d9488', gradient: 'from-teal-600 to-cyan-700' },
+  budget:    { label: 'अर्थसंकल्प व आर्थिक विवरण', labelEn: 'Budget & Financial',   color: '#0891b2', gradient: 'from-cyan-600 to-teal-700' },
+  financial: { label: 'आर्थिक स्थिती विवरण',     labelEn: 'Financial Position',  color: '#059669', gradient: 'from-green-600 to-emerald-700' },
+  cash:      { label: 'रोकड व पावती',           labelEn: 'Cash & Receipts',     color: '#16a34a', gradient: 'from-green-500 to-lime-600' },
+  tax:       { label: 'कर आकारणी व मागणी',      labelEn: 'Tax & Demand',        color: '#dc2626', gradient: 'from-red-600 to-rose-700' },
+  expense:   { label: 'खर्च व प्रमाणक',          labelEn: 'Expenses & Vouchers',  color: '#ea580c', gradient: 'from-orange-600 to-amber-700' },
+  employee:  { label: 'कर्मचारी व वेतन',         labelEn: 'Employees & Salary',  color: '#2563eb', gradient: 'from-blue-600 to-indigo-700' },
+  asset:     { label: 'साठा व मालमत्ता',          labelEn: 'Stock & Assets',      color: '#9333ea', gradient: 'from-purple-600 to-violet-700' },
+  works:     { label: 'विकासकाम व देयक',         labelEn: 'Works & Bills',       color: '#d97706', gradient: 'from-amber-600 to-orange-700' },
+  audit:     { label: 'मासिक विवरण व लेखापरीक्षण', labelEn: 'Monthly & Audit',    color: '#475569', gradient: 'from-slate-600 to-gray-700' },
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────
@@ -148,11 +163,36 @@ function isTotalKey(key: string): boolean {
   return key.startsWith('एकूण') || key.startsWith('निव्वळ') || key.startsWith('फरक');
 }
 
+// ─── Namuna Key Parsing & Display ──────────────────────────────────────────
+
+/** Convert initialNamuna string like "5ka", "9ka", "20ka", "20kha", "26ka", "26kha" to the decimal num used in NAMUNA_DEFS */
+function parseNamunaKey(key: string): number {
+  const s = key.trim().toLowerCase();
+  // Sub-forms: 5ka → 5.1, 9ka → 9.1, 20ka → 20.1, 20kha → 20.2, 26ka → 26.1, 26kha → 26.2
+  if (s === '5ka') return 5.1;
+  if (s === '9ka') return 9.1;
+  if (s === '20ka') return 20.1;
+  if (s === '20kha') return 20.2;
+  if (s === '26ka') return 26.1;
+  if (s === '26kha') return 26.2;
+  return parseInt(s, 10);
+}
+
+/** Format namuna num for display: 5.1 → "५ क", 20.2 → "२० ख", etc. */
+function formatNamunaNum(num: number): string {
+  const marathiDigits = ['०','१','२','३','४','५','६','७','८','९'];
+  const toMr = (n: number) => String(n).split('').map(c => marathiDigits[parseInt(c)] ?? c).join('');
+  const base = Math.floor(num);
+  const sub = Math.round((num - base) * 10); // 1=क, 2=ख
+  const suffix = sub === 1 ? ' क' : sub === 2 ? ' ख' : '';
+  return toMr(base) + suffix;
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────
 
 export default function NamunaReports({ initialNamuna, onNavigate }: NamunaReportsProps) {
   const [selectedNamuna, setSelectedNamuna] = useState<number | null>(
-    initialNamuna ? parseInt(initialNamuna, 10) : null
+    initialNamuna ? parseNamunaKey(initialNamuna) : null
   );
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -424,7 +464,7 @@ export default function NamunaReports({ initialNamuna, onNavigate }: NamunaRepor
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 mb-0.5">
                           <Badge className="text-[9px] border-0 font-bold px-1.5 py-0 leading-4 text-white" style={{ background: catInfo.color }}>
-                            {n.num}
+                            {formatNamunaNum(n.num)}
                           </Badge>
                         </div>
                         <p className="text-[11px] font-semibold leading-tight truncate">{n.nameMr}</p>
@@ -454,7 +494,7 @@ export default function NamunaReports({ initialNamuna, onNavigate }: NamunaRepor
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 mb-0.5">
                       <Badge className="text-[9px] border-0 font-bold px-1.5 py-0 leading-4 text-white" style={{ background: catInfo?.color || '#059669' }}>
-                        {n.num}
+                        {formatNamunaNum(n.num)}
                       </Badge>
                     </div>
                     <p className="text-[11px] font-semibold leading-tight truncate">{n.nameMr}</p>
@@ -812,7 +852,7 @@ export default function NamunaReports({ initialNamuna, onNavigate }: NamunaRepor
                     className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all hover:shadow-sm ${n.bg} ${n.color}`}
                   >
                     <n.icon className="h-3 w-3" />
-                    {n.num}
+                    {formatNamunaNum(n.num)}
                   </button>
                 );
               })}

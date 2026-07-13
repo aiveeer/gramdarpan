@@ -122,6 +122,8 @@ import {
   Gauge,
   TreePine,
   Compass,
+  Stamp,
+  RotateCcw,
 } from 'lucide-react';
 
 import MasterData from '@/components/master-data';
@@ -207,11 +209,6 @@ const masterEntryItems: NavItem[] = [
   { id: 'master-budget', label: 'बजेट शिर्ष', labelEn: 'Budget Heads', icon: BanknoteIcon },
   { id: 'master-demand-type', label: 'मागणी प्रकार', labelEn: 'Demand Categories', icon: Tag },
   { id: 'master-disability', label: 'अपंगत्व नोंदणी', labelEn: 'Disability Register', icon: Accessibility },
-  { id: 'master-namuna13', label: 'नमुना १३ - कर्मचारी वर्ग', labelEn: 'Namuna 13 Employee Category', icon: UserCog },
-  { id: 'master-namuna22', label: 'नमुना २२ - स्थावर मालमत्ता', labelEn: 'Namuna 22 Immovable Property', icon: Building2 },
-  { id: 'master-namuna23', label: 'नमुना २३ - रस्ता नोंदवही', labelEn: 'Namuna 23 Road Register', icon: Route },
-  { id: 'master-namuna24', label: 'नमुना २४ - जमीन नोंदवही', labelEn: 'Namuna 24 Land Register', icon: Compass },
-  { id: 'master-namuna33', label: 'नमुना ३३ - वृक्ष नोंदवही', labelEn: 'Namuna 33 Tree Register', icon: TreePine },
 ];
 
 const dailyTransactionItems: NavItem[] = [
@@ -231,15 +228,15 @@ const dailyTransactionItems: NavItem[] = [
 ];
 
 const autoRegisterItems: NavItem[] = [
-  { id: 'reg-cash-book', label: 'रोकड वही (नमुना ३)', labelEn: 'Cash Book', icon: BookOpen, color: 'text-green-600' },
-  { id: 'reg-bank-book', label: 'बँक वही (नमुना ४)', labelEn: 'Bank Book', icon: Landmark, color: 'text-teal-600' },
-  { id: 'reg-receipt', label: 'पावती रजिस्टर', labelEn: 'Receipt Register', icon: ReceiptText, color: 'text-emerald-600' },
-  { id: 'reg-payment', label: 'पेमेंट रजिस्टर', labelEn: 'Payment Register', icon: FileText, color: 'text-red-600' },
-  { id: 'reg-demand', label: 'मागणी रजिस्टर (नमुना ९)', labelEn: 'Demand Register', icon: BookOpenCheck, color: 'text-amber-600' },
-  { id: 'reg-collection', label: 'वसूल रजिस्टर', labelEn: 'Collection Register', icon: ListChecks, color: 'text-cyan-600' },
-  { id: 'reg-asset', label: 'मालमत्ता रजिस्टर (नमुना ५)', labelEn: 'Asset Register', icon: FolderArchive, color: 'text-orange-600' },
-  { id: 'reg-stock', label: 'साठा रजिस्टर (नमुना ६)', labelEn: 'Stock Register', icon: PackageCheck, color: 'text-indigo-600' },
-  { id: 'reg-grant', label: 'अनुदान रजिस्टर (नमुना १०)', labelEn: 'Grant Register', icon: HandCoinsIcon, color: 'text-purple-600' },
+  { id: 'reg-cash-book', label: 'सामान्य रोकड वही (नमुना ५)', labelEn: 'Cash Book', icon: BookOpen, color: 'text-green-600' },
+  { id: 'reg-daily-cash', label: 'दैनिक रोकडवही (नमुना ५ क)', labelEn: 'Daily Cash Book', icon: BookCopy, color: 'text-teal-600' },
+  { id: 'reg-classified', label: 'वर्गीकृत नोंदवही (नमुना ६)', labelEn: 'Classified Register', icon: BookOpenCheck, color: 'text-emerald-600' },
+  { id: 'reg-receipt', label: 'सामान्य पावती (नमुना ७)', labelEn: 'General Receipt', icon: ReceiptText, color: 'text-cyan-600' },
+  { id: 'reg-demand', label: 'कर मागणी नोंदवही (नमुना ९)', labelEn: 'Tax Demand Register', icon: BookOpenCheck, color: 'text-amber-600' },
+  { id: 'reg-tax-receipt', label: 'कर व फी पावती (नमुना १०)', labelEn: 'Tax & Fee Receipt', icon: Receipt, color: 'text-purple-600' },
+  { id: 'reg-misc-demand', label: 'किरकोळ मागणी (नमुना ११)', labelEn: 'Miscellaneous Demand', icon: FileText, color: 'text-rose-600' },
+  { id: 'reg-petty-cash', label: 'किरकोळ रोकडवही (नमुना १८)', labelEn: 'Petty Cash Book', icon: IndianRupee, color: 'text-orange-600' },
+  { id: 'reg-muster-roll', label: 'हजेरीपट (नमुना १९)', labelEn: 'Muster Roll', icon: ClipboardList, color: 'text-lime-600' },
 ];
 
 interface NamunaSubGroup {
@@ -249,51 +246,86 @@ interface NamunaSubGroup {
 
 const namunaReportSubGroups: NamunaSubGroup[] = [
   {
-    label: 'मालमत्ता व नोंदणी',
+    label: 'अर्थसंकल्प व आर्थिक विवरण',
     items: [
-      { id: 'namuna-1', label: 'नमुना १ - मालमत्ता नोंदणी', labelEn: 'Property Registration', icon: FileBadge, color: 'text-cyan-600' },
-      { id: 'namuna-2', label: 'नमुना २ - मालमत्ता मूल्यांकन', labelEn: 'Property Valuation', icon: FileCheck2, color: 'text-teal-600' },
+      { id: 'namuna-1', label: 'नमुना १ - अर्थसंकल्प/अंदाजपत्रक', labelEn: 'Budget Estimate', icon: Calculator, color: 'text-cyan-600' },
+      { id: 'namuna-2', label: 'नमुना २ - पुनर्विनियोजन व नियत वाटप', labelEn: 'Re-appropriation & Allocation', icon: FileCheck2, color: 'text-teal-600' },
     ],
   },
   {
-    label: 'कर आकारणी व वसूल',
+    label: 'आर्थिक स्थिती विवरण',
     items: [
-      { id: 'namuna-8', label: 'नमुना ८ - कर आकारणी', labelEn: 'Tax Assessment', icon: FileText, color: 'text-green-600' },
-      { id: 'namuna-9', label: 'नमुना ९ - मागणी नोंदवही', labelEn: 'Demand Register', icon: BookOpen, color: 'text-amber-600' },
-      { id: 'namuna-9ka', label: 'नमुना ९-क - पावती', labelEn: 'Receipt', icon: Receipt, color: 'text-rose-600' },
-      { id: 'namuna-19', label: 'नमुना १९ - कर वसूल वही', labelEn: 'Tax Collection Book', icon: ScrollText, color: 'text-orange-600' },
-      { id: 'namuna-21-24', label: 'नमुना २१-२४ - वसूल अहवाल', labelEn: 'Collection Reports', icon: FileBarChart, color: 'text-red-600' },
+      { id: 'namuna-3', label: 'नमुना ३ - जमा खर्च विवरण', labelEn: 'Income & Expenditure Statement', icon: Gauge, color: 'text-green-600' },
+      { id: 'namuna-4', label: 'नमुना ४ - मत्ता व दायित्वे', labelEn: 'Assets & Liabilities', icon: FileBarChart, color: 'text-emerald-600' },
     ],
   },
   {
-    label: 'वित्तीय वही',
+    label: 'रोकड व पावती',
     items: [
-      { id: 'namuna-3', label: 'नमुना ३ - रोकड वही', labelEn: 'Cash Book', icon: BookCopy, color: 'text-green-600' },
-      { id: 'namuna-4', label: 'नमुना ४ - बँक वही', labelEn: 'Bank Book', icon: Landmark, color: 'text-teal-600' },
-      { id: 'namuna-11-15', label: 'नमुना ११-१५ - वित्तीय अहवाल', labelEn: 'Financial Reports', icon: Gauge, color: 'text-purple-600' },
+      { id: 'namuna-5', label: 'नमुना ५ - सामान्य रोकड वही', labelEn: 'General Cash Book', icon: BookOpen, color: 'text-green-600' },
+      { id: 'namuna-5ka', label: 'नमुना ५ क - दैनिक रोकडवही', labelEn: 'Daily Cash Book', icon: BookCopy, color: 'text-teal-600' },
+      { id: 'namuna-6', label: 'नमुना ६ - वर्गीकृत नोंदवही', labelEn: 'Classified Receipt Register', icon: BookOpenCheck, color: 'text-cyan-600' },
+      { id: 'namuna-7', label: 'नमुना ७ - सामान्य पावती', labelEn: 'General Receipt', icon: ReceiptText, color: 'text-amber-600' },
     ],
   },
   {
-    label: 'मालमत्ता व साठा',
+    label: 'कर आकारणी व मागणी',
     items: [
-      { id: 'namuna-5', label: 'नमुना ५ - मालमत्ता रजिस्टर', labelEn: 'Asset Register', icon: FolderArchive, color: 'text-orange-600' },
-      { id: 'namuna-6', label: 'नमुना ६ - साठा रजिस्टर', labelEn: 'Stock Register', icon: PackageCheck, color: 'text-indigo-600' },
-      { id: 'namuna-16-18', label: 'नमुना १६-१८ - मालमत्ता अहवाल', labelEn: 'Asset Reports', icon: FileBarChart, color: 'text-amber-600' },
+      { id: 'namuna-8', label: 'नमुना ८ - कर आकारणी नोंदवही', labelEn: 'Tax Assessment Register', icon: FileText, color: 'text-emerald-600' },
+      { id: 'namuna-9', label: 'नमुना ९ - कर मागणी नोंदवही', labelEn: 'Tax Demand Register', icon: BookOpen, color: 'text-amber-600' },
+      { id: 'namuna-9ka', label: 'नमुना ९ क - कराची मागणी पावती', labelEn: 'Tax Demand Bill', icon: Receipt, color: 'text-rose-600' },
+      { id: 'namuna-10', label: 'नमुना १० - कर व फी बाबत पावती', labelEn: 'Tax & Fee Receipt', icon: IndianRupee, color: 'text-purple-600' },
+      { id: 'namuna-11', label: 'नमुना ११ - किरकोळ मागणी नोंदवही', labelEn: 'Miscellaneous Demand Register', icon: ScrollText, color: 'text-orange-600' },
     ],
   },
   {
-    label: 'अनुदान व योजना',
+    label: 'खर्च व प्रमाणक',
     items: [
-      { id: 'namuna-7', label: 'नमुना ७ - अनुदान नोंदवही', labelEn: 'Grant Register', icon: HandCoinsIcon, color: 'text-purple-600' },
-      { id: 'namuna-10', label: 'नमुना १० - अनुदान रजिस्टर', labelEn: 'Grant Register 10', icon: Banknote, color: 'text-blue-600' },
-      { id: 'namuna-28-30', label: 'नमुना २८-३० - योजना अहवाल', labelEn: 'Scheme Reports', icon: FileSpreadsheet, color: 'text-rose-600' },
+      { id: 'namuna-12', label: 'नमुना १२ - आकस्मिक खर्चाचे प्रमाणक', labelEn: 'Contingent Expense Voucher', icon: FileText, color: 'text-red-600' },
+      { id: 'namuna-18', label: 'नमुना १८ - किरकोळ रोकडवही', labelEn: 'Petty Cash Book', icon: IndianRupee, color: 'text-orange-600' },
     ],
   },
   {
-    label: 'अंतिम हिशेब',
+    label: 'कर्मचारी व वेतन',
     items: [
-      { id: 'namuna-25-27', label: 'नमुना २५-२७ - हिशेब तपासणी', labelEn: 'Audit Reports', icon: FileLock2, color: 'text-red-600' },
-      { id: 'namuna-31-33', label: 'नमुना ३१-३३ - अंतिम हिशेब', labelEn: 'Final Accounts', icon: FileBadge, color: 'text-emerald-600' },
+      { id: 'namuna-13', label: 'नमुना १३ - कर्मचारी वर्ग व वेतनश्रेणी', labelEn: 'Employee Category & Pay Scale', icon: UserCog, color: 'text-blue-600' },
+      { id: 'namuna-14', label: 'नमुना १४ - मुद्रांक हिशोब नोंदवही', labelEn: 'Stamp Account Register', icon: Stamp, color: 'text-indigo-600' },
+      { id: 'namuna-21', label: 'नमुना २१ - कर्मचाऱ्याच्या देयकाची नोंदवही', labelEn: 'Employee Bill Register', icon: NotebookPen, color: 'text-sky-600' },
+      { id: 'namuna-31', label: 'नमुना ३१ - प्रवास भत्ता देयक', labelEn: 'Travel Allowance Bill', icon: RotateCcw, color: 'text-teal-600' },
+    ],
+  },
+  {
+    label: 'साठा व मालमत्ता',
+    items: [
+      { id: 'namuna-15', label: 'नमुना १५ - उपभोग्य वस्तूंसाठी नोंदवही', labelEn: 'Consumable Stock Register', icon: PackageCheck, color: 'text-indigo-600' },
+      { id: 'namuna-16', label: 'नमुना १६ - जड वस्तू संग्रह व जंगल मालमत्ता', labelEn: 'Heavy Assets & Forest Property', icon: FolderArchive, color: 'text-amber-600' },
+      { id: 'namuna-17', label: 'नमुना १७ - अग्रीम/अनामत रक्कम नोंदवही', labelEn: 'Advance & Deposit Register', icon: HandCoinsIcon, color: 'text-purple-600' },
+      { id: 'namuna-22', label: 'नमुना २२ - स्थावर मालमत्ता नोंदवही', labelEn: 'Immovable Property Register', icon: Building2, color: 'text-orange-600' },
+      { id: 'namuna-23', label: 'नमुना २३ - ताब्यातील रस्त्यांची नोंदवही', labelEn: 'Road Register', icon: Route, color: 'text-slate-600' },
+      { id: 'namuna-24', label: 'नमुना २४ - जमिनीची नोंदवही', labelEn: 'Land Register', icon: Compass, color: 'text-amber-700' },
+      { id: 'namuna-25', label: 'नमुना २५ - गुंतवणूक वही', labelEn: 'Investment Register', icon: TrendingUp, color: 'text-emerald-600' },
+      { id: 'namuna-33', label: 'नमुना ३३ - वृक्ष नोंदवही', labelEn: 'Tree Register', icon: TreePine, color: 'text-green-600' },
+    ],
+  },
+  {
+    label: 'विकासकाम व देयक',
+    items: [
+      { id: 'namuna-19', label: 'नमुना १९ - हजेरीपट (मजुरांची हजेरी)', labelEn: 'Muster Roll / Attendance', icon: ClipboardList, color: 'text-lime-600' },
+      { id: 'namuna-20', label: 'नमुना २० - कामाच्या अंदाजाची नोंदवही', labelEn: 'Estimate Register for Works', icon: Ruler, color: 'text-cyan-600' },
+      { id: 'namuna-20ka', label: 'नमुना २० क - मोजमाप वही', labelEn: 'Measurement Book', icon: Ruler, color: 'text-sky-600' },
+      { id: 'namuna-20kha', label: 'नमुना २० ख - कामाचे देयक', labelEn: 'Work Bill', icon: FileText, color: 'text-rose-600' },
+    ],
+  },
+  {
+    label: 'मासिक विवरण व लेखापरीक्षण',
+    items: [
+      { id: 'namuna-26ka', label: 'नमुना २६ क - जमा मासिक विवरण', labelEn: 'Monthly Income Statement', icon: TrendingUp, color: 'text-teal-600' },
+      { id: 'namuna-26kha', label: 'नमुना २६ ख - खर्चाचे मासिक विवरण', labelEn: 'Monthly Expenditure Statement', icon: TrendingDown, color: 'text-red-600' },
+      { id: 'namuna-27', label: 'नमुना २७ - लेखा परीक्षण आक्षेप पूर्तता विवरण', labelEn: 'Audit Objection Compliance Statement', icon: Shield, color: 'text-amber-600' },
+      { id: 'namuna-28', label: 'नमुना २८ - मागासवर्गीय/महिला बालकल्याण खर्च', labelEn: 'SC/Women & Child Welfare Expenditure', icon: HeartPulse, color: 'text-pink-600' },
+      { id: 'namuna-29', label: 'नमुना २९ - कर्जाची नोंदवही', labelEn: 'Loan Register', icon: Banknote, color: 'text-orange-600' },
+      { id: 'namuna-30', label: 'नमुना ३० - लेखा परीक्षण आक्षेप पूर्तता नोंदवही', labelEn: 'Audit Objection Compliance Register', icon: FileLock2, color: 'text-slate-600' },
+      { id: 'namuna-32', label: 'नमुना ३२ - रक्कमेच्या परताव्यासाठीचा आदेश', labelEn: 'Refund Order', icon: RotateCcw, color: 'text-purple-600' },
     ],
   },
 ];
@@ -513,16 +545,6 @@ export default function Home() {
         return <MasterData initialTab="disability" />;
       case 'master-contractor':
         return <MasterData initialTab="contractor" />;
-      case 'master-namuna13':
-        return <MasterData initialTab="namuna13" />;
-      case 'master-namuna22':
-        return <MasterData initialTab="namuna22" />;
-      case 'master-namuna23':
-        return <MasterData initialTab="namuna23" />;
-      case 'master-namuna24':
-        return <MasterData initialTab="namuna24" />;
-      case 'master-namuna33':
-        return <MasterData initialTab="namuna33" />;
 
       // Daily Transactions - use DailyTransactions component with initial tab
       case 'txn-receipt':
@@ -554,27 +576,32 @@ export default function Home() {
 
       // Auto Registers - use AutoRegisters component with initial tab
       case 'reg-cash-book':
-      case 'namuna-3':
         return <AutoRegisters initialTab="cash-book" />;
-      case 'reg-bank-book':
-      case 'namuna-4':
-        return <AutoRegisters initialTab="bank-book" />;
+      case 'reg-daily-cash':
+        return <NamunaReports initialNamuna="5ka" onNavigate={handleNavClick} />;
+      case 'reg-classified':
+        return <NamunaReports initialNamuna="6" onNavigate={handleNavClick} />;
       case 'reg-receipt':
         return <AutoRegisters initialTab="receipt" />;
-      case 'reg-payment':
-        return <AutoRegisters initialTab="payment" />;
       case 'reg-demand':
         return <AutoRegisters initialTab="demand" />;
+      case 'reg-tax-receipt':
+        return <NamunaReports initialNamuna="10" onNavigate={handleNavClick} />;
+      case 'reg-misc-demand':
+        return <NamunaReports initialNamuna="11" onNavigate={handleNavClick} />;
+      case 'reg-petty-cash':
+        return <NamunaReports initialNamuna="18" onNavigate={handleNavClick} />;
+      case 'reg-muster-roll':
+        return <NamunaReports initialNamuna="19" onNavigate={handleNavClick} />;
+      case 'reg-payment':
+        return <AutoRegisters initialTab="payment" />;
       case 'reg-collection':
         return <AutoRegisters initialTab="collection" />;
       case 'reg-asset':
-      case 'namuna-5':
         return <AutoRegisters initialTab="asset" />;
       case 'reg-stock':
-      case 'namuna-6':
         return <AutoRegisters initialTab="stock" />;
       case 'reg-grant':
-      case 'namuna-10':
         return <AutoRegisters initialTab="grant" />;
       case 'registers-receipt-payment':
         return <AutoRegisters initialTab="receipt" />;
@@ -586,28 +613,78 @@ export default function Home() {
         return <Namuna1Component />;
       case 'namuna-2':
         return <NamunaReports initialNamuna="2" onNavigate={handleNavClick} />;
+      case 'namuna-3':
+        return <NamunaReports initialNamuna="3" onNavigate={handleNavClick} />;
+      case 'namuna-4':
+        return <NamunaReports initialNamuna="4" onNavigate={handleNavClick} />;
+      case 'namuna-5':
+        return <NamunaReports initialNamuna="5" onNavigate={handleNavClick} />;
+      case 'namuna-5ka':
+        return <NamunaReports initialNamuna="5ka" onNavigate={handleNavClick} />;
+      case 'namuna-6':
+        return <NamunaReports initialNamuna="6" onNavigate={handleNavClick} />;
+      case 'namuna-7':
+        return <NamunaReports initialNamuna="7" onNavigate={handleNavClick} />;
       case 'namuna-8':
         return <Namuna8Component />;
       case 'namuna-9':
         return <Namuna9Component />;
       case 'namuna-9ka':
         return <Namuna9KaComponent />;
+      case 'namuna-10':
+        return <NamunaReports initialNamuna="10" onNavigate={handleNavClick} />;
+      case 'namuna-11':
+        return <NamunaReports initialNamuna="11" onNavigate={handleNavClick} />;
+      case 'namuna-12':
+        return <NamunaReports initialNamuna="12" onNavigate={handleNavClick} />;
+      case 'namuna-13':
+        return <NamunaReports initialNamuna="13" onNavigate={handleNavClick} />;
+      case 'namuna-14':
+        return <NamunaReports initialNamuna="14" onNavigate={handleNavClick} />;
+      case 'namuna-15':
+        return <NamunaReports initialNamuna="15" onNavigate={handleNavClick} />;
+      case 'namuna-16':
+        return <NamunaReports initialNamuna="16" onNavigate={handleNavClick} />;
+      case 'namuna-17':
+        return <NamunaReports initialNamuna="17" onNavigate={handleNavClick} />;
+      case 'namuna-18':
+        return <NamunaReports initialNamuna="18" onNavigate={handleNavClick} />;
       case 'namuna-19':
         return <NamunaReports initialNamuna="19" onNavigate={handleNavClick} />;
-      case 'namuna-21-24':
+      case 'namuna-20':
+        return <NamunaReports initialNamuna="20" onNavigate={handleNavClick} />;
+      case 'namuna-20ka':
+        return <NamunaReports initialNamuna="20ka" onNavigate={handleNavClick} />;
+      case 'namuna-20kha':
+        return <NamunaReports initialNamuna="20kha" onNavigate={handleNavClick} />;
+      case 'namuna-21':
         return <NamunaReports initialNamuna="21" onNavigate={handleNavClick} />;
-      case 'namuna-11-15':
-        return <NamunaReports initialNamuna="11" onNavigate={handleNavClick} />;
-      case 'namuna-16-18':
-        return <NamunaReports initialNamuna="16" onNavigate={handleNavClick} />;
-      case 'namuna-7':
-        return <NamunaReports initialNamuna="7" onNavigate={handleNavClick} />;
-      case 'namuna-28-30':
-        return <NamunaReports initialNamuna="28" onNavigate={handleNavClick} />;
-      case 'namuna-25-27':
+      case 'namuna-22':
+        return <NamunaReports initialNamuna="22" onNavigate={handleNavClick} />;
+      case 'namuna-23':
+        return <NamunaReports initialNamuna="23" onNavigate={handleNavClick} />;
+      case 'namuna-24':
+        return <NamunaReports initialNamuna="24" onNavigate={handleNavClick} />;
+      case 'namuna-25':
         return <NamunaReports initialNamuna="25" onNavigate={handleNavClick} />;
-      case 'namuna-31-33':
+      case 'namuna-26ka':
+        return <NamunaReports initialNamuna="26ka" onNavigate={handleNavClick} />;
+      case 'namuna-26kha':
+        return <NamunaReports initialNamuna="26kha" onNavigate={handleNavClick} />;
+      case 'namuna-27':
+        return <NamunaReports initialNamuna="27" onNavigate={handleNavClick} />;
+      case 'namuna-28':
+        return <NamunaReports initialNamuna="28" onNavigate={handleNavClick} />;
+      case 'namuna-29':
+        return <NamunaReports initialNamuna="29" onNavigate={handleNavClick} />;
+      case 'namuna-30':
+        return <NamunaReports initialNamuna="30" onNavigate={handleNavClick} />;
+      case 'namuna-31':
         return <NamunaReports initialNamuna="31" onNavigate={handleNavClick} />;
+      case 'namuna-32':
+        return <NamunaReports initialNamuna="32" onNavigate={handleNavClick} />;
+      case 'namuna-33':
+        return <NamunaReports initialNamuna="33" onNavigate={handleNavClick} />;
 
       // Search
       case 'search':
