@@ -183,7 +183,8 @@ export default function Namuna1Component() {
         fetch('/api/master?table=property'),
         fetch('/api/master?table=village'),
       ]);
-      setProperties(await propRes.json());
+      const propData = await propRes.json();
+      setProperties(Array.isArray(propData) ? propData : []);
       const village = await villageRes.json();
       setVillageInfo(village);
     } catch {

@@ -125,9 +125,12 @@ export default function Namuna9KaComponent() {
         fetch('/api/master?table=property'),
         fetch('/api/payment'),
       ]);
-      setNamuna9Records(await n9Res.json());
-      setProperties(await propRes.json());
-      setAllPayments(await payRes.json());
+      const n9Data = await n9Res.json();
+      setNamuna9Records(Array.isArray(n9Data) ? n9Data : []);
+      const propData = await propRes.json();
+      setProperties(Array.isArray(propData) ? propData : []);
+      const payData = await payRes.json();
+      setAllPayments(Array.isArray(payData) ? payData : []);
     } catch {
       toast({ title: 'त्रुटी', description: 'डेटा लोड करता आला नाही', variant: 'destructive' });
     } finally {

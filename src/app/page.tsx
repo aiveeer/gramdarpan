@@ -234,7 +234,7 @@ const autoRegisterItems: NavItem[] = [
   { id: 'reg-receipt', label: 'सामान्य पावती (नमुना ७)', labelEn: 'General Receipt', icon: ReceiptText, color: 'text-cyan-600' },
   { id: 'reg-demand', label: 'कर मागणी नोंदवही (नमुना ९)', labelEn: 'Tax Demand Register', icon: BookOpenCheck, color: 'text-amber-600' },
   { id: 'reg-tax-receipt', label: 'कर व फी पावती (नमुना १०)', labelEn: 'Tax & Fee Receipt', icon: Receipt, color: 'text-purple-600' },
-  { id: 'reg-misc-demand', label: 'किरकोळ मागणी (नमुना ११)', labelEn: 'Miscellaneous Demand', icon: FileText, color: 'text-rose-600' },
+  { id: 'reg-misc-demand', label: 'किरकोळ कर व फी आकारणी (नमुना ११)', labelEn: 'Miscellaneous Tax & Fee Assessment', icon: FileText, color: 'text-rose-600' },
   { id: 'reg-petty-cash', label: 'किरकोळ रोकडवही (नमुना १८)', labelEn: 'Petty Cash Book', icon: IndianRupee, color: 'text-orange-600' },
   { id: 'reg-muster-roll', label: 'हजेरीपट (नमुना १९)', labelEn: 'Muster Roll', icon: ClipboardList, color: 'text-lime-600' },
 ];
@@ -275,20 +275,20 @@ const namunaReportSubGroups: NamunaSubGroup[] = [
       { id: 'namuna-9', label: 'नमुना ९ - कर मागणी नोंदवही', labelEn: 'Tax Demand Register', icon: BookOpen, color: 'text-amber-600' },
       { id: 'namuna-9ka', label: 'नमुना ९ क - कराची मागणी पावती', labelEn: 'Tax Demand Bill', icon: Receipt, color: 'text-rose-600' },
       { id: 'namuna-10', label: 'नमुना १० - कर व फी बाबत पावती', labelEn: 'Tax & Fee Receipt', icon: IndianRupee, color: 'text-purple-600' },
-      { id: 'namuna-11', label: 'नमुना ११ - किरकोळ मागणी नोंदवही', labelEn: 'Miscellaneous Demand Register', icon: ScrollText, color: 'text-orange-600' },
+      { id: 'namuna-11', label: 'नमुना ११ - किरकोळ कर व फी आकारणी नोंदवही', labelEn: 'Miscellaneous Tax & Fee Assessment Register', icon: ScrollText, color: 'text-orange-600' },
     ],
   },
   {
     label: 'खर्च व प्रमाणक',
     items: [
-      { id: 'namuna-12', label: 'नमुना १२ - आकस्मिक खर्चाचे प्रमाणक', labelEn: 'Contingent Expense Voucher', icon: FileText, color: 'text-red-600' },
+      { id: 'namuna-12', label: 'नमुना १२ - अकस्मात खर्चाचे प्रमाणक', labelEn: 'Contingent Expense Voucher', icon: FileText, color: 'text-red-600' },
       { id: 'namuna-18', label: 'नमुना १८ - किरकोळ रोकडवही', labelEn: 'Petty Cash Book', icon: IndianRupee, color: 'text-orange-600' },
     ],
   },
   {
     label: 'कर्मचारी व वेतन',
     items: [
-      { id: 'namuna-13', label: 'नमुना १३ - कर्मचारी वर्ग व वेतनश्रेणी', labelEn: 'Employee Category & Pay Scale', icon: UserCog, color: 'text-blue-600' },
+      { id: 'namuna-13', label: 'नमुना १३ - कर्मचारी नोंदवही', labelEn: 'Employee Register', icon: UserCog, color: 'text-blue-600' },
       { id: 'namuna-14', label: 'नमुना १४ - मुद्रांक हिशोब नोंदवही', labelEn: 'Stamp Account Register', icon: Stamp, color: 'text-indigo-600' },
       { id: 'namuna-21', label: 'नमुना २१ - कर्मचाऱ्याच्या देयकाची नोंदवही', labelEn: 'Employee Bill Register', icon: NotebookPen, color: 'text-sky-600' },
       { id: 'namuna-31', label: 'नमुना ३१ - प्रवास भत्ता देयक', labelEn: 'Travel Allowance Bill', icon: RotateCcw, color: 'text-teal-600' },
@@ -297,13 +297,13 @@ const namunaReportSubGroups: NamunaSubGroup[] = [
   {
     label: 'साठा व मालमत्ता',
     items: [
-      { id: 'namuna-15', label: 'नमुना १५ - उपभोग्य वस्तूंसाठी नोंदवही', labelEn: 'Consumable Stock Register', icon: PackageCheck, color: 'text-indigo-600' },
-      { id: 'namuna-16', label: 'नमुना १६ - जड वस्तू संग्रह व जंगल मालमत्ता', labelEn: 'Heavy Assets & Forest Property', icon: FolderArchive, color: 'text-amber-600' },
+      { id: 'namuna-15', label: 'नमुना १५ - उपभोग्य वस्तू साठा नोंदवही', labelEn: 'Consumable Stock Register', icon: PackageCheck, color: 'text-indigo-600' },
+      { id: 'namuna-16', label: 'नमुना १६ - जडवस्तू संग्रह व जंगम मालमत्ता नोंदवही', labelEn: 'Dead Stock & Movable Property Register', icon: FolderArchive, color: 'text-amber-600' },
       { id: 'namuna-17', label: 'नमुना १७ - अग्रीम/अनामत रक्कम नोंदवही', labelEn: 'Advance & Deposit Register', icon: HandCoinsIcon, color: 'text-purple-600' },
       { id: 'namuna-22', label: 'नमुना २२ - स्थावर मालमत्ता नोंदवही', labelEn: 'Immovable Property Register', icon: Building2, color: 'text-orange-600' },
       { id: 'namuna-23', label: 'नमुना २३ - ताब्यातील रस्त्यांची नोंदवही', labelEn: 'Road Register', icon: Route, color: 'text-slate-600' },
       { id: 'namuna-24', label: 'नमुना २४ - जमिनीची नोंदवही', labelEn: 'Land Register', icon: Compass, color: 'text-amber-700' },
-      { id: 'namuna-25', label: 'नमुना २५ - गुंतवणूक वही', labelEn: 'Investment Register', icon: TrendingUp, color: 'text-emerald-600' },
+      { id: 'namuna-25', label: 'नमुना २५ - गुंतवणूक नोंदवही', labelEn: 'Investment Register', icon: TrendingUp, color: 'text-emerald-600' },
       { id: 'namuna-33', label: 'नमुना ३३ - वृक्ष नोंदवही', labelEn: 'Tree Register', icon: TreePine, color: 'text-green-600' },
     ],
   },
@@ -322,7 +322,7 @@ const namunaReportSubGroups: NamunaSubGroup[] = [
       { id: 'namuna-26ka', label: 'नमुना २६ क - जमा मासिक विवरण', labelEn: 'Monthly Income Statement', icon: TrendingUp, color: 'text-teal-600' },
       { id: 'namuna-26kha', label: 'नमुना २६ ख - खर्चाचे मासिक विवरण', labelEn: 'Monthly Expenditure Statement', icon: TrendingDown, color: 'text-red-600' },
       { id: 'namuna-27', label: 'नमुना २७ - लेखा परीक्षण आक्षेप पूर्तता विवरण', labelEn: 'Audit Objection Compliance Statement', icon: Shield, color: 'text-amber-600' },
-      { id: 'namuna-28', label: 'नमुना २८ - मागासवर्गीय/महिला बालकल्याण खर्च', labelEn: 'SC/Women & Child Welfare Expenditure', icon: HeartPulse, color: 'text-pink-600' },
+      { id: 'namuna-28', label: 'नमुना २८ - मागासवर्गीय 15% व महिला बालकल्याण 10% खर्चाचे मासिक विवरण', labelEn: 'SC 15% & Women/Child Welfare 10% Monthly Expenditure', icon: HeartPulse, color: 'text-pink-600' },
       { id: 'namuna-29', label: 'नमुना २९ - कर्जाची नोंदवही', labelEn: 'Loan Register', icon: Banknote, color: 'text-orange-600' },
       { id: 'namuna-30', label: 'नमुना ३० - लेखा परीक्षण आक्षेप पूर्तता नोंदवही', labelEn: 'Audit Objection Compliance Register', icon: FileLock2, color: 'text-slate-600' },
       { id: 'namuna-32', label: 'नमुना ३२ - रक्कमेच्या परताव्यासाठीचा आदेश', labelEn: 'Refund Order', icon: RotateCcw, color: 'text-purple-600' },

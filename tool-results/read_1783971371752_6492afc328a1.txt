@@ -1,0 +1,805 @@
+     1→'use client';
+     2→
+     3→import React, { useState, useEffect, useCallback } from 'react';
+     4→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+     5→import { Button } from '@/components/ui/button';
+     6→import { Input } from '@/components/ui/input';
+     7→import { Label } from '@/components/ui/label';
+     8→import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+     9→import { Badge } from '@/components/ui/badge';
+    10→import { Skeleton } from '@/components/ui/skeleton';
+    11→import { toast } from '@/hooks/use-toast';
+    12→import {
+    13→  FileText, Printer, RefreshCw, Search, Building2, IndianRupee,
+    14→  ChevronRight, Zap, Database, Calculator, CheckCircle2, AlertCircle,
+    15→  Layers, ArrowDownToLine, Hash, Users, MapPin, Route, Loader2,
+    16→  Landmark, Scale, BookOpen
+    17→} from 'lucide-react';
+    18→
+    19→// ===== INTERFACES =====
+    20→
+    21→interface ConstructionDetail {
+    22→  type: string;
+    23→  rate: number;
+    24→  area: number;
+    25→  capitalValue: number;
+    26→  taxAmount: number;
+    27→}
+    28→
+    29→interface OwnerInfo {
+    30→  owner: { firstName: string; lastName: string; firstNameMr: string; lastNameMr: string };
+    31→  ownershipType: string;
+    32→}
+    33→
+    34→interface PropertyInfo {
+    35→  id: string;
+    36→  propertyNumber: string;
+    37→  area: number | null;
+    38→  builtUpArea: number | null;
+    39→  constructionType: string | null;
+    40→  usageType: string | null;
+    41→  citySurveyNo: string | null;
+    42→  boundaryEast?: string;
+    43→  boundaryWest?: string;
+    44→  boundarySouth?: string;
+    45→  boundaryNorth?: string;
+    46→  lengthEast?: number;
+    47→  widthEast?: number;
+    48→  lengthWest?: number;
+    49→  widthWest?: number;
+    50→  lengthSouth?: number;
+    51→  widthSouth?: number;
+    52→  lengthNorth?: number;
+    53→  widthNorth?: number;
+    54→  totalLength?: number;
+    55→  totalWidth?: number;
+    56→  depreciationRate?: number;
+    57→  usageFactor?: number;
+    58→  taxRate?: number;
+    59→  houseTax?: number;
+    60→  lightTax?: number;
+    61→  healthTax?: number;
+    62→  waterTax?: number;
+    63→  constructionDetails?: string;
+    64→  yearBuilt?: string;
+    65→  ward?: { wardNameMr: string; wardNumber: string; wardName: string };
+    66→  road?: { roadNameMr: string; roadNumber: string; roadName: string };
+    67→  owners: OwnerInfo[];
+    68→  taxRates: { taxMasterId: string; rate: number; taxMaster: { name: string; nameMarathi: string; isEnabled: boolean; order: number; category: string } }[];
+    69→}
+    70→
+    71→interface Namuna8Record {
+    72→  id: string;
+    73→  propertyId: string;
+    74→  financialYear: string;
+    75→  taxDetails: string;
+    76→  totalTax: number;
+    77→  totalArea?: number;
+    78→  landRate?: number;
+    79→  buildingRate?: number;
+    80→  constructionRate?: number;
+    81→  depreciationRate?: number;
+    82→  usageFactor?: number;
+    83→  capitalValue?: number;
+    84→  taxRatePercent?: number;
+    85→  houseTaxAmt?: number;
+    86→  lightTaxAmt?: number;
+    87→  healthTaxAmt?: number;
+    88→  waterTaxAmt?: number;
+    89→  totalTaxAmt?: number;
+    90→  constructionDetails?: string;
+    91→  appealHouseTax?: number;
+    92→  appealLightTax?: number;
+    93→  appealHealthTax?: number;
+    94→  appealWaterTax?: number;
+    95→  appealTotalTax?: number;
+    96→  remarks?: string;
+    97→  property: PropertyInfo;
+    98→}
+    99→
+   100→interface VillageInfo {
+   101→  gramPanchayatName: string;
+   102→  gramPanchayatNameMr: string;
+   103→  taluka: string;
+   104→  district: string;
+   105→  state: string;
+   106→  sarpanchNameMr?: string;
+   107→  secretaryNameMr?: string;
+   108→}
+   109→
+   110→// ===== CONSTANTS =====
+   111→
+   112→type ProcessStep = 'select' | 'fetch' | 'calculate' | 'generate';
+   113→
+   114→const CONSTRUCTION_TYPES = [
+   115→  { type: 'झोपडी किंवा मातीचे घर', rate: 6403 },
+   116→  { type: 'दगड विटा/मातीचे बांधकाम', rate: 9979 },
+   117→  { type: 'दगड विट/सिमेंटचे बांधकाम', rate: 14923 },
+   118→  { type: 'आर.सि.सि. बांधकाम', rate: 17424 },
+   119→  { type: 'पहिला मजला', rate: 34848 },
+   120→  { type: 'जमीन/खुली जागा', rate: 1310 },
+   121→];
+   122→
+   123→const BOUNDARY_DIRS = [
+   124→  { key: 'East', label: 'पूर्व', bField: 'boundaryEast' as const, lField: 'lengthEast' as const, wField: 'widthEast' as const },
+   125→  { key: 'West', label: 'पश्चिम', bField: 'boundaryWest' as const, lField: 'lengthWest' as const, wField: 'widthWest' as const },
+   126→  { key: 'South', label: 'दक्षिण', bField: 'boundarySouth' as const, lField: 'lengthSouth' as const, wField: 'widthSouth' as const },
+   127→  { key: 'North', label: 'उत्तर', bField: 'boundaryNorth' as const, lField: 'lengthNorth' as const, wField: 'widthNorth' as const },
+   128→];
+   129→
+   130→const fmt = (n: number | null | undefined, d = 2) => {
+   131→  if (n == null || isNaN(n)) return '-';
+   132→  return n.toLocaleString('en-IN', { minimumFractionDigits: d, maximumFractionDigits: d });
+   133→};
+   134→
+   135→// Shared cell classes
+   136→const cellBase = 'border border-green-300 px-1 py-1 text-[10px]';
+   137→const cellR = `${cellBase} text-right`;
+   138→const cellC = `${cellBase} text-center`;
+   139→
+   140→// ===== MAIN COMPONENT =====
+   141→
+   142→export default function Namuna8Component() {
+   143→  const [records, setRecords] = useState<Namuna8Record[]>([]);
+   144→  const [properties, setProperties] = useState<PropertyInfo[]>([]);
+   145→  const [villageInfo, setVillageInfo] = useState<VillageInfo | null>(null);
+   146→  const [loading, setLoading] = useState(true);
+   147→  const [selectedPropertyId, setSelectedPropertyId] = useState('');
+   148→  const [financialYear, setFinancialYear] = useState('2024-25');
+   149→  const [generating, setGenerating] = useState(false);
+   150→  const [searchTerm, setSearchTerm] = useState('');
+   151→  const [activeStep, setActiveStep] = useState<ProcessStep>('select');
+   152→  const [generatingAll, setGeneratingAll] = useState(false);
+   153→  const [generateProgress, setGenerateProgress] = useState({ current: 0, total: 0 });
+   154→
+   155→  const fetchData = useCallback(async () => {
+   156→    setLoading(true);
+   157→    try {
+   158→      const [recRes, propRes, villageRes] = await Promise.all([
+   159→        fetch('/api/namuna8'),
+   160→        fetch('/api/master?table=property'),
+   161→        fetch('/api/master?table=village'),
+   162→      ]);
+   163→      setRecords(await recRes.json());
+   164→      setProperties(await propRes.json());
+   165→      const vd = await villageRes.json();
+   166→      if (vd && !Array.isArray(vd)) setVillageInfo(vd);
+   167→    } catch {
+   168→      toast({ title: 'त्रुटी', description: 'डेटा लोड अयशस्वी', variant: 'destructive' });
+   169→    } finally {
+   170→      setLoading(false);
+   171→    }
+   172→  }, []);
+   173→
+   174→  useEffect(() => { fetchData(); }, [fetchData]);
+   175→  useEffect(() => { setActiveStep(selectedPropertyId ? 'fetch' : 'select'); }, [selectedPropertyId]);
+   176→
+   177→  const handleGenerate = async () => {
+   178→    if (!selectedPropertyId) { toast({ title: 'त्रुटी', description: 'मालमत्ता निवडा', variant: 'destructive' }); return; }
+   179→    setGenerating(true); setActiveStep('calculate');
+   180→    try {
+   181→      const res = await fetch('/api/namuna8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ propertyId: selectedPropertyId, financialYear }) });
+   182→      if (res.ok) { setActiveStep('generate'); toast({ title: 'यशस्वी', description: 'नमुना ८ तयार झाला' }); fetchData(); setTimeout(() => setActiveStep('select'), 2000); }
+   183→      else { const err = await res.json(); toast({ title: 'त्रुटी', description: err.error, variant: 'destructive' }); setActiveStep('fetch'); }
+   184→    } catch { toast({ title: 'त्रुटी', description: 'नमुना ८ तयार करण्यात अयशस्वी', variant: 'destructive' }); setActiveStep('fetch'); }
+   185→    finally { setGenerating(false); }
+   186→  };
+   187→
+   188→  const handleGenerateAll = async () => {
+   189→    if (properties.length === 0) return;
+   190→    setGeneratingAll(true); setGenerating(true); setActiveStep('calculate');
+   191→    setGenerateProgress({ current: 0, total: properties.length });
+   192→    try {
+   193→      for (let i = 0; i < properties.length; i++) {
+   194→        await fetch('/api/namuna8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ propertyId: properties[i].id, financialYear }) });
+   195→        setGenerateProgress({ current: i + 1, total: properties.length });
+   196→      }
+   197→      setActiveStep('generate'); toast({ title: 'यशस्वी', description: `सर्व ${properties.length} मालमत्तांसाठी नमुना ८ तयार` });
+   198→      fetchData(); setTimeout(() => setActiveStep('select'), 2000);
+   199→    } catch { toast({ title: 'त्रुटी', description: 'काही मालमत्तांसाठी तयार करण्यात अयशस्वी', variant: 'destructive' }); }
+   200→    finally { setGenerating(false); setGeneratingAll(false); setGenerateProgress({ current: 0, total: 0 }); }
+   201→  };
+   202→
+   203→  const getOwnerName = (prop: PropertyInfo) => {
+   204→    const o = prop.owners?.find(x => x.ownershipType === 'मालक');
+   205→    if (!o) return prop.owners?.[0] ? `${prop.owners[0].owner.firstNameMr || prop.owners[0].owner.firstName} ${prop.owners[0].owner.lastNameMr || prop.owners[0].owner.lastName}` : '-';
+   206→    return `${o.owner.firstNameMr || o.owner.firstName} ${o.owner.lastNameMr || o.owner.lastName}`;
+   207→  };
+   208→
+   209→  const getOccupantName = (prop: PropertyInfo) => {
+   210→    const o = prop.owners?.find(x => x.ownershipType === 'भोगवटादार');
+   211→    if (!o) return getOwnerName(prop);
+   212→    return `${o.owner.firstNameMr || o.owner.firstName} ${o.owner.lastNameMr || o.owner.lastName}`;
+   213→  };
+   214→
+   215→  const parseCD = (s: string | null | undefined): ConstructionDetail[] => { try { return JSON.parse(s || '[]'); } catch { return []; } };
+   216→
+   217→  const filtered = records.filter(r => {
+   218→    if (!searchTerm) return true;
+   219→    const s = searchTerm.toLowerCase();
+   220→    return r.property.propertyNumber.toLowerCase().includes(s) || getOwnerName(r.property).toLowerCase().includes(s) || (r.property.ward?.wardNameMr || '').toLowerCase().includes(s);
+   221→  });
+   222→
+   223→  const totalTaxAmount = filtered.reduce((s, r) => s + (r.totalTaxAmt || r.totalTax || 0), 0);
+   224→  const totalProperties = filtered.length;
+   225→  const avgTax = totalProperties > 0 ? totalTaxAmount / totalProperties : 0;
+   226→  const selectedProperty = properties.find(p => p.id === selectedPropertyId);
+   227→
+   228→  // Process steps
+   229→  const processSteps: { key: ProcessStep; label: string; labelEn: string; icon: React.ReactNode }[] = [
+   230→    { key: 'select', label: 'मालमत्ता निवडा', labelEn: 'Select Property', icon: <Building2 className="h-4 w-4" /> },
+   231→    { key: 'fetch', label: 'मास्टर डेटा', labelEn: 'Master Data', icon: <Database className="h-4 w-4" /> },
+   232→    { key: 'calculate', label: 'कर गणना', labelEn: 'Tax Calculation', icon: <Calculator className="h-4 w-4" /> },
+   233→    { key: 'generate', label: 'नमुना ८ तयार', labelEn: 'Generate', icon: <FileText className="h-4 w-4" /> },
+   234→  ];
+   235→  const currentStepIndex = processSteps.findIndex(s => s.key === activeStep);
+   236→
+   237→  // ===== PRINT FUNCTION =====
+   238→  const handlePrintGovFormat = () => {
+   239→    if (filtered.length === 0) { toast({ title: 'त्रुटी', description: 'प्रिंट करण्यासाठी रेकॉर्ड नाहीत', variant: 'destructive' }); return; }
+   240→    const gpName = villageInfo?.gramPanchayatNameMr || 'ग्रामपंचायत';
+   241→    const taluka = villageInfo?.taluka || '';
+   242→    const district = villageInfo?.district || '';
+   243→    const fyParts = financialYear.split('-');
+   244→    const fyFull = `सन ${fyParts[0]}-${(fyParts[1]?.length === 2 ? '20' : '') + (fyParts[1] || '')}`;
+   245→
+   246→    // Build rows for each property
+   247→    const rows = filtered.map((rec, idx) => {
+   248→      const p = rec.property;
+   249→      const on = getOwnerName(p);
+   250→      const occ = getOccupantName(p);
+   251→      const cd = parseCD(rec.constructionDetails).filter(c => c.area > 0);
+   252→      const rn = p.road?.roadNameMr || '-';
+   253→      const totalBlockRows = 4 + Math.max(cd.length, 1) + 1 + 1; // boundaries + constructions + total + note
+   254→
+   255→      const rowBg = idx % 2 === 0 ? '#f0faf5' : '#ffffff';
+   256→      const allRows: string[] = [];
+   257→
+   258→      // 4 Boundary rows
+   259→      BOUNDARY_DIRS.forEach((dir, bi) => {
+   260→        const bName = p[dir.bField] || '-';
+   261→        const bLen = p[dir.lField] || (bi === 0 ? p.totalLength : null) || '';
+   262→        const bWid = p[dir.wField] || (bi === 0 ? p.totalWidth : null) || '';
+   263→        allRows.push(`<tr style="background:${rowBg}">
+   264→          ${bi === 0 ? `<td rowspan="${totalBlockRows}" class="ctr" style="font-weight:700">${idx + 1}</td><td rowspan="${totalBlockRows}">${rn}</td><td rowspan="${totalBlockRows}" class="ctr">${p.citySurveyNo || '-'}</td><td rowspan="${totalBlockRows}" class="ctr" style="font-weight:700;color:#1a5632">${p.propertyNumber}</td><td rowspan="${totalBlockRows}">${on}</td><td rowspan="${totalBlockRows}">${occ}</td>` : ''}
+   265→          <td class="ctr" style="font-weight:600;color:#1a5632">${dir.label}</td>
+   266→          <td>${bName}</td>
+   267→          <td class="rt">${bLen || '-'}</td>
+   268→          <td class="rt">${bWid || '-'}</td>
+   269→          ${bi === 0 ? `<td rowspan="4">${p.constructionType || '-'}</td><td rowspan="4" class="ctr">${p.yearBuilt || '-'}</td><td rowspan="4" class="rt">${fmt(p.builtUpArea || p.area)}</td><td rowspan="4" class="rt">${fmt(rec.landRate)}</td><td rowspan="4" class="rt">${fmt(rec.buildingRate)}</td><td rowspan="4" class="rt">${fmt(rec.constructionRate)}</td><td rowspan="4" class="rt">${fmt(rec.depreciationRate)}</td><td rowspan="4" class="rt">${fmt(rec.usageFactor)}</td><td rowspan="4" class="rt" style="font-weight:700">${fmt(rec.capitalValue)}</td><td rowspan="4" class="rt">${fmt(rec.taxRatePercent)}</td><td rowspan="${Math.max(cd.length, 1)}" class="rt" style="font-weight:600">${fmt(rec.houseTaxAmt)}</td><td rowspan="${Math.max(cd.length, 1)}" class="rt">${fmt(rec.lightTaxAmt)}</td><td rowspan="${Math.max(cd.length, 1)}" class="rt">${fmt(rec.healthTaxAmt)}</td><td rowspan="${Math.max(cd.length, 1)}" class="rt">${fmt(rec.waterTaxAmt)}</td><td rowspan="${Math.max(cd.length, 1)}" class="rt bold" style="color:#138808">${fmt(rec.totalTaxAmt)}</td><td rowspan="${Math.max(cd.length, 1)}" class="rt">${fmt(rec.appealHouseTax)}</td><td rowspan="${Math.max(cd.length, 1)}" class="rt">${fmt(rec.appealLightTax)}</td><td rowspan="${Math.max(cd.length, 1)}" class="rt">${fmt(rec.appealHealthTax)}</td><td rowspan="${Math.max(cd.length, 1)}" class="rt">${fmt(rec.appealWaterTax)}</td><td rowspan="${Math.max(cd.length, 1)}" class="rt">${fmt(rec.appealTotalTax)}</td><td rowspan="${totalBlockRows}">${rec.remarks || '-'}</td>` : ''}
+   270→        </tr>`);
+   271→      });
+   272→
+   273→      // Construction type rows
+   274→      if (cd.length > 0) {
+   275→        cd.forEach((c, ci) => {
+   276→          allRows.push(`<tr style="background:${rowBg}">
+   277→            <td colspan="4"></td>
+   278→            <td style="font-weight:600">${c.type}</td>
+   279→            <td class="ctr">${ci === 0 ? (p.yearBuilt || '-') : ''}</td>
+   280→            <td class="rt">${fmt(c.area)}</td>
+   281→            <td class="rt">${c.type === 'जमीन/खुली जागा' ? fmt(c.rate) : '-'}</td>
+   282→            <td class="rt">${c.type !== 'जमीन/खुली जागा' ? fmt(c.rate) : '-'}</td>
+   283→            <td class="rt">${c.type !== 'जमीन/खुली जागा' ? fmt(c.rate) : '-'}</td>
+   284→            <td class="rt">${fmt(rec.depreciationRate)}</td>
+   285→            <td class="rt">${fmt(rec.usageFactor)}</td>
+   286→            <td class="rt" style="font-weight:700">${fmt(c.capitalValue)}</td>
+   287→            <td class="rt">${fmt(rec.taxRatePercent)}</td>
+   288→            ${ci === 0 ? '' : ''}
+   289→          </tr>`);
+   290→        });
+   291→      } else {
+   292→        allRows.push(`<tr style="background:${rowBg}">
+   293→          <td colspan="4"></td>
+   294→          <td>${p.constructionType || '-'}</td>
+   295→          <td class="ctr">${p.yearBuilt || '-'}</td>
+   296→          <td class="rt">${fmt(p.builtUpArea || p.area)}</td>
+   297→          <td class="rt">${fmt(rec.landRate)}</td>
+   298→          <td class="rt">${fmt(rec.buildingRate)}</td>
+   299→          <td class="rt">${fmt(rec.constructionRate)}</td>
+   300→          <td class="rt">${fmt(rec.depreciationRate)}</td>
+   301→          <td class="rt">${fmt(rec.usageFactor)}</td>
+   302→          <td class="rt" style="font-weight:700">${fmt(rec.capitalValue)}</td>
+   303→          <td class="rt">${fmt(rec.taxRatePercent)}</td>
+   304→        </tr>`);
+   305→      }
+   306→
+   307→      // Total row
+   308→      allRows.push(`<tr class="total-row">
+   309→        <td colspan="8" class="rt bold" style="padding-right:6px">एकुण</td>
+   310→        <td class="rt bold">${fmt(rec.totalArea || p.builtUpArea || p.area)}</td>
+   311→        <td colspan="8"></td>
+   312→        <td class="rt bold">${fmt(rec.houseTaxAmt)}</td>
+   313→        <td class="rt bold">${fmt(rec.lightTaxAmt)}</td>
+   314→        <td class="rt bold">${fmt(rec.healthTaxAmt)}</td>
+   315→        <td class="rt bold">${fmt(rec.waterTaxAmt)}</td>
+   316→        <td class="rt bold" style="color:#138808;font-size:11px">₹${fmt(rec.totalTaxAmt)}</td>
+   317→        <td class="rt">${fmt(rec.appealHouseTax)}</td>
+   318→        <td class="rt">${fmt(rec.appealLightTax)}</td>
+   319→        <td class="rt">${fmt(rec.appealHealthTax)}</td>
+   320→        <td class="rt">${fmt(rec.appealWaterTax)}</td>
+   321→        <td class="rt">${fmt(rec.appealTotalTax)}</td>
+   322→      </tr>`);
+   323→
+   324→      // Note row
+   325→      allRows.push(`<tr class="note-row"><td colspan="31" style="text-align:left;padding:2px 6px;font-size:8px">शेरे: ${rec.remarks || '-'} | सरपंचाची स्वाक्षरी: ________________</td></tr>`);
+   326→
+   327→      return allRows.join('\n');
+   328→    }).join('\n');
+   329→
+   330→    const html = `<!DOCTYPE html><html lang="mr"><head><meta charset="UTF-8"><title>नमुना ८</title>
+   331→<style>
+   332→  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap');
+   333→  *{margin:0;padding:0;box-sizing:border-box}
+   334→  body{font-family:'Noto Sans Devanagari',Arial,sans-serif;padding:10px;font-size:9px;color:#1a1a1a}
+   335→  .flag-bar{display:flex;height:5px;width:100%}.flag-saffron{flex:1;background:#FF9933}.flag-white{flex:1;background:#FFF}.flag-green{flex:1;background:#138808}
+   336→  .form-header{text-align:center;padding:6px 0;border-bottom:2px solid #138808;margin-bottom:6px}
+   337→  .form-title{font-size:12px;font-weight:700}.rule-ref{font-size:9px;color:#666}
+   338→  .fy-row{display:flex;justify-content:space-between;align-items:center;margin:4px 0;padding:3px 6px;background:#f8f9fa;border:1px solid #ddd}
+   339→  .fy-row span{font-size:10px;font-weight:600}
+   340→  .gp-info{display:flex;justify-content:space-between;font-size:9px;padding:2px 6px}
+   341→  .gp-info span{font-weight:600}
+   342→  table{width:100%;border-collapse:collapse;margin:6px 0}
+   343→  th,td{border:1px solid #555;padding:2px 3px;font-size:7.5px;text-align:center;vertical-align:middle;line-height:1.3}
+   344→  th{background:#138808;color:#fff;font-weight:600;font-size:7px}
+   345→  .rt{text-align:right}.ctr{text-align:center}.bold{font-weight:700}
+   346→  .total-row{background:#c8e6c9!important;font-weight:700}.total-row td{border-top:2px solid #138808;font-size:8px}
+   347→  .note-row{background:#fff9c4!important}
+   348→  .header-main th{background:#0d5c2e;font-size:7.5px;padding:3px 1px}
+   349→  .header-sub th{background:#138808;font-size:7px;padding:2px}
+   350→  .header-num th{background:#1a7a3a;font-size:7px;padding:1px;color:#c8e6c9}
+   351→  .footer{margin-top:12px;display:flex;justify-content:space-between;align-items:flex-end}
+   352→  .sig-block{text-align:center;min-width:120px}
+   353→  .sig-line{border-top:1px solid #333;padding-top:3px;margin-top:25px;font-size:9px;font-weight:600}
+   354→  @media print{body{padding:3px;font-size:7px}.flag-bar,th,.total-row,.note-row{-webkit-print-color-adjust:exact;print-color-adjust:exact}table{page-break-inside:auto}tr{page-break-inside:avoid}}
+   355→</style></head><body>
+   356→<div class="flag-bar"><div class="flag-saffron"></div><div class="flag-white"></div><div class="flag-green"></div></div>
+   357→<div class="form-header"><div class="form-title">नमुना नंबर ८</div><div class="rule-ref">नियम (३२) १ पहा</div></div>
+   358→<div class="fy-row"><span>${fyFull} या वर्षासाठी कर आकारणी नोंदवही</span><span style="font-size:9px">पान क्र. _____</span></div>
+   359→<div class="gp-info"><span>ग्रामपंचायत: ${gpName}</span><span>तालुका: ${taluka}</span><span>जिल्हा: ${district}</span></div>
+   360→<table><thead>
+   361→<tr class="header-main"><th rowspan="3" style="width:20px">अ.क्र.</th><th rowspan="3" style="width:50px">रस्त्याचे नाव</th><th rowspan="3" style="width:35px">सिटी सर्वे नंबर</th><th rowspan="3" style="width:30px">मालमत्ता क्र</th><th rowspan="3" style="width:55px">मालकाचे नाव</th><th rowspan="3" style="width:55px">भोगवटा करणारा नाव</th><th colspan="4" style="background:#0a7e3a">क्षेत्रफळ (७-१०)</th><th rowspan="3" style="width:60px">मालमत्तेचे वर्णन</th><th rowspan="3" style="width:25px">बांधका माचे वर्ष</th><th rowspan="3" style="width:30px">क्षेत्रफळ चौ.मी.</th><th colspan="3" style="background:#0a7e3a">रेडीरेकनर दर</th><th rowspan="3" style="width:22px">घसारा दर</th><th rowspan="3" style="width:22px">भारांक</th><th rowspan="3" style="width:40px">भांडवली मूल्य</th><th rowspan="3" style="width:22px">करदर</th><th colspan="5" style="background:#0a7e3a">कराची रक्कम (रु.)</th><th colspan="5" style="background:#b71c1c">अपिलाचे निकाल (रु.)</th><th rowspan="3" style="width:45px">शेरे</th></tr>
+   362→<tr class="header-sub"><th rowspan="2" style="background:#0a7e3a">चर्तू:सिमा</th><th rowspan="2" style="background:#0a7e3a">नाव</th><th rowspan="2" style="background:#0a7e3a">लांबी</th><th rowspan="2" style="background:#0a7e3a">रुंदी</th><th rowspan="2" style="background:#0a7e3a">जमीन</th><th rowspan="2" style="background:#0a7e3a">इमारत</th><th rowspan="2" style="background:#0a7e3a">बांधकाम</th><th>घरपट्टी</th><th>दिवाबत्ती</th><th>आरोग्य</th><th>पाणीपट्टी</th><th>एकुण</th><th style="background:#8b0000">घरपट्टी</th><th style="background:#8b0000">दिवाबत्ती</th><th style="background:#8b0000">आरोग्य</th><th style="background:#8b0000">पाणीपट्टी</th><th style="background:#8b0000">एकुण</th></tr>
+   363→<tr class="header-num"><th>२१</th><th>२२</th><th>२३</th><th>२४</th><th>२५</th><th style="background:#6d0000">२६</th><th style="background:#6d0000">२७</th><th style="background:#6d0000">२८</th><th style="background:#6d0000">२९</th><th style="background:#6d0000">३०</th></tr>
+   364→</thead><tbody>${rows}</tbody></table>
+   365→<div class="footer"><div class="sig-block"><div class="sig-line">मालकाची सही</div></div><div class="sig-block"><div class="sig-line">ग्रामसेवक सही</div></div><div class="sig-block"><div class="sig-line">सरपंच सही व मुद्रा</div></div></div>
+   366→<div style="text-align:center;margin-top:10px;font-size:8px;color:#999">दिनांक: ${new Date().toLocaleDateString('mr-IN')} | नमुना ८ | ${gpName}</div>
+   367→</body></html>`;
+   368→
+   369→    const w = window.open('', '_blank');
+   370→    if (w) { w.document.write(html); w.document.close(); w.focus(); setTimeout(() => w.print(), 500); }
+   371→  };
+   372→
+   373→  // ===== RENDER =====
+   374→  return (
+   375→    <div className="space-y-5">
+   376→      {/* HEADER CARD */}
+   377→      <Card className="border-0 shadow-lg overflow-hidden">
+   378→        <div className="relative" style={{ background: 'linear-gradient(135deg, #1a5632 0%, #0d7377 50%, #1a5632 100%)' }}>
+   379→          <div className="flex h-1.5"><div className="flex-1" style={{ background: '#FF9933' }} /><div className="flex-1 bg-white" /><div className="flex-1" style={{ background: '#138808' }} /></div>
+   380→          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,255,255,0.1) 35px, rgba(255,255,255,0.1) 70px)' }} />
+   381→          <div className="relative p-5 sm:p-6">
+   382→            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+   383→              <div className="flex items-center gap-3">
+   384→                <div className="h-14 w-14 rounded-xl flex items-center justify-center shadow-lg" style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)' }}>
+   385→                  <FileText className="h-7 w-7 text-white" />
+   386→                </div>
+   387→                <div>
+   388→                  <h1 className="text-2xl font-bold text-white leading-tight">नमुना नंबर ८</h1>
+   389→                  <p className="text-green-100 text-sm font-medium">कर आकारणी नोंदवही</p>
+   390→                  <p className="text-green-200/70 text-xs">नियम (३२) १ पहा | Tax Assessment Register</p>
+   391→                  {villageInfo && <p className="text-amber-200 text-xs mt-1 font-semibold">{villageInfo.gramPanchayatNameMr} | ता. {villageInfo.taluka} | जि. {villageInfo.district}</p>}
+   392→                </div>
+   393→              </div>
+   394→              <div className="flex items-center gap-2">
+   395→                <Badge className="bg-white/20 text-white border-white/30 backdrop-blur text-xs px-3 py-1"><Hash className="h-3 w-3 mr-1" />{records.length} रेकॉर्ड्स</Badge>
+   396→                <Button variant="ghost" size="sm" onClick={fetchData} disabled={loading} className="text-white hover:bg-white/20 h-9"><RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />रिफ्रेश</Button>
+   397→              </div>
+   398→            </div>
+   399→            {/* Process Flow */}
+   400→            <div className="mt-5 bg-white/10 backdrop-blur-sm rounded-xl p-4">
+   401→              <div className="flex items-center justify-between mb-2">
+   402→                <span className="text-white/80 text-xs font-medium">प्रक्रिया प्रवाह</span>
+   403→                <Badge className="bg-white/20 text-white border-0 text-xs">Step {currentStepIndex + 1} / {processSteps.length}</Badge>
+   404→              </div>
+   405→              <div className="flex items-center gap-1 sm:gap-2">
+   406→                {processSteps.map((step, i) => {
+   407→                  const isActive = i === currentStepIndex;
+   408→                  const isCompleted = i < currentStepIndex;
+   409→                  return (
+   410→                    <React.Fragment key={step.key}>
+   411→                      <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg transition-all" style={{ background: isActive ? 'rgba(255,255,255,0.3)' : isCompleted ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.05)', border: isActive ? '1.5px solid rgba(255,255,255,0.5)' : '1.5px solid transparent' }}>
+   412→                        <div className="h-6 w-6 rounded-full flex items-center justify-center text-xs" style={{ background: isCompleted ? '#2ecc71' : isActive ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)' }}>
+   413→                          {isCompleted ? <CheckCircle2 className="h-3.5 w-3.5 text-white" /> : <span className="text-white font-semibold">{i + 1}</span>}
+   414→                        </div>
+   415→                        <div className="hidden sm:block"><div className="text-white text-xs font-semibold leading-tight">{step.label}</div><div className="text-white/50 text-[10px] leading-tight">{step.labelEn}</div></div>
+   416→                      </div>
+   417→                      {i < processSteps.length - 1 && <ChevronRight className="h-4 w-4 text-white/30 flex-shrink-0" />}
+   418→                    </React.Fragment>
+   419→                  );
+   420→                })}
+   421→              </div>
+   422→            </div>
+   423→          </div>
+   424→        </div>
+   425→      </Card>
+   426→
+   427→      {/* CONTROLS */}
+   428→      <Card className="border-0 shadow-md overflow-hidden">
+   429→        <div className="h-1" style={{ background: 'linear-gradient(90deg, #FF9933, #FFF, #138808)' }} />
+   430→        <CardContent className="p-5">
+   431→          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4">
+   432→            <div className="lg:col-span-4">
+   433→              <Label className="text-sm font-semibold text-green-800 mb-1.5 flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" />मालमत्ता निवडा</Label>
+   434→              <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
+   435→                <SelectTrigger className="border-green-200 focus:ring-green-500/20 focus:border-green-400 h-10"><SelectValue placeholder="मालमत्ता निवडा..." /></SelectTrigger>
+   436→                <SelectContent>{properties.map(p => <SelectItem key={p.id} value={p.id}><span className="font-semibold">{p.propertyNumber}</span><span className="text-muted-foreground"> - {getOwnerName(p)}</span></SelectItem>)}</SelectContent>
+   437→              </Select>
+   438→            </div>
+   439→            <div className="lg:col-span-3">
+   440→              <Label className="text-sm font-semibold text-green-800 mb-1.5 flex items-center gap-1.5"><Layers className="h-3.5 w-3.5" />वित्तीय वर्ष</Label>
+   441→              <Select value={financialYear} onValueChange={setFinancialYear}>
+   442→                <SelectTrigger className="border-green-200 focus:ring-green-500/20 focus:border-green-400 h-10"><SelectValue /></SelectTrigger>
+   443→                <SelectContent>{['2021-22', '2022-23', '2023-24', '2024-25', '2025-26'].map(y => <SelectItem key={y} value={y}><span className="font-semibold">सन {y}</span></SelectItem>)}</SelectContent>
+   444→              </Select>
+   445→            </div>
+   446→            <div className="lg:col-span-3 flex items-end">
+   447→              <Button onClick={handleGenerate} disabled={generating || !selectedPropertyId} className="w-full h-10 text-sm font-semibold shadow-md" style={{ background: generating || !selectedPropertyId ? undefined : 'linear-gradient(135deg, #1a5632, #0d7377)' }}>
+   448→                {generating ? <><Loader2 className="h-4 w-4 mr-1.5 animate-spin" />तयार होत आहे...</> : <><Zap className="h-4 w-4 mr-1.5" />नमुना ८ तयार करा</>}
+   449→              </Button>
+   450→            </div>
+   451→            <div className="lg:col-span-2 flex items-end">
+   452→              <Button variant="outline" onClick={handleGenerateAll} disabled={generating || properties.length === 0} className="w-full h-10 text-sm border-2 border-green-300 text-green-700 hover:bg-green-50 font-semibold">
+   453→                {generatingAll ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" />{generateProgress.current}/{generateProgress.total}</> : <><ArrowDownToLine className="h-4 w-4 mr-1" />सर्वांसाठी</>}
+   454→              </Button>
+   455→            </div>
+   456→          </div>
+   457→          {selectedProperty && (
+   458→            <div className="mt-4 p-3 rounded-lg border border-green-200" style={{ background: 'linear-gradient(135deg, #eafaf1, #f0fdf4)' }}>
+   459→              <div className="flex items-start gap-3">
+   460→                <div className="h-10 w-10 rounded-lg bg-green-600 flex items-center justify-center shadow-sm flex-shrink-0"><Building2 className="h-5 w-5 text-white" /></div>
+   461→                <div className="flex-1 min-w-0">
+   462→                  <div className="flex items-center gap-2 flex-wrap">
+   463→                    <span className="font-bold text-green-900 text-sm">{selectedProperty.propertyNumber}</span>
+   464→                    <Badge className="bg-green-100 text-green-800 border border-green-300 text-xs">{selectedProperty.constructionType || '-'}</Badge>
+   465→                    <Badge className="bg-teal-100 text-teal-800 border border-teal-300 text-xs">{selectedProperty.usageType || '-'}</Badge>
+   466→                    <Badge className="bg-amber-100 text-amber-800 border border-amber-300 text-xs"><MapPin className="h-3 w-3 mr-0.5" />{selectedProperty.ward?.wardNameMr || '-'}</Badge>
+   467→                  </div>
+   468→                  <div className="flex items-center gap-4 mt-1 text-xs text-green-700">
+   469→                    <span className="flex items-center gap-1"><Users className="h-3 w-3" />{getOwnerName(selectedProperty)}</span>
+   470→                    <span className="flex items-center gap-1"><Route className="h-3 w-3" />{selectedProperty.road?.roadNameMr || '-'}</span>
+   471→                    <span>क्षेत्रफळ: {selectedProperty.area || 0} चौ.मी.</span>
+   472→                  </div>
+   473→                </div>
+   474→              </div>
+   475→            </div>
+   476→          )}
+   477→          <div className="mt-4 flex gap-3">
+   478→            <div className="relative flex-1">
+   479→              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-400" />
+   480→              <Input placeholder="मालमत्ता क्र./मालक नाव/वार्ड शोधा..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10 border-green-200 focus:ring-green-500/20 focus:border-green-400" />
+   481→            </div>
+   482→            {filtered.length > 0 && (
+   483→              <Button onClick={handlePrintGovFormat} className="shadow-md" style={{ background: 'linear-gradient(135deg, #1a5632, #0d7377)' }}>
+   484→                <Printer className="h-4 w-4 mr-1.5" />शासकीय स्वरूप प्रिंट
+   485→              </Button>
+   486→            )}
+   487→          </div>
+   488→        </CardContent>
+   489→      </Card>
+   490→
+   491→      {/* SUMMARY STATS */}
+   492→      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+   493→        {[
+   494→          { icon: FileText, val: totalProperties, label: 'एकूण रेकॉर्ड्स', bg1: '#e8f5e9', bg2: '#f1f8e9', color: '#138808', ic: 'text-green-600' },
+   495→          { icon: Building2, val: properties.length, label: 'एकूण मालमत्ता', bg1: '#e0f2f1', bg2: '#e8f5e9', color: '#0d7377', ic: 'text-teal-600' },
+   496→          { icon: IndianRupee, val: `₹${totalTaxAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, label: 'एकूण कर', bg1: '#fff3e0', bg2: '#fff8e1', color: '#FF9933', ic: 'text-amber-600' },
+   497→          { icon: Scale, val: `₹${avgTax.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, label: 'सरासरी कर', bg1: '#e8f5e9', bg2: '#e0f2f1', color: '#1a5632', ic: 'text-emerald-600' },
+   498→        ].map((s, i) => (
+   499→          <Card key={i} className="border-0 shadow-sm overflow-hidden">
+   500→            <div className="h-1" style={{ background: s.color }} />
+   501→            <CardContent className="p-4 text-center" style={{ background: `linear-gradient(135deg, ${s.bg1}, ${s.bg2})` }}>
+   502→              <s.icon className={`h-5 w-5 mx-auto mb-1 ${s.ic}`} />
+   503→              <div className="text-2xl font-bold" style={{ color: s.color }}>{s.val}</div>
+   504→              <div className="text-xs" style={{ color: s.color }}>{s.label}</div>
+   505→            </CardContent>
+   506→          </Card>
+   507→        ))}
+   508→      </div>
+   509→
+   510→      {/* ===== MAIN EXCEL FORMAT TABLE ===== */}
+   511→      <Card className="border-0 shadow-md overflow-hidden">
+   512→        <div className="flex h-1.5"><div className="flex-1" style={{ background: '#FF9933' }} /><div className="flex-1 bg-white" /><div className="flex-1" style={{ background: '#138808' }} /></div>
+   513→        <CardHeader className="pb-3">
+   514→          <div className="flex items-center justify-between flex-wrap gap-3">
+   515→            <CardTitle className="text-lg flex items-center gap-2 text-green-900">
+   516→              <div className="h-8 w-8 rounded-lg bg-green-100 flex items-center justify-center"><BookOpen className="h-4 w-4 text-green-600" /></div>
+   517→              नमुना ८ - कर आकारणी नोंदवही (३१ स्तंभ)
+   518→            </CardTitle>
+   519→            <div className="flex items-center gap-2">
+   520→              {villageInfo && <Badge className="bg-green-50 text-green-800 border border-green-200 text-xs"><Landmark className="h-3 w-3 mr-1" />{villageInfo.gramPanchayatNameMr}</Badge>}
+   521→              <Badge className="bg-amber-50 text-amber-800 border border-amber-200 text-xs">सन {financialYear}</Badge>
+   522→            </div>
+   523→          </div>
+   524→        </CardHeader>
+   525→        <CardContent>
+   526→          {loading ? (
+   527→            <div className="space-y-3">{[1, 2, 3, 4, 5].map(i => <div key={i} className="flex items-center gap-4"><Skeleton className="h-4 w-8" /><Skeleton className="h-4 w-24" /><Skeleton className="h-4 w-32" /><Skeleton className="h-4 w-20" /><Skeleton className="h-4 w-16" /></div>)}</div>
+   528→          ) : filtered.length === 0 ? (
+   529→            <div className="text-center py-12"><div className="h-16 w-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4"><AlertCircle className="h-8 w-8 text-green-300" /></div><p className="text-muted-foreground font-medium">नमुना ८ रेकॉर्ड नाहीत</p><p className="text-xs text-muted-foreground mt-1">मालमत्ता निवडून &quot;नमुना ८ तयार करा&quot; बटण दाबा</p></div>
+   530→          ) : (
+   531→            <div className="overflow-x-auto border border-green-200 rounded-lg" style={{ scrollbarWidth: 'thin' }}>
+   532→              <table className="w-full border-collapse min-w-[2400px]" style={{ fontSize: '11px' }}>
+   533→                <thead>
+   534→                  {/* Row 1: Main Headers */}
+   535→                  <tr style={{ background: '#0d5c2e' }}>
+   536→                    <th rowSpan={3} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ minWidth: '35px' }}>अ.क्र.<br/><span className="text-green-300 text-[8px]">(१)</span></th>
+   537→                    <th rowSpan={3} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ minWidth: '70px' }}>रस्त्याचे<br/>नाव<br/><span className="text-green-300 text-[8px]">(२)</span></th>
+   538→                    <th rowSpan={3} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ minWidth: '50px' }}>सिटी<br/>सर्वे<br/>नंबर<br/><span className="text-green-300 text-[8px]">(३)</span></th>
+   539→                    <th rowSpan={3} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ minWidth: '45px' }}>मालमत्ता<br/>क्र<br/><span className="text-green-300 text-[8px]">(४)</span></th>
+   540→                    <th rowSpan={3} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ minWidth: '85px' }}>मालकाचे<br/>नाव<br/><span className="text-green-300 text-[8px]">(५)</span></th>
+   541→                    <th rowSpan={3} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ minWidth: '85px' }}>भोगवटा<br/>करणारा<br/>नाव<br/><span className="text-green-300 text-[8px]">(६)</span></th>
+   542→                    <th colSpan={4} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ background: '#0a7e3a' }}>क्षेत्रफळ (७-१०)</th>
+   543→                    <th rowSpan={3} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ minWidth: '85px' }}>मालमत्तेचे<br/>वर्णन<br/><span className="text-green-300 text-[8px]">(११)</span></th>
+   544→                    <th rowSpan={3} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ minWidth: '40px' }}>बांधका<br/>माचे<br/>वर्ष<br/><span className="text-green-300 text-[8px]">(१२)</span></th>
+   545→                    <th rowSpan={3} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ minWidth: '45px' }}>क्षेत्रफळ<br/>चौ.मी.<br/><span className="text-green-300 text-[8px]">(१३)</span></th>
+   546→                    <th colSpan={3} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ background: '#0a7e3a' }}>रेडीरेकनर दर प्रति चौ.मी.</th>
+   547→                    <th rowSpan={3} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ minWidth: '35px' }}>घसारा<br/>दर<br/><span className="text-green-300 text-[8px]">(१७)</span></th>
+   548→                    <th rowSpan={3} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ minWidth: '38px' }}>वापरा<br/>नुसार<br/>भारांक<br/><span className="text-green-300 text-[8px]">(१८)</span></th>
+   549→                    <th rowSpan={3} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ minWidth: '65px' }}>एकुण<br/>भांडवली<br/>मूल्य (रु.)<br/><span className="text-green-300 text-[8px]">(१९)</span></th>
+   550→                    <th rowSpan={3} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ minWidth: '35px' }}>करचा<br/>दर<br/><span className="text-green-300 text-[8px]">(२०)</span></th>
+   551→                    <th colSpan={5} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ background: '#0a7e3a' }}>कराची रक्कम (रु.) (२१-२५)</th>
+   552→                    <th colSpan={5} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ background: '#b71c1c' }}>अपिलाचे निकाल (रु.) (२६-३०)</th>
+   553→                    <th rowSpan={3} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ minWidth: '60px' }}>शेरे व दुरुस्त्या<br/><span className="text-green-300 text-[8px]">(३१)</span></th>
+   554→                  </tr>
+   555→                  {/* Row 2: Sub Headers */}
+   556→                  <tr style={{ background: '#138808' }}>
+   557→                    <th rowSpan={2} className="border border-green-700 text-white px-1 py-1 text-[9px] font-semibold" style={{ background: '#0a7e3a', minWidth: '40px' }}>चर्तू:सिमा</th>
+   558→                    <th rowSpan={2} className="border border-green-700 text-white px-1 py-1 text-[9px] font-semibold" style={{ background: '#0a7e3a', minWidth: '55px' }}>नाव</th>
+   559→                    <th rowSpan={2} className="border border-green-700 text-white px-1 py-1 text-[9px] font-semibold" style={{ background: '#0a7e3a', minWidth: '40px' }}>लांबी<br/>(मी.)</th>
+   560→                    <th rowSpan={2} className="border border-green-700 text-white px-1 py-1 text-[9px] font-semibold" style={{ background: '#0a7e3a', minWidth: '40px' }}>रुंदी<br/>(मी.)</th>
+   561→                    <th rowSpan={2} className="border border-green-700 text-white px-1 py-1 text-[9px] font-semibold" style={{ background: '#0a7e3a', minWidth: '40px' }}>जमीन<br/><span className="text-green-300 text-[7px]">(१४)</span></th>
+   562→                    <th rowSpan={2} className="border border-green-700 text-white px-1 py-1 text-[9px] font-semibold" style={{ background: '#0a7e3a', minWidth: '40px' }}>इमारत<br/><span className="text-green-300 text-[7px]">(१५)</span></th>
+   563→                    <th rowSpan={2} className="border border-green-700 text-white px-1 py-1 text-[9px] font-semibold" style={{ background: '#0a7e3a', minWidth: '40px' }}>बांधकाम<br/><span className="text-green-300 text-[7px]">(१६)</span></th>
+   564→                    <th className="border border-green-700 text-white px-1 py-1 text-[8px] font-semibold" style={{ minWidth: '42px' }}>घरपट्टी</th>
+   565→                    <th className="border border-green-700 text-white px-1 py-1 text-[8px] font-semibold" style={{ minWidth: '40px' }}>दिवाबत्ती<br/>कर</th>
+   566→                    <th className="border border-green-700 text-white px-1 py-1 text-[8px] font-semibold" style={{ minWidth: '42px' }}>आरोग्य<br/>रक्षण कर</th>
+   567→                    <th className="border border-green-700 text-white px-1 py-1 text-[8px] font-semibold" style={{ minWidth: '40px' }}>सा.<br/>पाणीपट्टी</th>
+   568→                    <th className="border border-green-700 text-white px-1 py-1 text-[8px] font-semibold" style={{ minWidth: '48px' }}>एकुण कर</th>
+   569→                    <th className="border border-red-800 text-white px-1 py-1 text-[8px] font-semibold" style={{ background: '#8b0000', minWidth: '38px' }}>घरपट्टी</th>
+   570→                    <th className="border border-red-800 text-white px-1 py-1 text-[8px] font-semibold" style={{ background: '#8b0000', minWidth: '36px' }}>दिवाबत्ती</th>
+   571→                    <th className="border border-red-800 text-white px-1 py-1 text-[8px] font-semibold" style={{ background: '#8b0000', minWidth: '38px' }}>आरोग्य</th>
+   572→                    <th className="border border-red-800 text-white px-1 py-1 text-[8px] font-semibold" style={{ background: '#8b0000', minWidth: '36px' }}>पाणीपट्टी</th>
+   573→                    <th className="border border-red-800 text-white px-1 py-1 text-[8px] font-semibold" style={{ background: '#8b0000', minWidth: '42px' }}>एकुण</th>
+   574→                  </tr>
+   575→                  {/* Row 3: Column Numbers for Tax/Appeal */}
+   576→                  <tr style={{ background: '#1a7a3a' }}>
+   577→                    <th className="border border-green-700 text-green-200 px-1 py-0.5 text-[8px]">२१</th>
+   578→                    <th className="border border-green-700 text-green-200 px-1 py-0.5 text-[8px]">२२</th>
+   579→                    <th className="border border-green-700 text-green-200 px-1 py-0.5 text-[8px]">२३</th>
+   580→                    <th className="border border-green-700 text-green-200 px-1 py-0.5 text-[8px]">२४</th>
+   581→                    <th className="border border-green-700 text-green-200 px-1 py-0.5 text-[8px]">२५</th>
+   582→                    <th className="border border-red-800 text-red-200 px-1 py-0.5 text-[8px]" style={{ background: '#6d0000' }}>२६</th>
+   583→                    <th className="border border-red-800 text-red-200 px-1 py-0.5 text-[8px]" style={{ background: '#6d0000' }}>२७</th>
+   584→                    <th className="border border-red-800 text-red-200 px-1 py-0.5 text-[8px]" style={{ background: '#6d0000' }}>२८</th>
+   585→                    <th className="border border-red-800 text-red-200 px-1 py-0.5 text-[8px]" style={{ background: '#6d0000' }}>२९</th>
+   586→                    <th className="border border-red-800 text-red-200 px-1 py-0.5 text-[8px]" style={{ background: '#6d0000' }}>३०</th>
+   587→                  </tr>
+   588→                </thead>
+   589→
+   590→                <tbody>
+   591→                  {filtered.map((rec, idx) => {
+   592→                    const p = rec.property;
+   593→                    const on = getOwnerName(p);
+   594→                    const occ = getOccupantName(p);
+   595→                    const cd = parseCD(rec.constructionDetails).filter(c => c.area > 0);
+   596→                    const rn = p.road?.roadNameMr || '-';
+   597→                    const cdCount = Math.max(cd.length, 1);
+   598→                    const totalBlockRows = 4 + cdCount + 1 + 1; // 4 boundaries + construction rows + total + note
+   599→                    const rowBg = idx % 2 === 0 ? 'bg-green-50/50' : 'bg-white';
+   600→
+   601→                    return (
+   602→                      <React.Fragment key={rec.id}>
+   603→                        {/* ===== 4 BOUNDARY ROWS ===== */}
+   604→                        {BOUNDARY_DIRS.map((dir, bi) => {
+   605→                          const bName = p[dir.bField] || '-';
+   606→                          const bLen = p[dir.lField] || (bi === 0 ? p.totalLength : null) || null;
+   607→                          const bWid = p[dir.wField] || (bi === 0 ? p.totalWidth : null) || null;
+   608→
+   609→                          return (
+   610→                            <tr key={dir.key} className={rowBg}>
+   611→                              {bi === 0 && (
+   612→                                <>
+   613→                                  {/* Cols 1-6: span entire property block */}
+   614→                                  <td rowSpan={totalBlockRows} className={`${cellC} font-bold text-green-900 align-top`}>{idx + 1}</td>
+   615→                                  <td rowSpan={totalBlockRows} className={`${cellBase} align-top`}>{rn}</td>
+   616→                                  <td rowSpan={totalBlockRows} className={`${cellC} align-top`}>{p.citySurveyNo || '-'}</td>
+   617→                                  <td rowSpan={totalBlockRows} className={`${cellC} font-bold text-green-800 align-top`}>{p.propertyNumber}</td>
+   618→                                  <td rowSpan={totalBlockRows} className={`${cellBase} align-top`}>{on}</td>
+   619→                                  <td rowSpan={totalBlockRows} className={`${cellBase} align-top`}>{occ}</td>
+   620→                                </>
+   621→                              )}
+   622→                              {/* Cols 7-10: boundary data per row */}
+   623→                              <td className={`${cellC} font-medium text-green-800`}>{dir.label}</td>
+   624→                              <td className={cellBase}>{bName}</td>
+   625→                              <td className={cellR}>{bLen != null ? fmt(bLen) : '-'}</td>
+   626→                              <td className={cellR}>{bWid != null ? fmt(bWid) : '-'}</td>
+   627→
+   628→                              {bi === 0 && (
+   629→                                <>
+   630→                                  {/* Cols 11-20: span 4 boundary rows */}
+   631→                                  <td rowSpan={4} className={`${cellBase} align-top`}>{p.constructionType || '-'}</td>
+   632→                                  <td rowSpan={4} className={`${cellC} align-top`}>{p.yearBuilt || '-'}</td>
+   633→                                  <td rowSpan={4} className={`${cellR} align-top`}>{fmt(p.builtUpArea || p.area)}</td>
+   634→                                  <td rowSpan={4} className={`${cellR} align-top`}>{fmt(rec.landRate)}</td>
+   635→                                  <td rowSpan={4} className={`${cellR} align-top`}>{fmt(rec.buildingRate)}</td>
+   636→                                  <td rowSpan={4} className={`${cellR} align-top`}>{fmt(rec.constructionRate)}</td>
+   637→                                  <td rowSpan={4} className={`${cellR} align-top`}>{fmt(rec.depreciationRate)}</td>
+   638→                                  <td rowSpan={4} className={`${cellR} align-top`}>{fmt(rec.usageFactor)}</td>
+   639→                                  <td rowSpan={4} className={`${cellR} font-semibold align-top`}>{fmt(rec.capitalValue)}</td>
+   640→                                  <td rowSpan={4} className={`${cellR} align-top`}>{fmt(rec.taxRatePercent)}</td>
+   641→
+   642→                                  {/* Cols 21-25: tax amounts span construction rows */}
+   643→                                  <td rowSpan={cdCount} className={`${cellR} font-semibold align-top`}>{fmt(rec.houseTaxAmt)}</td>
+   644→                                  <td rowSpan={cdCount} className={`${cellR} align-top`}>{fmt(rec.lightTaxAmt)}</td>
+   645→                                  <td rowSpan={cdCount} className={`${cellR} align-top`}>{fmt(rec.healthTaxAmt)}</td>
+   646→                                  <td rowSpan={cdCount} className={`${cellR} align-top`}>{fmt(rec.waterTaxAmt)}</td>
+   647→                                  <td rowSpan={cdCount} className={`${cellR} font-bold text-green-800 align-top`} style={{ background: '#e8f5e9' }}>{fmt(rec.totalTaxAmt)}</td>
+   648→
+   649→                                  {/* Cols 26-30: appeal amounts span construction rows */}
+   650→                                  <td rowSpan={cdCount} className={`${cellR} align-top`} style={{ background: '#fce4ec' }}>{fmt(rec.appealHouseTax)}</td>
+   651→                                  <td rowSpan={cdCount} className={`${cellR} align-top`} style={{ background: '#fce4ec' }}>{fmt(rec.appealLightTax)}</td>
+   652→                                  <td rowSpan={cdCount} className={`${cellR} align-top`} style={{ background: '#fce4ec' }}>{fmt(rec.appealHealthTax)}</td>
+   653→                                  <td rowSpan={cdCount} className={`${cellR} align-top`} style={{ background: '#fce4ec' }}>{fmt(rec.appealWaterTax)}</td>
+   654→                                  <td rowSpan={cdCount} className={`${cellR} font-semibold align-top`} style={{ background: '#fce4ec' }}>{fmt(rec.appealTotalTax)}</td>
+   655→
+   656→                                  {/* Col 31: span entire property block */}
+   657→                                  <td rowSpan={totalBlockRows} className={`${cellBase} text-[9px] align-top`}>{rec.remarks || '-'}</td>
+   658→                                </>
+   659→                              )}
+   660→                            </tr>
+   661→                          );
+   662→                        })}
+   663→
+   664→                        {/* ===== CONSTRUCTION TYPE ROWS ===== */}
+   665→                        {cd.length > 0 ? (
+   666→                          cd.map((c, ci) => (
+   667→                            <tr key={`cd-${ci}`} className={rowBg}>
+   668→                              {/* Cols 7-10: empty */}
+   669→                              <td className={cellBase}></td>
+   670→                              <td className={cellBase}></td>
+   671→                              <td className={cellBase}></td>
+   672→                              <td className={cellBase}></td>
+   673→                              {/* Cols 11-20: construction data */}
+   674→                              <td className={`${cellBase} font-medium`}>{c.type}</td>
+   675→                              <td className={cellC}>{ci === 0 ? (p.yearBuilt || '-') : ''}</td>
+   676→                              <td className={cellR}>{fmt(c.area)}</td>
+   677→                              <td className={cellR}>{c.type === 'जमीन/खुली जागा' ? fmt(c.rate) : '-'}</td>
+   678→                              <td className={cellR}>{c.type !== 'जमीन/खुली जागा' ? fmt(c.rate) : '-'}</td>
+   679→                              <td className={cellR}>{c.type !== 'जमीन/खुली जागा' ? fmt(c.rate) : '-'}</td>
+   680→                              <td className={cellR}>{fmt(rec.depreciationRate)}</td>
+   681→                              <td className={cellR}>{fmt(rec.usageFactor)}</td>
+   682→                              <td className={`${cellR} font-semibold`}>{fmt(c.capitalValue)}</td>
+   683→                              <td className={cellR}>{fmt(rec.taxRatePercent)}</td>
+   684→                              {/* Cols 21-30: covered by rowspan from first boundary row */}
+   685→                            </tr>
+   686→                          ))
+   687→                        ) : (
+   688→                          /* Default row when no construction details */
+   689→                          <tr className={rowBg}>
+   690→                            <td className={cellBase}></td><td className={cellBase}></td><td className={cellBase}></td><td className={cellBase}></td>
+   691→                            <td className={cellBase}>{p.constructionType || '-'}</td>
+   692→                            <td className={cellC}>{p.yearBuilt || '-'}</td>
+   693→                            <td className={cellR}>{fmt(p.builtUpArea || p.area)}</td>
+   694→                            <td className={cellR}>{fmt(rec.landRate)}</td>
+   695→                            <td className={cellR}>{fmt(rec.buildingRate)}</td>
+   696→                            <td className={cellR}>{fmt(rec.constructionRate)}</td>
+   697→                            <td className={cellR}>{fmt(rec.depreciationRate)}</td>
+   698→                            <td className={cellR}>{fmt(rec.usageFactor)}</td>
+   699→                            <td className={`${cellR} font-semibold`}>{fmt(rec.capitalValue)}</td>
+   700→                            <td className={cellR}>{fmt(rec.taxRatePercent)}</td>
+   701→                          </tr>
+   702→                        )}
+   703→
+   704→                        {/* ===== TOTAL ROW ===== */}
+   705→                        <tr style={{ background: '#c8e6c9' }}>
+   706→                          {/* Cols 7-10: empty */}
+   707→                          <td className="border-2 border-green-500"></td>
+   708→                          <td className="border-2 border-green-500"></td>
+   709→                          <td className="border-2 border-green-500"></td>
+   710→                          <td className="border-2 border-green-500"></td>
+   711→                          {/* Cols 11-12: label */}
+   712→                          <td className="border-2 border-green-500"></td>
+   713→                          <td className="border-2 border-green-500 text-right pr-2 font-bold text-green-900 text-[11px]">एकुण</td>
+   714→                          {/* Col 13: total area */}
+   715→                          <td className="border-2 border-green-500 text-right px-1 py-1 text-[11px] font-bold text-green-900">{fmt(rec.totalArea || p.builtUpArea || p.area)}</td>
+   716→                          {/* Cols 14-20: empty */}
+   717→                          <td className="border-2 border-green-500"></td>
+   718→                          <td className="border-2 border-green-500"></td>
+   719→                          <td className="border-2 border-green-500"></td>
+   720→                          <td className="border-2 border-green-500"></td>
+   721→                          <td className="border-2 border-green-500"></td>
+   722→                          <td className="border-2 border-green-500"></td>
+   723→                          <td className="border-2 border-green-500"></td>
+   724→                          {/* Cols 21-25: total taxes */}
+   725→                          <td className="border-2 border-green-500 text-right px-1 py-1 text-[11px] font-bold">{fmt(rec.houseTaxAmt)}</td>
+   726→                          <td className="border-2 border-green-500 text-right px-1 py-1 text-[11px] font-bold">{fmt(rec.lightTaxAmt)}</td>
+   727→                          <td className="border-2 border-green-500 text-right px-1 py-1 text-[11px] font-bold">{fmt(rec.healthTaxAmt)}</td>
+   728→                          <td className="border-2 border-green-500 text-right px-1 py-1 text-[11px] font-bold">{fmt(rec.waterTaxAmt)}</td>
+   729→                          <td className="border-2 border-green-500 text-right px-1 py-1 text-[12px] font-bold text-green-900" style={{ background: '#a5d6a7' }}>₹{fmt(rec.totalTaxAmt)}</td>
+   730→                          {/* Cols 26-30: total appeals */}
+   731→                          <td className="border-2 border-red-300 text-right px-1 py-1 text-[10px]" style={{ background: '#ef9a9a' }}>{fmt(rec.appealHouseTax)}</td>
+   732→                          <td className="border-2 border-red-300 text-right px-1 py-1 text-[10px]" style={{ background: '#ef9a9a' }}>{fmt(rec.appealLightTax)}</td>
+   733→                          <td className="border-2 border-red-300 text-right px-1 py-1 text-[10px]" style={{ background: '#ef9a9a' }}>{fmt(rec.appealHealthTax)}</td>
+   734→                          <td className="border-2 border-red-300 text-right px-1 py-1 text-[10px]" style={{ background: '#ef9a9a' }}>{fmt(rec.appealWaterTax)}</td>
+   735→                          <td className="border-2 border-red-300 text-right px-1 py-1 text-[10px] font-bold" style={{ background: '#ef9a9a' }}>{fmt(rec.appealTotalTax)}</td>
+   736→                        </tr>
+   737→
+   738→                        {/* ===== NOTE / शेरे ROW ===== */}
+   739→                        <tr style={{ background: '#fff9c4' }}>
+   740→                          <td colSpan={31} className="border border-amber-300 px-2 py-1 text-[9px] text-amber-900 font-medium">
+   741→                            शेरे: {rec.remarks || '-'} | अनुप्रमाणीतकरणारी सरपंचाची स्वाक्षरी: ________________
+   742→                          </td>
+   743→                        </tr>
+   744→                      </React.Fragment>
+   745→                    );
+   746→                  })}
+   747→
+   748→                  {/* ===== GRAND TOTAL ROW ===== */}
+   749→                  {filtered.length > 1 && (
+   750→                    <tr style={{ background: '#1a5632' }}>
+   751→                      <td colSpan={17} className="border-2 border-green-700 text-right pr-2 py-2 text-[12px] font-bold text-white">सर्व एकुण रक्कम</td>
+   752→                      <td className="border-2 border-green-700 text-right px-1 py-2 text-[12px] font-bold text-white">{fmt(filtered.reduce((s, r) => s + (r.capitalValue || 0), 0))}</td>
+   753→                      <td className="border-2 border-green-700"></td>
+   754→                      <td className="border-2 border-green-700 text-right px-1 py-2 text-[11px] font-bold text-white">{fmt(filtered.reduce((s, r) => s + (r.houseTaxAmt || 0), 0))}</td>
+   755→                      <td className="border-2 border-green-700 text-right px-1 py-2 text-[11px] font-bold text-white">{fmt(filtered.reduce((s, r) => s + (r.lightTaxAmt || 0), 0))}</td>
+   756→                      <td className="border-2 border-green-700 text-right px-1 py-2 text-[11px] font-bold text-white">{fmt(filtered.reduce((s, r) => s + (r.healthTaxAmt || 0), 0))}</td>
+   757→                      <td className="border-2 border-green-700 text-right px-1 py-2 text-[11px] font-bold text-white">{fmt(filtered.reduce((s, r) => s + (r.waterTaxAmt || 0), 0))}</td>
+   758→                      <td className="border-2 border-green-700 text-right px-1 py-2 text-[13px] font-bold" style={{ background: '#FF9933', color: '#fff' }}>₹{fmt(totalTaxAmount)}</td>
+   759→                      <td colSpan={5} className="border-2 border-red-800" style={{ background: '#8b0000' }}></td>
+   760→                      <td className="border-2 border-green-700"></td>
+   761→                    </tr>
+   762→                  )}
+   763→                </tbody>
+   764→              </table>
+   765→            </div>
+   766→          )}
+   767→
+   768→          {/* Legend */}
+   769→          {filtered.length > 0 && (
+   770→            <div className="mt-4 p-3 rounded-lg border border-green-200 bg-green-50/50">
+   771→              <div className="flex flex-wrap gap-4 text-[10px] text-green-800">
+   772→                <div className="flex items-center gap-1.5"><div className="h-3 w-3 rounded-sm" style={{ background: '#c8e6c9' }} /><span>एकुण रांग</span></div>
+   773→                <div className="flex items-center gap-1.5"><div className="h-3 w-3 rounded-sm" style={{ background: '#fff9c4' }} /><span>शेरे / नोंद</span></div>
+   774→                <div className="flex items-center gap-1.5"><div className="h-3 w-3 rounded-sm" style={{ background: '#fce4ec' }} /><span>अपिलाचे निकाल</span></div>
+   775→                <div className="flex items-center gap-1.5"><div className="h-3 w-3 rounded-sm" style={{ background: '#1a5632' }} /><span>सर्व एकुण</span></div>
+   776→                <span className="font-semibold">बांधकाम प्रकार दर:</span>
+   777→                {CONSTRUCTION_TYPES.map(ct => <span key={ct.type}>{ct.type}: ₹{ct.rate}</span>)}
+   778→              </div>
+   779→            </div>
+   780→          )}
+   781→        </CardContent>
+   782→      </Card>
+   783→
+   784→      {/* FOOTER SIGNATURE SECTION */}
+   785→      {filtered.length > 0 && (
+   786→        <Card className="border-0 shadow-sm overflow-hidden">
+   787→          <CardContent className="p-6" style={{ background: 'linear-gradient(135deg, #f1f8e9, #e8f5e9)' }}>
+   788→            <div className="flex flex-col sm:flex-row justify-between items-end gap-6">
+   789→              {['मालकाची सही|Owner Signature', 'ग्रामसेवक सही|Gram Sevak', 'सरपंच सही व मुद्रा|Sarpanch & Seal'].map((s, i) => {
+   790→                const [mr, en] = s.split('|');
+   791→                return (
+   792→                  <div key={i} className="text-center">
+   793→                    <div className="text-sm font-semibold text-green-800 mb-8">{mr}</div>
+   794→                    <div className="border-t-2 border-green-700 pt-2 min-w-[150px]"><span className="text-xs text-green-600">{en}</span></div>
+   795→                  </div>
+   796→                );
+   797→              })}
+   798→            </div>
+   799→          </CardContent>
+   800→        </Card>
+   801→      )}
+   802→    </div>
+   803→  );
+   804→}
+   805→

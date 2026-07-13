@@ -130,8 +130,10 @@ export default function Namuna9Component() {
         fetch('/api/master?table=property'),
         fetch('/api/master?table=village'),
       ]);
-      setRecords(await n9Res.json());
-      setProperties(await propRes.json());
+      const n9Data = await n9Res.json();
+      setRecords(Array.isArray(n9Data) ? n9Data : []);
+      const propData = await propRes.json();
+      setProperties(Array.isArray(propData) ? propData : []);
       const vData = await vilRes.json();
       setVillage(Array.isArray(vData) ? vData[0] : vData);
     } catch {

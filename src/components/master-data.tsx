@@ -2346,7 +2346,7 @@ function DemandCategoryTab() {
 }
 
 // ================================================================
-// TAB: NAMUNA 13 - कर्मचारी वर्ग सूची (Employee Category List)
+// TAB: NAMUNA 13 - कर्मचारी नोंदवही (Employee Register)
 // ================================================================
 
 function Namuna13Tab() {
@@ -2358,7 +2358,7 @@ function Namuna13Tab() {
 
   return (
     <CrudList
-      title="नमुना १३ - कर्मचारी वर्ग सूची"
+      title="नमुना १३ - कर्मचारी नोंदवही"
       table="namuna13"
       colorKey="namuna13"
       icon={<Users className="h-5 w-5" />}

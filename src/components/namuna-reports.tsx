@@ -30,7 +30,7 @@ import {
   ScrollText, Gauge, Users,
   TrendingUp, TrendingDown,
   IndianRupee, AlertCircle, CheckCircle2, Loader2,
-  Search as SearchIcon,
+  Search as SearchIcon, Landmark,
 } from 'lucide-react';
 
 // ─── Namuna Definitions ───────────────────────────────────────────────────
@@ -48,10 +48,10 @@ interface NamunaDef {
 const NAMUNA_DEFS: NamunaDef[] = [
   // अर्थसंकल्प व आर्थिक विवरण
   { num: 1, nameMr: 'अर्थसंकल्प/अंदाजपत्रक', nameEn: 'Budget Estimate', category: 'budget', color: 'text-cyan-600', bg: 'bg-cyan-50', icon: FileBadge },
-  { num: 2, nameMr: 'पुनर्विनियोजन व नियत वाटप', nameEn: 'Re-appropriation & Allocation', category: 'budget', color: 'text-teal-600', bg: 'bg-teal-50', icon: FileCheck2 },
+  { num: 2, nameMr: 'पुनर्विनियोजन व नियत वाटप (सुधारित अर्थसंकल्प)', nameEn: 'Re-appropriation & Revised Budget', category: 'budget', color: 'text-teal-600', bg: 'bg-teal-50', icon: FileCheck2 },
   // आर्थिक स्थिती विवरण
-  { num: 3, nameMr: 'जमा खर्च विवरण', nameEn: 'Income & Expenditure Statement', category: 'financial', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: FileBarChart },
-  { num: 4, nameMr: 'मत्ता व दायित्वे', nameEn: 'Assets & Liabilities', category: 'financial', color: 'text-teal-600', bg: 'bg-teal-50', icon: Gauge },
+  { num: 3, nameMr: 'ग्रामपंचायत जमा-खर्च विवरण', nameEn: 'Income & Expenditure Statement', category: 'financial', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: FileBarChart },
+  { num: 4, nameMr: 'ग्रामपंचायतीची मत्ता व दायित्वे', nameEn: 'Assets & Liabilities', category: 'financial', color: 'text-teal-600', bg: 'bg-teal-50', icon: Gauge },
   // रोकड व पावती
   { num: 5, nameMr: 'सामान्य रोकड वही', nameEn: 'General Cash Book', category: 'cash', color: 'text-green-600', bg: 'bg-green-50', icon: BookCopy },
   { num: 5.1, nameMr: 'दैनिक रोकडवही (५ क)', nameEn: 'Daily Cash Book', category: 'cash', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: BookCopy },
@@ -62,23 +62,23 @@ const NAMUNA_DEFS: NamunaDef[] = [
   { num: 9, nameMr: 'कर मागणी नोंदवही', nameEn: 'Tax Demand Register', category: 'tax', color: 'text-amber-600', bg: 'bg-amber-50', icon: BookOpen },
   { num: 9.1, nameMr: 'कराची मागणी पावती (९ क)', nameEn: 'Tax Demand Bill', category: 'tax', color: 'text-rose-600', bg: 'bg-rose-50', icon: Receipt },
   { num: 10, nameMr: 'कर व फी बाबत पावती', nameEn: 'Tax & Fee Receipt', category: 'tax', color: 'text-cyan-600', bg: 'bg-cyan-50', icon: CircleDollarSign },
-  { num: 11, nameMr: 'किरकोळ मागणी नोंदवही', nameEn: 'Miscellaneous Demand Register', category: 'tax', color: 'text-purple-600', bg: 'bg-purple-50', icon: ScrollText },
+  { num: 11, nameMr: 'किरकोळ कर व फी आकारणी नोंदवही', nameEn: 'Miscellaneous Tax & Fee Assessment Register', category: 'tax', color: 'text-purple-600', bg: 'bg-purple-50', icon: ScrollText },
   // खर्च व प्रमाणक
-  { num: 12, nameMr: 'आकस्मिक खर्चाचे प्रमाणक', nameEn: 'Contingent Expense Voucher', category: 'expense', color: 'text-red-600', bg: 'bg-red-50', icon: FileText },
+  { num: 12, nameMr: 'अकस्मात खर्चाचे प्रमाणक', nameEn: 'Contingent Expense Voucher', category: 'expense', color: 'text-red-600', bg: 'bg-red-50', icon: FileText },
   { num: 18, nameMr: 'किरकोळ रोकडवही', nameEn: 'Petty Cash Book', category: 'expense', color: 'text-orange-600', bg: 'bg-orange-50', icon: BookCopy },
   // कर्मचारी व वेतन
-  { num: 13, nameMr: 'कर्मचारी वर्ग व वेतनश्रेणी', nameEn: 'Employee Category & Pay Scale', category: 'employee', color: 'text-blue-600', bg: 'bg-blue-50', icon: Users },
+  { num: 13, nameMr: 'कर्मचारी नोंदवही', nameEn: 'Employee Register', category: 'employee', color: 'text-blue-600', bg: 'bg-blue-50', icon: Users },
   { num: 14, nameMr: 'मुद्रांक हिशोब नोंदवही', nameEn: 'Stamp Account Register', category: 'employee', color: 'text-amber-600', bg: 'bg-amber-50', icon: FileText },
   { num: 21, nameMr: 'कर्मचाऱ्याच्या देयकाची नोंदवही', nameEn: 'Employee Bill Register', category: 'employee', color: 'text-green-600', bg: 'bg-green-50', icon: IndianRupee },
   { num: 31, nameMr: 'प्रवास भत्ता देयक', nameEn: 'Travel Allowance Bill', category: 'employee', color: 'text-teal-600', bg: 'bg-teal-50', icon: FileText },
   // साठा व मालमत्ता
-  { num: 15, nameMr: 'उपभोग्य वस्तूंसाठी नोंदवही', nameEn: 'Consumable Stock Register', category: 'asset', color: 'text-indigo-600', bg: 'bg-indigo-50', icon: PackageCheck },
-  { num: 16, nameMr: 'जड वस्तू संग्रह व जंगल मालमत्ता', nameEn: 'Heavy Assets & Forest Property', category: 'asset', color: 'text-orange-600', bg: 'bg-orange-50', icon: FolderArchive },
+  { num: 15, nameMr: 'उपभोग्य वस्तू साठा नोंदवही', nameEn: 'Consumable Stock Register', category: 'asset', color: 'text-indigo-600', bg: 'bg-indigo-50', icon: PackageCheck },
+  { num: 16, nameMr: 'जडवस्तू संग्रह व जंगम मालमत्ता नोंदवही', nameEn: 'Dead Stock & Movable Property Register', category: 'asset', color: 'text-orange-600', bg: 'bg-orange-50', icon: FolderArchive },
   { num: 17, nameMr: 'अग्रीम/अनामत रक्कम नोंदवही', nameEn: 'Advance & Deposit Register', category: 'asset', color: 'text-purple-600', bg: 'bg-purple-50', icon: HandCoins },
   { num: 22, nameMr: 'स्थावर मालमत्ता नोंदवही', nameEn: 'Immovable Property Register', category: 'asset', color: 'text-orange-600', bg: 'bg-orange-50', icon: FolderArchive },
   { num: 23, nameMr: 'ताब्यातील रस्त्यांची नोंदवही', nameEn: 'Road Register', category: 'asset', color: 'text-amber-600', bg: 'bg-amber-50', icon: FileText },
-  { num: 24, nameMr: 'जमिनीची नोंदवही', nameEn: 'Land Register', category: 'asset', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: FileText },
-  { num: 25, nameMr: 'गुंतवणूक वही', nameEn: 'Investment Register', category: 'asset', color: 'text-cyan-600', bg: 'bg-cyan-50', icon: TrendingUp },
+  { num: 24, nameMr: 'जमिनीची नोंदवही', nameEn: 'Land Register', category: 'asset', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: Landmark },
+  { num: 25, nameMr: 'गुंतवणूक नोंदवही', nameEn: 'Investment Register', category: 'asset', color: 'text-cyan-600', bg: 'bg-cyan-50', icon: TrendingUp },
   { num: 33, nameMr: 'वृक्ष नोंदवही', nameEn: 'Tree Register', category: 'asset', color: 'text-green-600', bg: 'bg-green-50', icon: FileText },
   // विकासकाम व देयक
   { num: 19, nameMr: 'हजेरीपट (मजुरांची हजेरी)', nameEn: 'Muster Roll / Attendance', category: 'works', color: 'text-amber-600', bg: 'bg-amber-50', icon: FileText },
@@ -88,11 +88,11 @@ const NAMUNA_DEFS: NamunaDef[] = [
   // मासिक विवरण व लेखापरीक्षण
   { num: 26.1, nameMr: 'जमा मासिक विवरण (२६ क)', nameEn: 'Monthly Income Statement', category: 'audit', color: 'text-green-600', bg: 'bg-green-50', icon: TrendingUp },
   { num: 26.2, nameMr: 'खर्चाचे मासिक विवरण (२६ ख)', nameEn: 'Monthly Expenditure Statement', category: 'audit', color: 'text-red-600', bg: 'bg-red-50', icon: TrendingDown },
-  { num: 27, nameMr: 'लेखा परीक्षण आक्षेप पूर्तता विवरण', nameEn: 'Audit Objection Compliance Statement', category: 'audit', color: 'text-slate-600', bg: 'bg-slate-50', icon: FileLock2 },
-  { num: 28, nameMr: 'मागासवर्गीय/महिला बालकल्याण खर्च विवरण', nameEn: 'SC/Women & Child Welfare Expenditure', category: 'audit', color: 'text-purple-600', bg: 'bg-purple-50', icon: FileBarChart },
+  { num: 27, nameMr: 'लेखापरीक्षण आक्षेपांच्या पुर्तेचे मासिक विवरण', nameEn: 'Audit Objection Compliance Monthly Statement', category: 'audit', color: 'text-slate-600', bg: 'bg-slate-50', icon: FileLock2 },
+  { num: 28, nameMr: 'मागासवर्गीय 15% व महिला बालकल्याण 10% खर्चाचे मासिक विवरण', nameEn: 'SC 15% & Women/Child Welfare 10% Monthly Expenditure', category: 'audit', color: 'text-purple-600', bg: 'bg-purple-50', icon: FileBarChart },
   { num: 29, nameMr: 'कर्जाची नोंदवही', nameEn: 'Loan Register', category: 'audit', color: 'text-rose-600', bg: 'bg-rose-50', icon: FileText },
   { num: 30, nameMr: 'लेखा परीक्षण आक्षेप पूर्तता नोंदवही', nameEn: 'Audit Objection Compliance Register', category: 'audit', color: 'text-gray-600', bg: 'bg-gray-50', icon: FileLock2 },
-  { num: 32, nameMr: 'रक्कमेच्या परताव्यासाठीचा आदेश', nameEn: 'Refund Order', category: 'audit', color: 'text-red-600', bg: 'bg-red-50', icon: FileText },
+  { num: 32, nameMr: 'रकमेच्या परताव्यासाठीचा आदेश', nameEn: 'Refund Order', category: 'audit', color: 'text-red-600', bg: 'bg-red-50', icon: FileText },
 ];
 
 // ─── Category Definitions ────────────────────────────────────────────────

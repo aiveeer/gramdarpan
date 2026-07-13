@@ -37,8 +37,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 1,
-          title: 'मालमत्ता नोंदणी पत्र',
-          titleEn: 'Property Registration Form',
+          title: 'अर्थसंकल्प/अंदाजपत्रक',
+          titleEn: 'Budget Estimate',
           village,
           financialYear: financialYear || 'All',
           entries: properties,
@@ -107,8 +107,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 2,
-          title: 'मालमत्ता मूल्यांकन',
-          titleEn: 'Property Valuation',
+          title: 'पुनर्विनियोजन व नियत वाटप (सुधारित अर्थसंकल्प)',
+          titleEn: 'Re-appropriation & Revised Budget',
           village,
           financialYear: financialYear || 'All',
           entries: valuations,
@@ -139,8 +139,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 3,
-          title: 'रोख वही',
-          titleEn: 'Cash Book',
+          title: 'ग्रामपंचायत जमा-खर्च विवरण',
+          titleEn: 'Income & Expenditure Statement',
           village,
           financialYear: financialYear || 'All',
           receipts,
@@ -184,8 +184,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 4,
-          title: 'बँक वही',
-          titleEn: 'Bank Book',
+          title: 'ग्रामपंचायतीची मत्ता व दायित्वे',
+          titleEn: 'Assets & Liabilities',
           village,
           financialYear: financialYear || 'All',
           bankAccounts,
@@ -211,8 +211,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 5,
-          title: 'मालमत्ता नोंदवही',
-          titleEn: 'Asset Register',
+          title: 'सामान्य रोकड वही',
+          titleEn: 'General Cash Book',
           village,
           financialYear: financialYear || 'All',
           entries: assets,
@@ -237,8 +237,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 6,
-          title: 'साठा नोंदवही',
-          titleEn: 'Stock Register',
+          title: 'वर्गीकृत नोंदवही',
+          titleEn: 'Classified Receipt Register',
           village,
           financialYear: financialYear || 'All',
           entries: stocks,
@@ -262,8 +262,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 7,
-          title: 'उत्पन्न वसूल नोंदवही',
-          titleEn: 'Revenue Collection Register',
+          title: 'सामान्य पावती',
+          titleEn: 'General Receipt',
           village,
           financialYear: financialYear || 'All',
           entries: collections,
@@ -328,8 +328,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 9,
-          title: 'मागणी नोंदवही',
-          titleEn: 'Demand Register',
+          title: 'कर मागणी नोंदवही',
+          titleEn: 'Tax Demand Register',
           village,
           financialYear: financialYear || 'All',
           entries: namuna9s,
@@ -354,8 +354,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 10,
-          title: 'अनुदान नोंदवही',
-          titleEn: 'Grant Register',
+          title: 'कर व फी बाबत पावती',
+          titleEn: 'Tax & Fee Receipt',
           village,
           financialYear: financialYear || 'All',
           entries: schemeFunds,
@@ -378,8 +378,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 11,
-          title: 'उत्पन्न सारांश',
-          titleEn: 'Income Summary',
+          title: 'किरकोळ कर व फी आकारणी नोंदवही',
+          titleEn: 'Miscellaneous Tax & Fee Assessment Register',
           village,
           financialYear: financialYear || 'All',
           entries: receipts,
@@ -401,8 +401,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 12,
-          title: 'खर्च सारांश',
-          titleEn: 'Expenditure Summary',
+          title: 'अकस्मात खर्चाचे प्रमाणक',
+          titleEn: 'Contingent Expense Voucher',
           village,
           financialYear: financialYear || 'All',
           entries: payments,
@@ -430,8 +430,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 13,
-          title: 'उत्पन्न व खर्च तुलना',
-          titleEn: 'Income vs Expenditure',
+          title: 'कर्मचारी नोंदवही',
+          titleEn: 'Employee Register',
           village,
           financialYear: financialYear || 'All',
           incomeByHead: groupAndSum(receipts, 'headOfAccount', 'amount'),
@@ -462,8 +462,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 14,
-          title: 'अर्थसंकल्प व वास्तव',
-          titleEn: 'Budget vs Actual',
+          title: 'मुद्रांक हिशोब नोंदवही',
+          titleEn: 'Stamp Account Register',
           village,
           financialYear: financialYear || 'All',
           budgetHeads,
@@ -502,8 +502,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 15,
-          title: 'वित्तीय आढावा',
-          titleEn: 'Financial Overview',
+          title: 'उपभोग्य वस्तू साठा नोंदवही',
+          titleEn: 'Consumable Stock Register',
           village,
           financialYear: financialYear || 'All',
           summary: {
@@ -533,8 +533,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 16,
-          title: 'काम नोंदवही',
-          titleEn: 'Work Register',
+          title: 'जडवस्तू संग्रह व जंगम मालमत्ता नोंदवही',
+          titleEn: 'Dead Stock & Movable Property Register',
           village,
           financialYear: financialYear || 'All',
           entries: schemeFunds,
@@ -554,8 +554,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 17,
-          title: 'अडव्हान्स नोंदवही',
-          titleEn: 'Advance Register',
+          title: 'अग्रीम/अनामत रक्कम नोंदवही',
+          titleEn: 'Advance & Deposit Register',
           village,
           financialYear: financialYear || 'All',
           entries: payments,
@@ -575,8 +575,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 18,
-          title: 'ठेवी नोंदवही',
-          titleEn: 'Deposit Register',
+          title: 'किरकोळ रोकडवही',
+          titleEn: 'Petty Cash Book',
           village,
           financialYear: financialYear || 'All',
           entries: receipts,
@@ -604,8 +604,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 19,
-          title: 'मूल्यांकन नोंदवही',
-          titleEn: 'Assessment Register',
+          title: 'हजेरीपट (मजुरांची हजेरी)',
+          titleEn: 'Muster Roll / Attendance',
           village,
           financialYear: financialYear || 'All',
           entries: namuna8s,
@@ -625,8 +625,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 20,
-          title: 'पाणी बिल नोंदवही',
-          titleEn: 'Water Bill Register',
+          title: 'कामाच्या अंदाजाची नोंदवही',
+          titleEn: 'Estimate Register for Works',
           village,
           financialYear: financialYear || 'All',
           entries: waterBills,
@@ -651,8 +651,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 21,
-          title: 'गृहकर वसूल',
-          titleEn: 'House Tax Collection',
+          title: 'कर्मचाऱ्याच्या देयकाची नोंदवही',
+          titleEn: 'Employee Bill Register',
           village,
           financialYear: financialYear || 'All',
           collections,
@@ -672,8 +672,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 22,
-          title: 'पाणीकर वसूल',
-          titleEn: 'Water Tax Collection',
+          title: 'स्थावर मालमत्ता नोंदवही',
+          titleEn: 'Immovable Property Register',
           village,
           financialYear: financialYear || 'All',
           entries: collections,
@@ -692,8 +692,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 23,
-          title: 'दिवाबती कर वसूल',
-          titleEn: 'Light Tax Collection',
+          title: 'ताब्यातील रस्त्यांची नोंदवही',
+          titleEn: 'Road Register',
           village,
           financialYear: financialYear || 'All',
           entries: collections,
@@ -712,8 +712,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 24,
-          title: 'आरोग्य कर वसूल',
-          titleEn: 'Health Tax Collection',
+          title: 'जमिनीची नोंदवही',
+          titleEn: 'Land Register',
           village,
           financialYear: financialYear || 'All',
           entries: collections,
@@ -743,8 +743,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 25,
-          title: 'तोलापत्र',
-          titleEn: 'Balance Sheet',
+          title: 'गुंतवणूक नोंदवही',
+          titleEn: 'Investment Register',
           village,
           financialYear: financialYear || 'All',
           assets: {
@@ -775,8 +775,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 26,
-          title: 'उत्पन्न व खर्च लेखा',
-          titleEn: 'Income & Expenditure Account',
+          title: 'मासिक विवरण',
+          titleEn: 'Monthly Statement',
           village,
           financialYear: financialYear || 'All',
           income: incomeByHead,
@@ -798,8 +798,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 27,
-          title: 'प्राप्ति व अर्ज लेखा',
-          titleEn: 'Receipts & Payments Account',
+          title: 'लेखापरीक्षण आक्षेपांच्या पुर्तेचे मासिक विवरण',
+          titleEn: 'Audit Objection Compliance Monthly Statement',
           village,
           financialYear: financialYear || 'All',
           receipts,
@@ -825,8 +825,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 28,
-          title: 'मुद्दल लेखा',
-          titleEn: 'Capital Account',
+          title: 'मागासवर्गीय 15% व महिला बालकल्याण 10% खर्चाचे मासिक विवरण',
+          titleEn: 'SC 15% & Women/Child Welfare 10% Monthly Expenditure',
           village,
           financialYear: financialYear || 'All',
           fixedAssets: Math.round(totalAssetValue * 100) / 100,
@@ -844,8 +844,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 29,
-          title: 'आकस्मिक कोष',
-          titleEn: 'Contingent Fund',
+          title: 'कर्जाची नोंदवही',
+          titleEn: 'Loan Register',
           village,
           financialYear: financialYear || 'All',
           receipts,
@@ -866,8 +866,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 30,
-          title: 'विश्वास कोष',
-          titleEn: 'Trust Fund',
+          title: 'लेखा परीक्षण आक्षेप पूर्तता नोंदवही',
+          titleEn: 'Audit Objection Compliance Register',
           village,
           financialYear: financialYear || 'All',
           receipts,
@@ -896,8 +896,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 31,
-          title: 'ऑडिट अहवाल सारांश',
-          titleEn: 'Audit Report Summary',
+          title: 'प्रवास भत्ता देयक',
+          titleEn: 'Travel Allowance Bill',
           village,
           financialYear: financialYear || 'All',
           financialSummary: {
@@ -941,8 +941,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 32,
-          title: 'वार्षिक वित्तीय विधान',
-          titleEn: 'Annual Financial Statement',
+          title: 'रकमेच्या परताव्यासाठीचा आदेश',
+          titleEn: 'Refund Order',
           village,
           financialYear: financialYear || 'All',
           income: {
@@ -994,8 +994,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           namuna: 33,
-          title: 'संयुक्त अंतिम हिशेब',
-          titleEn: 'Consolidated Final Accounts',
+          title: 'वृक्ष नोंदवही',
+          titleEn: 'Tree Register',
           village,
           financialYear: financialYear || 'All',
           receiptAndPayments: {
