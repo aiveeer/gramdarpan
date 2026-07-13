@@ -689,7 +689,7 @@ export default function Home() {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full flex-col" style={{ background: 'linear-gradient(180deg, #f0faf5 0%, #f8faf9 30%, #ffffff 100%)' }}>
+      <div className="flex min-h-screen w-full flex-col overflow-hidden" style={{ background: 'linear-gradient(180deg, #f0faf5 0%, #f8faf9 30%, #ffffff 100%)' }}>
         {/* ─── Indian Flag Tricolor Bar ──────────────────────────────── */}
         <div className="flex h-1.5 w-full shrink-0">
           <div className="flex-1" style={{ background: '#FF9933' }} />
@@ -783,7 +783,7 @@ export default function Home() {
         </header>
 
         {/* ─── Body: Sidebar + Main ──────────────────────────────────── */}
-        <div className="flex flex-1">
+        <div className="flex flex-1 min-h-0 overflow-hidden">
           {/* Sidebar */}
           <Sidebar collapsible="icon" className="border-r border-gray-200">
             <SidebarHeader className="p-3">
@@ -1063,7 +1063,7 @@ export default function Home() {
           </Sidebar>
 
           {/* Main Content Area */}
-          <SidebarInset>
+          <SidebarInset className="flex flex-col min-w-0 overflow-hidden">
             {/* Breadcrumb / Active View Indicator */}
             <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-sm border-b px-4 py-2">
               <div className="flex items-center gap-2 text-sm">
@@ -1086,12 +1086,12 @@ export default function Home() {
             </div>
 
             {/* Content */}
-            <div className="flex-1 p-4 sm:p-6">
+            <div className="flex-1 p-4 sm:p-6 overflow-y-auto overflow-x-hidden">
               {renderMainContent()}
             </div>
 
             {/* Footer */}
-            <footer className="mt-auto" style={{ background: 'linear-gradient(135deg, #0d7377, #1a5632)' }}>
+            <footer className="mt-auto shrink-0" style={{ background: 'linear-gradient(135deg, #0d7377, #1a5632)' }}>
               <div className="px-4 py-3">
                 <div className="flex flex-col sm:flex-row items-center justify-between text-sm text-teal-100/70 gap-2">
                   <div className="flex items-center gap-2">
