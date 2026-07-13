@@ -193,3 +193,23 @@ Stage Summary:
 - Auto-seed ensures gpo/gpo123 user exists even on fresh Vercel database
 - Cookie settings fixed for HTTPS (secure=true in production)
 - Local dev still works with SQLite (schema swapped back for local use)
+
+---
+Task ID: desktop-fix
+Agent: Main Agent
+Task: Fix desktop layout issues — horizontal scrollbar, content overflow, sidebar/content alignment
+
+Work Log:
+- Added `overflow-hidden` to outer wrapper div (line 692) to prevent horizontal scrollbar
+- Added `min-h-0 overflow-hidden` to body flex container (line 786) so flex children don't push beyond viewport
+- Added `flex flex-col min-w-0 overflow-hidden` to SidebarInset (line 1066) so it properly fills remaining space without pushing content off screen
+- Added `overflow-y-auto overflow-x-hidden` to content div (line 1089) so content scrolls within its container instead of overflowing
+- Added `shrink-0` to footer (line 1094) so it stays at bottom and doesn't get compressed
+- Ran `bun run lint` — zero errors
+
+Stage Summary:
+- Desktop horizontal scrollbar eliminated
+- Sidebar and content area properly aligned within viewport
+- Content scrolls vertically without horizontal overflow
+- Footer stays pinned at bottom with shrink-0
+- Key file: src/app/page.tsx (5 surgical CSS class edits)
