@@ -42,6 +42,30 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
+  /* Grampanchayat Color Palette */
+  --color-gp-teal: #0d7377;
+  --color-gp-teal-dark: #0a5c5f;
+  --color-gp-teal-light: #e0f5f5;
+  --color-gp-saffron: #e67e22;
+  --color-gp-saffron-light: #fef3e8;
+  --color-gp-green: #27ae60;
+  --color-gp-green-light: #eafaf1;
+  --color-gp-red: #c0392b;
+  --color-gp-red-light: #fdedec;
+  --color-gp-purple: #8e44ad;
+  --color-gp-purple-light: #f4ecf7;
+  --color-gp-amber: #f39c12;
+  --color-gp-amber-light: #fef9e7;
+  --color-gp-cyan: #16a085;
+  --color-gp-cyan-light: #e8f8f5;
+  --color-gp-rose: #e74c3c;
+  --color-gp-rose-light: #fdedec;
+  --color-gp-blue: #2980b9;
+  --color-gp-blue-light: #ebf5fb;
+  --color-gp-indigo: #6c5ce7;
+  --color-gp-indigo-light: #f0edff;
+  --color-gp-pink: #e84393;
+  --color-gp-pink-light: #fde8f4;
 }
 
 :root {
@@ -69,14 +93,14 @@
   --chart-3: oklch(0.55 0.15 145);
   --chart-4: oklch(0.60 0.18 30);
   --chart-5: oklch(0.50 0.20 350);
-  --sidebar: oklch(0.985 0.005 185);
-  --sidebar-foreground: oklch(0.195 0.02 155);
-  --sidebar-primary: oklch(0.45 0.12 185);
-  --sidebar-primary-foreground: oklch(0.985 0.005 185);
-  --sidebar-accent: oklch(0.95 0.02 70);
-  --sidebar-accent-foreground: oklch(0.35 0.08 70);
-  --sidebar-border: oklch(0.91 0.015 155);
-  --sidebar-ring: oklch(0.45 0.12 185);
+  --sidebar: #0a5c5f;
+  --sidebar-foreground: #e0f5f5;
+  --sidebar-primary: #27ae60;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #0d7377;
+  --sidebar-accent-foreground: #e0f5f5;
+  --sidebar-border: #0d7377;
+  --sidebar-ring: #27ae60;
 }
 
 .dark {

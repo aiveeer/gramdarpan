@@ -181,14 +181,14 @@ export default function Home() {
     <SidebarProvider>
       <TooltipProvider>
         <Sidebar>
-          <SidebarHeader className="border-b border-sidebar-border">
+          <SidebarHeader className="border-b border-sidebar-border bg-gradient-to-b from-gp-teal-dark to-sidebar">
             <div className="flex items-center gap-3 px-2 py-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-lg">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gp-saffron text-white font-bold text-lg shadow-md">
                 ग्रा
               </div>
               <div className="flex flex-col">
                 <span className="text-sm font-bold text-sidebar-foreground">ग्रामदर्पण</span>
-                <span className="text-xs text-sidebar-foreground/60">ग्रामपंचायत ERP</span>
+                <span className="text-xs text-sidebar-foreground/70">ग्रामपंचायत ERP</span>
               </div>
             </div>
           </SidebarHeader>
@@ -219,10 +219,10 @@ export default function Home() {
             ))}
           </SidebarContent>
 
-          <SidebarFooter className="border-t border-sidebar-border">
+          <SidebarFooter className="border-t border-sidebar-border bg-gradient-to-t from-gp-teal-dark to-sidebar">
             <div className="px-2 py-2 space-y-2">
-              <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-sidebar-accent/50">
-                <UserCog className="h-4 w-4 text-sidebar-foreground/70" />
+              <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-sidebar-accent/80">
+                <UserCog className="h-4 w-4 text-gp-saffron" />
                 <div className="flex flex-col min-w-0">
                   <span className="text-xs font-medium text-sidebar-foreground truncate">
                     {session.nameMarathi || session.name}
@@ -246,7 +246,7 @@ export default function Home() {
         </Sidebar>
 
         <SidebarInset>
-          <header className="flex h-14 items-center gap-4 border-b bg-background px-4 lg:px-6 sticky top-0 z-10">
+          <header className="flex h-14 items-center gap-4 border-b bg-gradient-to-r from-gp-teal-light via-background to-gp-teal-light px-4 lg:px-6 sticky top-0 z-10">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="h-6" />
             <div className="flex items-center gap-2">

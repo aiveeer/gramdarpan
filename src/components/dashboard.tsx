@@ -113,69 +113,93 @@ export default function Dashboard({ financialYear }: DashboardProps) {
       title: 'एकूण मालमत्ता',
       value: stats.totalProperties.toString(),
       icon: Building2,
-      color: 'text-primary',
-      bg: 'bg-primary/10',
+      color: 'text-gp-teal',
+      bg: 'bg-gp-teal-light',
+      border: 'border-l-gp-teal',
+      iconBg: 'bg-gp-teal',
+      iconColor: 'text-white',
     },
     {
       title: 'कर मागणी',
       value: formatCurrency(stats.totalDemand),
       icon: TrendingUp,
-      color: 'text-orange-600',
-      bg: 'bg-orange-50',
+      color: 'text-gp-saffron',
+      bg: 'bg-gp-saffron-light',
+      border: 'border-l-gp-saffron',
+      iconBg: 'bg-gp-saffron',
+      iconColor: 'text-white',
     },
     {
       title: 'कर वसूल',
       value: formatCurrency(stats.totalPaid),
       icon: TrendingDown,
-      color: 'text-emerald-600',
-      bg: 'bg-emerald-50',
+      color: 'text-gp-green',
+      bg: 'bg-gp-green-light',
+      border: 'border-l-gp-green',
+      iconBg: 'bg-gp-green',
+      iconColor: 'text-white',
     },
     {
       title: 'बकायपोरी',
       value: formatCurrency(stats.outstandingBalance),
       icon: IndianRupee,
-      color: 'text-red-600',
-      bg: 'bg-red-50',
+      color: 'text-gp-red',
+      bg: 'bg-gp-red-light',
+      border: 'border-l-gp-red',
+      iconBg: 'bg-gp-red',
+      iconColor: 'text-white',
     },
     {
       title: 'वसूल दर',
       value: `${collectionRate}%`,
       icon: BarChart3,
-      color: collectionRate > 70 ? 'text-emerald-600' : collectionRate > 40 ? 'text-orange-600' : 'text-red-600',
-      bg: collectionRate > 70 ? 'bg-emerald-50' : collectionRate > 40 ? 'bg-orange-50' : 'bg-red-50',
+      color: collectionRate > 70 ? 'text-gp-green' : collectionRate > 40 ? 'text-gp-saffron' : 'text-gp-red',
+      bg: collectionRate > 70 ? 'bg-gp-green-light' : collectionRate > 40 ? 'bg-gp-saffron-light' : 'bg-gp-red-light',
+      border: collectionRate > 70 ? 'border-l-gp-green' : collectionRate > 40 ? 'border-l-gp-saffron' : 'border-l-gp-red',
+      iconBg: collectionRate > 70 ? 'bg-gp-green' : collectionRate > 40 ? 'bg-gp-saffron' : 'bg-gp-red',
+      iconColor: 'text-white',
     },
     {
       title: 'प्राप्ती',
       value: formatCurrency(stats.totalReceiptAmount),
       icon: ArrowUpRight,
-      color: 'text-emerald-600',
-      bg: 'bg-emerald-50',
+      color: 'text-gp-cyan',
+      bg: 'bg-gp-cyan-light',
+      border: 'border-l-gp-cyan',
+      iconBg: 'bg-gp-cyan',
+      iconColor: 'text-white',
     },
     {
       title: 'पावती',
       value: formatCurrency(stats.totalPaymentAmount),
       icon: ArrowDownRight,
-      color: 'text-red-600',
-      bg: 'bg-red-50',
+      color: 'text-gp-purple',
+      bg: 'bg-gp-purple-light',
+      border: 'border-l-gp-purple',
+      iconBg: 'bg-gp-purple',
+      iconColor: 'text-white',
     },
     {
       title: 'बँक शिल्लक',
       value: formatCurrency(stats.totalBankBalance),
       icon: Landmark,
-      color: 'text-primary',
-      bg: 'bg-primary/10',
+      color: 'text-gp-blue',
+      bg: 'bg-gp-blue-light',
+      border: 'border-l-gp-blue',
+      iconBg: 'bg-gp-blue',
+      iconColor: 'text-white',
     },
   ];
 
   const infoCards = [
-    { title: 'वार्ड', value: stats.totalWards, icon: MapPin },
-    { title: 'मालक', value: stats.totalOwners, icon: Users },
-    { title: 'रस्ते', value: stats.totalRoads, icon: ClipboardList },
-    { title: 'कर्मचारी', value: stats.totalEmployees, icon: UserCog },
-    { title: 'कर आकारणी', value: stats.totalTaxAssessments, icon: Calculator },
-    { title: 'मागणी नोंद', value: stats.totalDemandRegisters, icon: Receipt },
-    { title: 'संपत्ती', value: stats.totalAssets, icon: Package },
-    { title: 'योजना', value: stats.totalSchemes, icon: Flag },
+    { title: 'वार्ड', value: stats.totalWards, icon: MapPin, color: 'text-gp-teal', bg: 'bg-gp-teal-light' },
+    { title: 'मालक', value: stats.totalOwners, icon: Users, color: 'text-gp-saffron', bg: 'bg-gp-saffron-light' },
+    { title: 'रस्ते', value: stats.totalRoads, icon: ClipboardList, color: 'text-gp-green', bg: 'bg-gp-green-light' },
+    { title: 'कर्मचारी', value: stats.totalEmployees, icon: UserCog, color: 'text-gp-red', bg: 'bg-gp-red-light' },
+    { title: 'कर आकारणी', value: stats.totalTaxAssessments, icon: Calculator, color: 'text-gp-purple', bg: 'bg-gp-purple-light' },
+    { title: 'मागणी नोंद', value: stats.totalDemandRegisters, icon: Receipt, color: 'text-gp-cyan', bg: 'bg-gp-cyan-light' },
+    { title: 'संपत्ती', value: stats.totalAssets, icon: Package, color: 'text-gp-amber', bg: 'bg-gp-amber-light' },
+    { title: 'योजना', value: stats.totalSchemes, icon: Flag, color: 'text-gp-indigo', bg: 'bg-gp-indigo-light' },
   ];
 
   return (
@@ -185,15 +209,15 @@ export default function Dashboard({ financialYear }: DashboardProps) {
         <h2 className="text-lg font-semibold mb-3">आर्थिक आढावा</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {metricCards.map((card) => (
-            <Card key={card.title} className="hover:shadow-md transition-shadow">
+            <Card key={card.title} className={`hover:shadow-lg transition-all duration-200 border-l-4 ${card.border} ${card.bg}`}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground font-medium">{card.title}</p>
                     <p className={`text-xl font-bold ${card.color}`}>{card.value}</p>
                   </div>
-                  <div className={`h-10 w-10 rounded-lg ${card.bg} flex items-center justify-center`}>
-                    <card.icon className={`h-5 w-5 ${card.color}`} />
+                  <div className={`h-11 w-11 rounded-xl ${card.iconBg} flex items-center justify-center shadow-md`}>
+                    <card.icon className={`h-5 w-5 ${card.iconColor}`} />
                   </div>
                 </div>
               </CardContent>
@@ -207,10 +231,12 @@ export default function Dashboard({ financialYear }: DashboardProps) {
         <h2 className="text-lg font-semibold mb-3">माहिती सारांश</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
           {infoCards.map((card) => (
-            <Card key={card.title} className="hover:shadow-md transition-shadow">
+            <Card key={card.title} className={`hover:shadow-lg transition-all duration-200 ${card.bg}`}>
               <CardContent className="p-3 text-center">
-                <card.icon className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
-                <p className="text-lg font-bold">{card.value}</p>
+                <div className={`h-8 w-8 rounded-lg ${card.bg} mx-auto mb-1.5 flex items-center justify-center`}>
+                  <card.icon className={`h-4 w-4 ${card.color}`} />
+                </div>
+                <p className={`text-lg font-bold ${card.color}`}>{card.value}</p>
                 <p className="text-[10px] text-muted-foreground">{card.title}</p>
               </CardContent>
             </Card>
@@ -260,11 +286,11 @@ export default function Dashboard({ financialYear }: DashboardProps) {
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">एकूण वसूल</span>
-                <span className="font-medium text-emerald-600">{formatCurrency(stats.totalPaid)}</span>
+                <span className="font-medium text-gp-green">{formatCurrency(stats.totalPaid)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">बकायपोरी</span>
-                <span className="font-medium text-red-600">{formatCurrency(stats.outstandingBalance)}</span>
+                <span className="font-medium text-gp-red">{formatCurrency(stats.outstandingBalance)}</span>
               </div>
               <div className="border-t pt-2">
                 <div className="flex justify-between items-center mb-2">
@@ -274,7 +300,7 @@ export default function Dashboard({ financialYear }: DashboardProps) {
                 <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-500 ${
-                      collectionRate > 70 ? 'bg-emerald-500' : collectionRate > 40 ? 'bg-orange-500' : 'bg-red-500'
+                      collectionRate > 70 ? 'bg-gp-green' : collectionRate > 40 ? 'bg-gp-saffron' : 'bg-gp-red'
                     }`}
                     style={{ width: `${Math.min(collectionRate, 100)}%` }}
                   />

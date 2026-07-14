@@ -46,15 +46,15 @@ export default function LoginForm({ onLogin }: LoginProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 p-4">
-      <Card className="w-full max-w-md shadow-xl border-primary/10">
-        <CardHeader className="text-center space-y-4 pb-2">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gp-teal via-gp-teal-dark to-primary p-4">
+      <Card className="w-full max-w-md shadow-2xl border-gp-saffron/20">
+        <CardHeader className="text-center space-y-4 pb-2 bg-gradient-to-b from-gp-teal-light to-card rounded-t-lg">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gp-saffron text-white shadow-lg">
             <Landmark className="h-8 w-8" />
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold">ग्रामदर्पण</CardTitle>
-            <CardDescription className="text-sm mt-1">ग्रामपंचायत ERP पोर्टल</CardDescription>
+            <CardTitle className="text-2xl font-bold text-gp-teal-dark">ग्रामदर्पण</CardTitle>
+            <CardDescription className="text-sm mt-1 text-gp-teal">ग्रामपंचायत ERP पोर्टल</CardDescription>
           </div>
         </CardHeader>
         <CardContent className="pt-4">
@@ -99,7 +99,7 @@ export default function LoginForm({ onLogin }: LoginProps) {
               </div>
             )}
 
-            <Button type="submit" className="w-full h-10" disabled={loading}>
+            <Button type="submit" className="w-full h-10 bg-gp-teal hover:bg-gp-teal-dark text-white" disabled={loading}>
               {loading ? (
                 <div className="flex items-center gap-2">
                   <div className="h-4 w-4 rounded-full border-2 border-primary-foreground border-t-transparent animate-spin" />
