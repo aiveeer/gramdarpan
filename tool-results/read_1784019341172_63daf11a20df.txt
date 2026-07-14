@@ -1,0 +1,780 @@
+     1→'use client';
+     2→
+     3→import React, { useState, useEffect, useCallback } from 'react';
+     4→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+     5→import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+     6→import { Button } from '@/components/ui/button';
+     7→import { Input } from '@/components/ui/input';
+     8→import { Label } from '@/components/ui/label';
+     9→import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+    10→import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+    11→import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+    12→import { Badge } from '@/components/ui/badge';
+    13→import { Checkbox } from '@/components/ui/checkbox';
+    14→import { Skeleton } from '@/components/ui/skeleton';
+    15→import { toast } from '@/hooks/use-toast';
+    16→import {
+    17→  Plus, RefreshCw, Pencil, Trash2, Loader2, AlertCircle,
+    18→  Building2, Package, Map, Route, TreePine,
+    19→} from 'lucide-react';
+    20→
+    21→// ===== TYPES =====
+    22→
+    23→interface AssetsProps {
+    24→  financialYear: string;
+    25→}
+    26→
+    27→interface AssetRecord {
+    28→  id: string;
+    29→  assetName: string;
+    30→  assetNameMr?: string;
+    31→  assetType?: string;
+    32→  assetNumber?: string;
+    33→  category?: string;
+    34→  purchaseDate?: string;
+    35→  purchaseCost: number;
+    36→  currentValue: number;
+    37→  depreciation: number;
+    38→  location?: string;
+    39→  condition?: string;
+    40→  status: string;
+    41→  serialNo?: string;
+    42→  financialYear: string;
+    43→  [key: string]: unknown;
+    44→}
+    45→
+    46→interface StockRecord {
+    47→  id: string;
+    48→  itemName: string;
+    49→  itemNameMr?: string;
+    50→  category?: string;
+    51→  unit?: string;
+    52→  quantity: number;
+    53→  ratePerUnit?: number;
+    54→  totalValue: number;
+    55→  minStock?: number;
+    56→  maxStock?: number;
+    57→  supplier?: string;
+    58→  status: string;
+    59→  financialYear: string;
+    60→  [key: string]: unknown;
+    61→}
+    62→
+    63→interface LandRecord {
+    64→  id: string;
+    65→  landName: string;
+    66→  landNameMr?: string;
+    67→  surveyNo?: string;
+    68→  areaAcres?: number;
+    69→  areaHectares?: number;
+    70→  areaGunthe?: number;
+    71→  landType?: string;
+    72→  ownershipType?: string;
+    73→  usageType?: string;
+    74→  mapNo?: string;
+    75→  gatNo?: string;
+    76→  financialYear: string;
+    77→  [key: string]: unknown;
+    78→}
+    79→
+    80→interface RoadRecord {
+    81→  id: string;
+    82→  roadName: string;
+    83→  roadNameMr?: string;
+    84→  roadType?: string;
+    85→  roadLength?: number;
+    86→  roadWidth?: number;
+    87→  surfaceType?: string;
+    88→  constructionYear?: string;
+    89→  estimatedCost?: number;
+    90→  condition?: string;
+    91→  financialYear: string;
+    92→  [key: string]: unknown;
+    93→}
+    94→
+    95→interface TreeRecord {
+    96→  id: string;
+    97→  treeType: string;
+    98→  treeTypeMr?: string;
+    99→  location?: string;
+   100→  plantDate?: string;
+   101→  height?: number;
+   102→  girth?: number;
+   103→  canopyDiameter?: number;
+   104→  condition?: string;
+   105→  estimatedValue?: number;
+   106→  isProtected: boolean;
+   107→  financialYear: string;
+   108→  [key: string]: unknown;
+   109→}
+   110→
+   111→// ===== HELPERS =====
+   112→
+   113→function safeExtract(data: unknown): unknown[] {
+   114→  if (Array.isArray(data)) return data;
+   115→  if (data && typeof data === 'object') {
+   116→    const obj = data as Record<string, unknown>;
+   117→    if (Array.isArray(obj.data)) return obj.data;
+   118→    if (Array.isArray(obj.records)) return obj.records;
+   119→  }
+   120→  return [];
+   121→}
+   122→
+   123→const conditionLabels: Record<string, string> = {
+   124→  good: 'चांगली',
+   125→  fair: 'सरासरी',
+   126→  poor: 'खराब',
+   127→  damaged: 'खराब झालेली',
+   128→};
+   129→
+   130→// ===== COMPONENT =====
+   131→
+   132→export default function Assets({ financialYear }: AssetsProps) {
+   133→  const [assets, setAssets] = useState<AssetRecord[]>([]);
+   134→  const [stocks, setStocks] = useState<StockRecord[]>([]);
+   135→  const [lands, setLands] = useState<LandRecord[]>([]);
+   136→  const [roads, setRoads] = useState<RoadRecord[]>([]);
+   137→  const [trees, setTrees] = useState<TreeRecord[]>([]);
+   138→  const [loading, setLoading] = useState(true);
+   139→  const [error, setError] = useState<string | null>(null);
+   140→
+   141→  // Dialogs
+   142→  const [dialogOpen, setDialogOpen] = useState(false);
+   143→  const [dialogType, setDialogType] = useState<'asset' | 'stock' | 'land' | 'road' | 'tree'>('asset');
+   144→  const [editing, setEditing] = useState<Record<string, unknown> | null>(null);
+   145→  const [form, setForm] = useState<Record<string, unknown>>({});
+   146→  const [saving, setSaving] = useState(false);
+   147→
+   148→  const fetchData = useCallback(async () => {
+   149→    setLoading(true);
+   150→    setError(null);
+   151→    try {
+   152→      const [aRes, sRes, lRes, rRes, tRes] = await Promise.all([
+   153→        fetch(`/api/assets?financialYear=${financialYear}`),
+   154→        fetch(`/api/assets?type=stock&financialYear=${financialYear}`),
+   155→        fetch(`/api/assets?type=land&financialYear=${financialYear}`),
+   156→        fetch(`/api/assets?type=road&financialYear=${financialYear}`),
+   157→        fetch(`/api/assets?type=tree&financialYear=${financialYear}`),
+   158→      ]);
+   159→      const [aData, sData, lData, rData, tData] = await Promise.all([aRes.json(), sRes.json(), lRes.json(), rRes.json(), tRes.json()]);
+   160→      setAssets(safeExtract(aData) as AssetRecord[]);
+   161→      setStocks(safeExtract(sData) as StockRecord[]);
+   162→      setLands(safeExtract(lData) as LandRecord[]);
+   163→      setRoads(safeExtract(rData) as RoadRecord[]);
+   164→      setTrees(safeExtract(tData) as TreeRecord[]);
+   165→    } catch {
+   166→      setError('डेटा लोड करताना त्रुटी आली');
+   167→    } finally {
+   168→      setLoading(false);
+   169→    }
+   170→  }, [financialYear]);
+   171→
+   172→  useEffect(() => { fetchData(); }, [fetchData]);
+   173→
+   174→  const openDialog = (type: typeof dialogType, record?: Record<string, unknown>) => {
+   175→    setDialogType(type);
+   176→    if (record) {
+   177→      setEditing(record);
+   178→      setForm({ ...record });
+   179→    } else {
+   180→      setEditing(null);
+   181→      const base: Record<string, unknown> = { financialYear };
+   182→      switch (type) {
+   183→        case 'asset': Object.assign(base, { purchaseCost: 0, currentValue: 0, depreciation: 0, status: 'active' }); break;
+   184→        case 'stock': Object.assign(base, { quantity: 0, ratePerUnit: 0, totalValue: 0, minStock: 0, maxStock: 0, status: 'In Stock' }); break;
+   185→        case 'land': Object.assign(base, { areaAcres: 0, areaHectares: 0, areaGunthe: 0 }); break;
+   186→        case 'road': Object.assign(base, { roadLength: 0, roadWidth: 0, estimatedCost: 0 }); break;
+   187→        case 'tree': Object.assign(base, { height: 0, girth: 0, canopyDiameter: 0, estimatedValue: 0, isProtected: false }); break;
+   188→      }
+   189→      setForm(base);
+   190→    }
+   191→    setDialogOpen(true);
+   192→  };
+   193→
+   194→  const saveRecord = async () => {
+   195→    setSaving(true);
+   196→    try {
+   197→      const typeParam = dialogType === 'asset' ? '' : `type=${dialogType}&`;
+   198→      const url = `/api/assets?${typeParam}financialYear=${financialYear}`;
+   199→      const payload = { action: editing ? 'update' : 'create', ...(editing ? { id: editing.id } : {}), ...form, financialYear };
+   200→      await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+   201→      toast({ title: editing ? 'अपडेट झाले' : 'जोडले' });
+   202→      setDialogOpen(false);
+   203→      fetchData();
+   204→    } catch {
+   205→      toast({ title: 'जतन करताना त्रुटी', variant: 'destructive' });
+   206→    } finally {
+   207→      setSaving(false);
+   208→    }
+   209→  };
+   210→
+   211→  const deleteRecord = async (type: typeof dialogType, id: string) => {
+   212→    if (!confirm('ही नोंद हटवायची?')) return;
+   213→    try {
+   214→      const typeParam = type === 'asset' ? '' : `type=${type}&`;
+   215→      await fetch(`/api/assets?${typeParam}financialYear=${financialYear}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete', id }) });
+   216→      toast({ title: 'हटवले' });
+   217→      fetchData();
+   218→    } catch {
+   219→      toast({ title: 'हटवताना त्रुटी', variant: 'destructive' });
+   220→    }
+   221→  };
+   222→
+   223→  if (loading) {
+   224→    return (
+   225→      <div className="space-y-4">
+   226→        <Skeleton className="h-10 w-64" />
+   227→        <Skeleton className="h-64" />
+   228→      </div>
+   229→    );
+   230→  }
+   231→
+   232→  if (error) {
+   233→    return (
+   234→      <Card>
+   235→        <CardContent className="flex flex-col items-center justify-center py-12 gap-4">
+   236→          <AlertCircle className="h-12 w-12 text-destructive" />
+   237→          <p className="text-destructive font-medium">{error}</p>
+   238→          <Button variant="outline" onClick={fetchData}><RefreshCw className="h-4 w-4 mr-2" />पुन्हा प्रयत्न करा</Button>
+   239→        </CardContent>
+   240→      </Card>
+   241→    );
+   242→  }
+   243→
+   244→  const renderDialogFields = () => {
+   245→    switch (dialogType) {
+   246→      case 'asset':
+   247→        return (
+   248→          <div className="grid gap-3 py-2">
+   249→            <div className="grid grid-cols-2 gap-3">
+   250→              <div><Label className="text-xs">नाव *</Label><Input value={(form.assetName as string) || ''} onChange={e => setForm(f => ({ ...f, assetName: e.target.value }))} /></div>
+   251→              <div><Label className="text-xs">मराठीत</Label><Input value={(form.assetNameMr as string) || ''} onChange={e => setForm(f => ({ ...f, assetNameMr: e.target.value }))} /></div>
+   252→            </div>
+   253→            <div className="grid grid-cols-3 gap-3">
+   254→              <div><Label className="text-xs">प्रकार</Label><Input value={(form.assetType as string) || ''} onChange={e => setForm(f => ({ ...f, assetType: e.target.value }))} /></div>
+   255→              <div><Label className="text-xs">क्रमांक</Label><Input value={(form.assetNumber as string) || ''} onChange={e => setForm(f => ({ ...f, assetNumber: e.target.value }))} /></div>
+   256→              <div><Label className="text-xs">वर्ग</Label><Input value={(form.category as string) || ''} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} /></div>
+   257→            </div>
+   258→            <div className="grid grid-cols-2 gap-3">
+   259→              <div><Label className="text-xs">खरेदी दिनांक</Label><Input type="date" value={(form.purchaseDate as string) || ''} onChange={e => setForm(f => ({ ...f, purchaseDate: e.target.value }))} /></div>
+   260→              <div><Label className="text-xs">अनुक्रमांक</Label><Input value={(form.serialNo as string) || ''} onChange={e => setForm(f => ({ ...f, serialNo: e.target.value }))} /></div>
+   261→            </div>
+   262→            <div className="grid grid-cols-3 gap-3">
+   263→              <div><Label className="text-xs">खरेदी किंमत</Label><Input type="number" value={(form.purchaseCost as number) || 0} onChange={e => setForm(f => ({ ...f, purchaseCost: Number(e.target.value) }))} /></div>
+   264→              <div><Label className="text-xs">सध्याचे मूल्य</Label><Input type="number" value={(form.currentValue as number) || 0} onChange={e => setForm(f => ({ ...f, currentValue: Number(e.target.value) }))} /></div>
+   265→              <div><Label className="text-xs">घसारा</Label><Input type="number" value={(form.depreciation as number) || 0} onChange={e => setForm(f => ({ ...f, depreciation: Number(e.target.value) }))} /></div>
+   266→            </div>
+   267→            <div className="grid grid-cols-3 gap-3">
+   268→              <div><Label className="text-xs">स्थान</Label><Input value={(form.location as string) || ''} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} /></div>
+   269→              <div>
+   270→                <Label className="text-xs">स्थिती</Label>
+   271→                <Select value={(form.condition as string) || 'good'} onValueChange={v => setForm(f => ({ ...f, condition: v }))}>
+   272→                  <SelectTrigger><SelectValue /></SelectTrigger>
+   273→                  <SelectContent>
+   274→                    <SelectItem value="good">चांगली</SelectItem>
+   275→                    <SelectItem value="fair">सरासरी</SelectItem>
+   276→                    <SelectItem value="poor">खराब</SelectItem>
+   277→                    <SelectItem value="damaged">खराब झालेली</SelectItem>
+   278→                  </SelectContent>
+   279→                </Select>
+   280→              </div>
+   281→              <div>
+   282→                <Label className="text-xs">स्थिती</Label>
+   283→                <Select value={(form.status as string) || 'active'} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
+   284→                  <SelectTrigger><SelectValue /></SelectTrigger>
+   285→                  <SelectContent>
+   286→                    <SelectItem value="active">सक्रिय</SelectItem>
+   287→                    <SelectItem value="disposed">विल्हेवाट</SelectItem>
+   288→                    <SelectItem value="under_repair">दुरुस्तीत</SelectItem>
+   289→                  </SelectContent>
+   290→                </Select>
+   291→              </div>
+   292→            </div>
+   293→          </div>
+   294→        );
+   295→
+   296→      case 'stock':
+   297→        return (
+   298→          <div className="grid gap-3 py-2">
+   299→            <div className="grid grid-cols-2 gap-3">
+   300→              <div><Label className="text-xs">वस्तूचे नाव *</Label><Input value={(form.itemName as string) || ''} onChange={e => setForm(f => ({ ...f, itemName: e.target.value }))} /></div>
+   301→              <div><Label className="text-xs">मराठीत</Label><Input value={(form.itemNameMr as string) || ''} onChange={e => setForm(f => ({ ...f, itemNameMr: e.target.value }))} /></div>
+   302→            </div>
+   303→            <div className="grid grid-cols-3 gap-3">
+   304→              <div><Label className="text-xs">वर्ग</Label><Input value={(form.category as string) || ''} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} /></div>
+   305→              <div><Label className="text-xs">एकक</Label><Input value={(form.unit as string) || ''} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))} /></div>
+   306→              <div><Label className="text-xs">पुरवठादार</Label><Input value={(form.supplier as string) || ''} onChange={e => setForm(f => ({ ...f, supplier: e.target.value }))} /></div>
+   307→            </div>
+   308→            <div className="grid grid-cols-3 gap-3">
+   309→              <div><Label className="text-xs">प्रमाण</Label><Input type="number" value={(form.quantity as number) || 0} onChange={e => setForm(f => ({ ...f, quantity: Number(e.target.value) }))} /></div>
+   310→              <div><Label className="text-xs">दर प्रति एकक</Label><Input type="number" value={(form.ratePerUnit as number) || 0} onChange={e => setForm(f => ({ ...f, ratePerUnit: Number(e.target.value) }))} /></div>
+   311→              <div><Label className="text-xs">एकूण मूल्य</Label><Input type="number" value={(form.totalValue as number) || 0} onChange={e => setForm(f => ({ ...f, totalValue: Number(e.target.value) }))} /></div>
+   312→            </div>
+   313→            <div className="grid grid-cols-2 gap-3">
+   314→              <div><Label className="text-xs">किमान साठा</Label><Input type="number" value={(form.minStock as number) || 0} onChange={e => setForm(f => ({ ...f, minStock: Number(e.target.value) }))} /></div>
+   315→              <div><Label className="text-xs">कमाल साठा</Label><Input type="number" value={(form.maxStock as number) || 0} onChange={e => setForm(f => ({ ...f, maxStock: Number(e.target.value) }))} /></div>
+   316→            </div>
+   317→            <div>
+   318→              <Label className="text-xs">स्थिती</Label>
+   319→              <Select value={(form.status as string) || 'In Stock'} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
+   320→                <SelectTrigger><SelectValue /></SelectTrigger>
+   321→                <SelectContent>
+   322→                  <SelectItem value="In Stock">साठ्यात</SelectItem>
+   323→                  <SelectItem value="Low Stock">कमी साठा</SelectItem>
+   324→                  <SelectItem value="Out of Stock">साठा संपला</SelectItem>
+   325→                </SelectContent>
+   326→              </Select>
+   327→            </div>
+   328→          </div>
+   329→        );
+   330→
+   331→      case 'land':
+   332→        return (
+   333→          <div className="grid gap-3 py-2">
+   334→            <div className="grid grid-cols-2 gap-3">
+   335→              <div><Label className="text-xs">जमीन नाव *</Label><Input value={(form.landName as string) || ''} onChange={e => setForm(f => ({ ...f, landName: e.target.value }))} /></div>
+   336→              <div><Label className="text-xs">मराठीत</Label><Input value={(form.landNameMr as string) || ''} onChange={e => setForm(f => ({ ...f, landNameMr: e.target.value }))} /></div>
+   337→            </div>
+   338→            <div className="grid grid-cols-3 gap-3">
+   339→              <div><Label className="text-xs">सर्व्हे क्र.</Label><Input value={(form.surveyNo as string) || ''} onChange={e => setForm(f => ({ ...f, surveyNo: e.target.value }))} /></div>
+   340→              <div><Label className="text-xs">नकाशा क्र.</Label><Input value={(form.mapNo as string) || ''} onChange={e => setForm(f => ({ ...f, mapNo: e.target.value }))} /></div>
+   341→              <div><Label className="text-xs">गट क्र.</Label><Input value={(form.gatNo as string) || ''} onChange={e => setForm(f => ({ ...f, gatNo: e.target.value }))} /></div>
+   342→            </div>
+   343→            <div className="grid grid-cols-3 gap-3">
+   344→              <div><Label className="text-xs">एकर</Label><Input type="number" step="0.01" value={(form.areaAcres as number) || 0} onChange={e => setForm(f => ({ ...f, areaAcres: Number(e.target.value) }))} /></div>
+   345→              <div><Label className="text-xs">हेक्टर</Label><Input type="number" step="0.01" value={(form.areaHectares as number) || 0} onChange={e => setForm(f => ({ ...f, areaHectares: Number(e.target.value) }))} /></div>
+   346→              <div><Label className="text-xs">गुंठे</Label><Input type="number" step="0.01" value={(form.areaGunthe as number) || 0} onChange={e => setForm(f => ({ ...f, areaGunthe: Number(e.target.value) }))} /></div>
+   347→            </div>
+   348→            <div className="grid grid-cols-3 gap-3">
+   349→              <div>
+   350→                <Label className="text-xs">जमीन प्रकार</Label>
+   351→                <Select value={(form.landType as string) || 'agricultural'} onValueChange={v => setForm(f => ({ ...f, landType: v }))}>
+   352→                  <SelectTrigger><SelectValue /></SelectTrigger>
+   353→                  <SelectContent>
+   354→                    <SelectItem value="agricultural">शेतजमीन</SelectItem>
+   355→                    <SelectItem value="residential">राहणीमत</SelectItem>
+   356→                    <SelectItem value="commercial">व्यावसायिक</SelectItem>
+   357→                    <SelectItem value="government">सरकारी</SelectItem>
+   358→                    <SelectItem value="gairan">गायरान</SelectItem>
+   359→                  </SelectContent>
+   360→                </Select>
+   361→              </div>
+   362→              <div>
+   363→                <Label className="text-xs">मालकी प्रकार</Label>
+   364→                <Select value={(form.ownershipType as string) || 'government'} onValueChange={v => setForm(f => ({ ...f, ownershipType: v }))}>
+   365→                  <SelectTrigger><SelectValue /></SelectTrigger>
+   366→                  <SelectContent>
+   367→                    <SelectItem value="government">सरकारी</SelectItem>
+   368→                    <SelectItem value="panchayat">पंचायत</SelectItem>
+   369→                    <SelectItem value="private">खाजगी</SelectItem>
+   370→                  </SelectContent>
+   371→                </Select>
+   372→              </div>
+   373→              <div>
+   374→                <Label className="text-xs">वापर</Label>
+   375→                <Select value={(form.usageType as string) || 'other'} onValueChange={v => setForm(f => ({ ...f, usageType: v }))}>
+   376→                  <SelectTrigger><SelectValue /></SelectTrigger>
+   377→                  <SelectContent>
+   378→                    <SelectItem value="farming">शेती</SelectItem>
+   379→                    <SelectItem value="housing">राहणी</SelectItem>
+   380→                    <SelectItem value="commercial_use">व्यावसायिक</SelectItem>
+   381→                    <SelectItem value="public_use">सार्वजनिक</SelectItem>
+   382→                    <SelectItem value="other">इतर</SelectItem>
+   383→                  </SelectContent>
+   384→                </Select>
+   385→              </div>
+   386→            </div>
+   387→          </div>
+   388→        );
+   389→
+   390→      case 'road':
+   391→        return (
+   392→          <div className="grid gap-3 py-2">
+   393→            <div className="grid grid-cols-2 gap-3">
+   394→              <div><Label className="text-xs">रस्ता नाव *</Label><Input value={(form.roadName as string) || ''} onChange={e => setForm(f => ({ ...f, roadName: e.target.value }))} /></div>
+   395→              <div><Label className="text-xs">मराठीत</Label><Input value={(form.roadNameMr as string) || ''} onChange={e => setForm(f => ({ ...f, roadNameMr: e.target.value }))} /></div>
+   396→            </div>
+   397→            <div className="grid grid-cols-2 gap-3">
+   398→              <div>
+   399→                <Label className="text-xs">प्रकार</Label>
+   400→                <Select value={(form.roadType as string) || 'village'} onValueChange={v => setForm(f => ({ ...f, roadType: v }))}>
+   401→                  <SelectTrigger><SelectValue /></SelectTrigger>
+   402→                  <SelectContent>
+   403→                    <SelectItem value="village">गावरस्ता</SelectItem>
+   404→                    <SelectItem value="district">जिल्हा रस्ता</SelectItem>
+   405→                    <SelectItem value="state">राज्य महामार्ग</SelectItem>
+   406→                    <SelectItem value="national">राष्ट्रीय महामार्ग</SelectItem>
+   407→                  </SelectContent>
+   408→                </Select>
+   409→              </div>
+   410→              <div>
+   411→                <Label className="text-xs">पृष्ठभाग</Label>
+   412→                <Select value={(form.surfaceType as string) || 'kutcha'} onValueChange={v => setForm(f => ({ ...f, surfaceType: v }))}>
+   413→                  <SelectTrigger><SelectValue /></SelectTrigger>
+   414→                  <SelectContent>
+   415→                    <SelectItem value="kutcha">कच्चा</SelectItem>
+   416→                    <SelectItem value="pucca">पक्का</SelectItem>
+   417→                    <SelectItem value="concrete">काँक्रीट</SelectItem>
+   418→                    <SelectItem value="wbm">WBM</SelectItem>
+   419→                  </SelectContent>
+   420→                </Select>
+   421→              </div>
+   422→            </div>
+   423→            <div className="grid grid-cols-3 gap-3">
+   424→              <div><Label className="text-xs">लांबी (मी.)</Label><Input type="number" value={(form.roadLength as number) || 0} onChange={e => setForm(f => ({ ...f, roadLength: Number(e.target.value) }))} /></div>
+   425→              <div><Label className="text-xs">रुंदी (मी.)</Label><Input type="number" value={(form.roadWidth as number) || 0} onChange={e => setForm(f => ({ ...f, roadWidth: Number(e.target.value) }))} /></div>
+   426→              <div><Label className="text-xs">बांधणी वर्ष</Label><Input value={(form.constructionYear as string) || ''} onChange={e => setForm(f => ({ ...f, constructionYear: e.target.value }))} /></div>
+   427→            </div>
+   428→            <div className="grid grid-cols-2 gap-3">
+   429→              <div><Label className="text-xs">अंदाजित खर्च</Label><Input type="number" value={(form.estimatedCost as number) || 0} onChange={e => setForm(f => ({ ...f, estimatedCost: Number(e.target.value) }))} /></div>
+   430→              <div>
+   431→                <Label className="text-xs">स्थिती</Label>
+   432→                <Select value={(form.condition as string) || 'good'} onValueChange={v => setForm(f => ({ ...f, condition: v }))}>
+   433→                  <SelectTrigger><SelectValue /></SelectTrigger>
+   434→                  <SelectContent>
+   435→                    <SelectItem value="good">चांगली</SelectItem>
+   436→                    <SelectItem value="fair">सरासरी</SelectItem>
+   437→                    <SelectItem value="poor">खराब</SelectItem>
+   438→                  </SelectContent>
+   439→                </Select>
+   440→              </div>
+   441→            </div>
+   442→          </div>
+   443→        );
+   444→
+   445→      case 'tree':
+   446→        return (
+   447→          <div className="grid gap-3 py-2">
+   448→            <div className="grid grid-cols-2 gap-3">
+   449→              <div><Label className="text-xs">झाडाचा प्रकार *</Label><Input value={(form.treeType as string) || ''} onChange={e => setForm(f => ({ ...f, treeType: e.target.value }))} /></div>
+   450→              <div><Label className="text-xs">स्थान</Label><Input value={(form.location as string) || ''} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} /></div>
+   451→            </div>
+   452→            <div><Label className="text-xs">लावणी दिनांक</Label><Input type="date" value={(form.plantDate as string) || ''} onChange={e => setForm(f => ({ ...f, plantDate: e.target.value }))} /></div>
+   453→            <div className="grid grid-cols-3 gap-3">
+   454→              <div><Label className="text-xs">उंची (मी.)</Label><Input type="number" step="0.1" value={(form.height as number) || 0} onChange={e => setForm(f => ({ ...f, height: Number(e.target.value) }))} /></div>
+   455→              <div><Label className="text-xs">घेर (सेमी)</Label><Input type="number" step="0.1" value={(form.girth as number) || 0} onChange={e => setForm(f => ({ ...f, girth: Number(e.target.value) }))} /></div>
+   456→              <div><Label className="text-xs">छत्री व्यास (मी.)</Label><Input type="number" step="0.1" value={(form.canopyDiameter as number) || 0} onChange={e => setForm(f => ({ ...f, canopyDiameter: Number(e.target.value) }))} /></div>
+   457→            </div>
+   458→            <div className="grid grid-cols-2 gap-3">
+   459→              <div><Label className="text-xs">अंदाजित मूल्य</Label><Input type="number" value={(form.estimatedValue as number) || 0} onChange={e => setForm(f => ({ ...f, estimatedValue: Number(e.target.value) }))} /></div>
+   460→              <div>
+   461→                <Label className="text-xs">स्थिती</Label>
+   462→                <Select value={(form.condition as string) || 'good'} onValueChange={v => setForm(f => ({ ...f, condition: v }))}>
+   463→                  <SelectTrigger><SelectValue /></SelectTrigger>
+   464→                  <SelectContent>
+   465→                    <SelectItem value="good">चांगली</SelectItem>
+   466→                    <SelectItem value="fair">सरासरी</SelectItem>
+   467→                    <SelectItem value="poor">खराब</SelectItem>
+   468→                    <SelectItem value="dead">मृत</SelectItem>
+   469→                  </SelectContent>
+   470→                </Select>
+   471→              </div>
+   472→            </div>
+   473→            <div className="flex items-center gap-2">
+   474→              <Checkbox checked={(form.isProtected as boolean) || false} onCheckedChange={v => setForm(f => ({ ...f, isProtected: v === true }))} />
+   475→              <Label className="text-xs">संरक्षित</Label>
+   476→            </div>
+   477→          </div>
+   478→        );
+   479→    }
+   480→  };
+   481→
+   482→  return (
+   483→    <div className="space-y-4">
+   484→      <Tabs defaultValue="asset">
+   485→        <TabsList className="flex-wrap">
+   486→          <TabsTrigger value="asset" className="gap-1"><Building2 className="h-4 w-4" />स्थावर मालमत्ता</TabsTrigger>
+   487→          <TabsTrigger value="stock" className="gap-1"><Package className="h-4 w-4" />साठा</TabsTrigger>
+   488→          <TabsTrigger value="land" className="gap-1"><Map className="h-4 w-4" />जमीन</TabsTrigger>
+   489→          <TabsTrigger value="road" className="gap-1"><Route className="h-4 w-4" />रस्ते</TabsTrigger>
+   490→          <TabsTrigger value="tree" className="gap-1"><TreePine className="h-4 w-4" />झाडे</TabsTrigger>
+   491→        </TabsList>
+   492→
+   493→        {/* ===== FIXED ASSETS ===== */}
+   494→        <TabsContent value="asset" className="space-y-4">
+   495→          <div className="flex justify-between items-center">
+   496→            <h3 className="text-lg font-semibold">स्थावर मालमत्ता यादी</h3>
+   497→            <div className="flex gap-2">
+   498→              <Button variant="outline" size="sm" onClick={fetchData}><RefreshCw className="h-4 w-4" /></Button>
+   499→              <Button size="sm" onClick={() => openDialog('asset')}><Plus className="h-4 w-4 mr-1" />नवीन मालमत्ता</Button>
+   500→            </div>
+   501→          </div>
+   502→          <Card>
+   503→            <CardContent className="p-0">
+   504→              <div className="max-h-96 overflow-y-auto">
+   505→                <Table>
+   506→                  <TableHeader>
+   507→                    <TableRow>
+   508→                      <TableHead className="text-xs">नाव</TableHead>
+   509→                      <TableHead className="text-xs">प्रकार</TableHead>
+   510→                      <TableHead className="text-xs">क्रमांक</TableHead>
+   511→                      <TableHead className="text-xs text-right">खरेदी किंमत</TableHead>
+   512→                      <TableHead className="text-xs text-right">सध्याचे मूल्य</TableHead>
+   513→                      <TableHead className="text-xs">स्थिती</TableHead>
+   514→                      <TableHead className="text-xs text-right">कृती</TableHead>
+   515→                    </TableRow>
+   516→                  </TableHeader>
+   517→                  <TableBody>
+   518→                    {assets.length === 0 ? (
+   519→                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">कोणतीही मालमत्ता नाही</TableCell></TableRow>
+   520→                    ) : assets.map(a => (
+   521→                      <TableRow key={a.id}>
+   522→                        <TableCell>
+   523→                          <div className="text-sm">{a.assetName}</div>
+   524→                          {a.assetNameMr && <div className="text-xs text-muted-foreground">{a.assetNameMr}</div>}
+   525→                        </TableCell>
+   526→                        <TableCell className="text-xs">{a.assetType || '-'}</TableCell>
+   527→                        <TableCell className="text-xs font-mono">{a.assetNumber || '-'}</TableCell>
+   528→                        <TableCell className="text-right text-sm">₹{(a.purchaseCost || 0).toLocaleString('en-IN')}</TableCell>
+   529→                        <TableCell className="text-right text-sm">₹{(a.currentValue || 0).toLocaleString('en-IN')}</TableCell>
+   530→                        <TableCell><Badge variant="outline">{a.status === 'active' ? 'सक्रिय' : a.status === 'disposed' ? 'विल्हेवाट' : 'दुरुस्तीत'}</Badge></TableCell>
+   531→                        <TableCell className="text-right">
+   532→                          <div className="flex justify-end gap-1">
+   533→                            <Button variant="ghost" size="sm" onClick={() => openDialog('asset', a)}><Pencil className="h-3.5 w-3.5" /></Button>
+   534→                            <Button variant="ghost" size="sm" className="text-destructive" onClick={() => deleteRecord('asset', a.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+   535→                          </div>
+   536→                        </TableCell>
+   537→                      </TableRow>
+   538→                    ))}
+   539→                  </TableBody>
+   540→                </Table>
+   541→              </div>
+   542→            </CardContent>
+   543→          </Card>
+   544→        </TabsContent>
+   545→
+   546→        {/* ===== INVENTORY ===== */}
+   547→        <TabsContent value="stock" className="space-y-4">
+   548→          <div className="flex justify-between items-center">
+   549→            <h3 className="text-lg font-semibold">साठा यादी</h3>
+   550→            <div className="flex gap-2">
+   551→              <Button variant="outline" size="sm" onClick={fetchData}><RefreshCw className="h-4 w-4" /></Button>
+   552→              <Button size="sm" onClick={() => openDialog('stock')}><Plus className="h-4 w-4 mr-1" />नवीन वस्तू</Button>
+   553→            </div>
+   554→          </div>
+   555→          <Card>
+   556→            <CardContent className="p-0">
+   557→              <div className="max-h-96 overflow-y-auto">
+   558→                <Table>
+   559→                  <TableHeader>
+   560→                    <TableRow>
+   561→                      <TableHead className="text-xs">वस्तूचे नाव</TableHead>
+   562→                      <TableHead className="text-xs">वर्ग</TableHead>
+   563→                      <TableHead className="text-xs text-right">प्रमाण</TableHead>
+   564→                      <TableHead className="text-xs text-right">दर</TableHead>
+   565→                      <TableHead className="text-xs text-right">एकूण मूल्य</TableHead>
+   566→                      <TableHead className="text-xs">स्थिती</TableHead>
+   567→                      <TableHead className="text-xs text-right">कृती</TableHead>
+   568→                    </TableRow>
+   569→                  </TableHeader>
+   570→                  <TableBody>
+   571→                    {stocks.length === 0 ? (
+   572→                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">कोणताही साठा नाही</TableCell></TableRow>
+   573→                    ) : stocks.map(s => (
+   574→                      <TableRow key={s.id}>
+   575→                        <TableCell>
+   576→                          <div className="text-sm">{s.itemName}</div>
+   577→                          {s.itemNameMr && <div className="text-xs text-muted-foreground">{s.itemNameMr}</div>}
+   578→                        </TableCell>
+   579→                        <TableCell className="text-xs">{s.category || '-'}</TableCell>
+   580→                        <TableCell className="text-right text-sm">{s.quantity} {s.unit || ''}</TableCell>
+   581→                        <TableCell className="text-right text-sm">₹{(s.ratePerUnit || 0).toLocaleString('en-IN')}</TableCell>
+   582→                        <TableCell className="text-right text-sm">₹{(s.totalValue || 0).toLocaleString('en-IN')}</TableCell>
+   583→                        <TableCell>
+   584→                          <Badge variant={s.status === 'In Stock' ? 'default' : s.status === 'Low Stock' ? 'secondary' : 'destructive'}>
+   585→                            {s.status === 'In Stock' ? 'साठ्यात' : s.status === 'Low Stock' ? 'कमी साठा' : 'साठा संपला'}
+   586→                          </Badge>
+   587→                        </TableCell>
+   588→                        <TableCell className="text-right">
+   589→                          <div className="flex justify-end gap-1">
+   590→                            <Button variant="ghost" size="sm" onClick={() => openDialog('stock', s)}><Pencil className="h-3.5 w-3.5" /></Button>
+   591→                            <Button variant="ghost" size="sm" className="text-destructive" onClick={() => deleteRecord('stock', s.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+   592→                          </div>
+   593→                        </TableCell>
+   594→                      </TableRow>
+   595→                    ))}
+   596→                  </TableBody>
+   597→                </Table>
+   598→              </div>
+   599→            </CardContent>
+   600→          </Card>
+   601→        </TabsContent>
+   602→
+   603→        {/* ===== LAND ===== */}
+   604→        <TabsContent value="land" className="space-y-4">
+   605→          <div className="flex justify-between items-center">
+   606→            <h3 className="text-lg font-semibold">जमीन यादी</h3>
+   607→            <div className="flex gap-2">
+   608→              <Button variant="outline" size="sm" onClick={fetchData}><RefreshCw className="h-4 w-4" /></Button>
+   609→              <Button size="sm" onClick={() => openDialog('land')}><Plus className="h-4 w-4 mr-1" />नवीन जमीन</Button>
+   610→            </div>
+   611→          </div>
+   612→          <Card>
+   613→            <CardContent className="p-0">
+   614→              <div className="max-h-96 overflow-y-auto">
+   615→                <Table>
+   616→                  <TableHeader>
+   617→                    <TableRow>
+   618→                      <TableHead className="text-xs">जमीन नाव</TableHead>
+   619→                      <TableHead className="text-xs">सर्व्हे क्र.</TableHead>
+   620→                      <TableHead className="text-xs text-right">एकर</TableHead>
+   621→                      <TableHead className="text-xs text-right">गुंठे</TableHead>
+   622→                      <TableHead className="text-xs">प्रकार</TableHead>
+   623→                      <TableHead className="text-xs">मालकी</TableHead>
+   624→                      <TableHead className="text-xs text-right">कृती</TableHead>
+   625→                    </TableRow>
+   626→                  </TableHeader>
+   627→                  <TableBody>
+   628→                    {lands.length === 0 ? (
+   629→                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">कोणतीही जमीन नाही</TableCell></TableRow>
+   630→                    ) : lands.map(l => (
+   631→                      <TableRow key={l.id}>
+   632→                        <TableCell className="text-sm">{l.landName}</TableCell>
+   633→                        <TableCell className="text-xs font-mono">{l.surveyNo || '-'}</TableCell>
+   634→                        <TableCell className="text-right text-sm">{(l.areaAcres || 0).toFixed(2)}</TableCell>
+   635→                        <TableCell className="text-right text-sm">{(l.areaGunthe || 0).toFixed(2)}</TableCell>
+   636→                        <TableCell className="text-xs">{l.landType || '-'}</TableCell>
+   637→                        <TableCell className="text-xs">{l.ownershipType || '-'}</TableCell>
+   638→                        <TableCell className="text-right">
+   639→                          <div className="flex justify-end gap-1">
+   640→                            <Button variant="ghost" size="sm" onClick={() => openDialog('land', l)}><Pencil className="h-3.5 w-3.5" /></Button>
+   641→                            <Button variant="ghost" size="sm" className="text-destructive" onClick={() => deleteRecord('land', l.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+   642→                          </div>
+   643→                        </TableCell>
+   644→                      </TableRow>
+   645→                    ))}
+   646→                  </TableBody>
+   647→                </Table>
+   648→              </div>
+   649→            </CardContent>
+   650→          </Card>
+   651→        </TabsContent>
+   652→
+   653→        {/* ===== ROADS ===== */}
+   654→        <TabsContent value="road" className="space-y-4">
+   655→          <div className="flex justify-between items-center">
+   656→            <h3 className="text-lg font-semibold">रस्ते यादी</h3>
+   657→            <div className="flex gap-2">
+   658→              <Button variant="outline" size="sm" onClick={fetchData}><RefreshCw className="h-4 w-4" /></Button>
+   659→              <Button size="sm" onClick={() => openDialog('road')}><Plus className="h-4 w-4 mr-1" />नवीन रस्ता</Button>
+   660→            </div>
+   661→          </div>
+   662→          <Card>
+   663→            <CardContent className="p-0">
+   664→              <div className="max-h-96 overflow-y-auto">
+   665→                <Table>
+   666→                  <TableHeader>
+   667→                    <TableRow>
+   668→                      <TableHead className="text-xs">रस्ता नाव</TableHead>
+   669→                      <TableHead className="text-xs">प्रकार</TableHead>
+   670→                      <TableHead className="text-xs text-right">लांबी (मी.)</TableHead>
+   671→                      <TableHead className="text-xs text-right">रुंदी (मी.)</TableHead>
+   672→                      <TableHead className="text-xs">पृष्ठभाग</TableHead>
+   673→                      <TableHead className="text-xs">स्थिती</TableHead>
+   674→                      <TableHead className="text-xs text-right">कृती</TableHead>
+   675→                    </TableRow>
+   676→                  </TableHeader>
+   677→                  <TableBody>
+   678→                    {roads.length === 0 ? (
+   679→                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">कोणतेही रस्ते नाहीत</TableCell></TableRow>
+   680→                    ) : roads.map(r => (
+   681→                      <TableRow key={r.id}>
+   682→                        <TableCell className="text-sm">{r.roadName}</TableCell>
+   683→                        <TableCell className="text-xs">{r.roadType || '-'}</TableCell>
+   684→                        <TableCell className="text-right text-sm">{(r.roadLength || 0).toFixed(0)}</TableCell>
+   685→                        <TableCell className="text-right text-sm">{(r.roadWidth || 0).toFixed(0)}</TableCell>
+   686→                        <TableCell className="text-xs">{r.surfaceType || '-'}</TableCell>
+   687→                        <TableCell><Badge variant="outline">{conditionLabels[r.condition || ''] || r.condition || '-'}</Badge></TableCell>
+   688→                        <TableCell className="text-right">
+   689→                          <div className="flex justify-end gap-1">
+   690→                            <Button variant="ghost" size="sm" onClick={() => openDialog('road', r)}><Pencil className="h-3.5 w-3.5" /></Button>
+   691→                            <Button variant="ghost" size="sm" className="text-destructive" onClick={() => deleteRecord('road', r.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+   692→                          </div>
+   693→                        </TableCell>
+   694→                      </TableRow>
+   695→                    ))}
+   696→                  </TableBody>
+   697→                </Table>
+   698→              </div>
+   699→            </CardContent>
+   700→          </Card>
+   701→        </TabsContent>
+   702→
+   703→        {/* ===== TREES ===== */}
+   704→        <TabsContent value="tree" className="space-y-4">
+   705→          <div className="flex justify-between items-center">
+   706→            <h3 className="text-lg font-semibold">झाडे यादी</h3>
+   707→            <div className="flex gap-2">
+   708→              <Button variant="outline" size="sm" onClick={fetchData}><RefreshCw className="h-4 w-4" /></Button>
+   709→              <Button size="sm" onClick={() => openDialog('tree')}><Plus className="h-4 w-4 mr-1" />नवीन झाड</Button>
+   710→            </div>
+   711→          </div>
+   712→          <Card>
+   713→            <CardContent className="p-0">
+   714→              <div className="max-h-96 overflow-y-auto">
+   715→                <Table>
+   716→                  <TableHeader>
+   717→                    <TableRow>
+   718→                      <TableHead className="text-xs">झाडाचा प्रकार</TableHead>
+   719→                      <TableHead className="text-xs">स्थान</TableHead>
+   720→                      <TableHead className="text-xs">लावणी दिनांक</TableHead>
+   721→                      <TableHead className="text-xs text-right">उंची (मी.)</TableHead>
+   722→                      <TableHead className="text-xs">स्थिती</TableHead>
+   723→                      <TableHead className="text-xs">संरक्षित</TableHead>
+   724→                      <TableHead className="text-xs text-right">कृती</TableHead>
+   725→                    </TableRow>
+   726→                  </TableHeader>
+   727→                  <TableBody>
+   728→                    {trees.length === 0 ? (
+   729→                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">कोणतीही झाडे नाहीत</TableCell></TableRow>
+   730→                    ) : trees.map(t => (
+   731→                      <TableRow key={t.id}>
+   732→                        <TableCell className="text-sm">{t.treeType}</TableCell>
+   733→                        <TableCell className="text-xs">{t.location || '-'}</TableCell>
+   734→                        <TableCell className="text-xs">{t.plantDate || '-'}</TableCell>
+   735→                        <TableCell className="text-right text-sm">{(t.height || 0).toFixed(1)}</TableCell>
+   736→                        <TableCell><Badge variant="outline">{conditionLabels[t.condition || ''] || t.condition || '-'}</Badge></TableCell>
+   737→                        <TableCell><Badge variant={t.isProtected ? 'default' : 'secondary'}>{t.isProtected ? 'हो' : 'नाही'}</Badge></TableCell>
+   738→                        <TableCell className="text-right">
+   739→                          <div className="flex justify-end gap-1">
+   740→                            <Button variant="ghost" size="sm" onClick={() => openDialog('tree', t)}><Pencil className="h-3.5 w-3.5" /></Button>
+   741→                            <Button variant="ghost" size="sm" className="text-destructive" onClick={() => deleteRecord('tree', t.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+   742→                          </div>
+   743→                        </TableCell>
+   744→                      </TableRow>
+   745→                    ))}
+   746→                  </TableBody>
+   747→                </Table>
+   748→              </div>
+   749→            </CardContent>
+   750→          </Card>
+   751→        </TabsContent>
+   752→      </Tabs>
+   753→
+   754→      {/* Generic Dialog */}
+   755→      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+   756→        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+   757→          <DialogHeader>
+   758→            <DialogTitle>
+   759→              {editing ? 'संपादन' : 'नवीन नोंद'} - {{
+   760→                asset: 'स्थावर मालमत्ता',
+   761→                stock: 'साठा',
+   762→                land: 'जमीन',
+   763→                road: 'रस्ता',
+   764→                tree: 'झाड',
+   765→              }[dialogType]}
+   766→            </DialogTitle>
+   767→          </DialogHeader>
+   768→          {renderDialogFields()}
+   769→          <DialogFooter>
+   770→            <Button variant="outline" onClick={() => setDialogOpen(false)}>रद्द करा</Button>
+   771→            <Button onClick={saveRecord} disabled={saving}>
+   772→              {saving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}जतन करा
+   773→            </Button>
+   774→          </DialogFooter>
+   775→        </DialogContent>
+   776→      </Dialog>
+   777→    </div>
+   778→  );
+   779→}
+   780→

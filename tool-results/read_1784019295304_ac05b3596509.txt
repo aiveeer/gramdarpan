@@ -1,0 +1,1150 @@
+     1→'use client';
+     2→
+     3→import React, { useState, useEffect, useCallback } from 'react';
+     4→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+     5→import { Button } from '@/components/ui/button';
+     6→import { Input } from '@/components/ui/input';
+     7→import { Label } from '@/components/ui/label';
+     8→import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+     9→import { Badge } from '@/components/ui/badge';
+    10→import { Skeleton } from '@/components/ui/skeleton';
+    11→import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+    12→import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+    13→import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+    14→import { toast } from '@/hooks/use-toast';
+    15→import {
+    16→  Plus, RefreshCw, Pencil, Trash2, Loader2, Calculator,
+    17→  FileText, Receipt, Landmark, AlertCircle, IndianRupee,
+    18→} from 'lucide-react';
+    19→
+    20→// ===== INTERFACES =====
+    21→
+    22→interface PropertyOption {
+    23→  id: string;
+    24→  propertyNo: string;
+    25→  ownerName?: string;
+    26→  ownerNameMr?: string;
+    27→}
+    28→
+    29→interface TaxAssessmentRecord {
+    30→  id: string;
+    31→  propertyId: string;
+    32→  financialYear: string;
+    33→  propertyTax: number;
+    34→  waterTax: number;
+    35→  lightTax: number;
+    36→  professionTax: number;
+    37→  miscTax: number;
+    38→  totalTax: number;
+    39→  concession: number;
+    40→  netDemand: number;
+    41→  remarks: string | null;
+    42→  totalArea: number;
+    43→  capitalValue: number;
+    44→  taxRatePercent: number;
+    45→  houseTaxAmt: number;
+    46→  lightTaxAmt: number;
+    47→  healthTaxAmt: number;
+    48→  waterTaxAmt: number;
+    49→  property?: { propertyNo: string; ownerName?: string; ownerNameMr?: string };
+    50→  [key: string]: unknown;
+    51→}
+    52→
+    53→interface DemandRegisterRecord {
+    54→  id: string;
+    55→  propertyId: string;
+    56→  financialYear: string;
+    57→  openingBalance: number;
+    58→  totalDemand: number;
+    59→  totalCollection: number;
+    60→  closingBalance: number;
+    61→  penalty: number;
+    62→  discount: number;
+    63→  currentTax: number;
+    64→  previousBalance: number;
+    65→  interest: number;
+    66→  remarks: string | null;
+    67→  property?: { propertyNo: string; ownerName?: string; ownerNameMr?: string };
+    68→  [key: string]: unknown;
+    69→}
+    70→
+    71→interface TaxPaymentRecord {
+    72→  id: string;
+    73→  propertyId: string;
+    74→  receiptNo: string;
+    75→  financialYear: string;
+    76→  amount: number;
+    77→  amountPaid: number;
+    78→  totalDemand: number;
+    79→  balance: number;
+    80→  paymentDate: string;
+    81→  paymentMode: string;
+    82→  chequeNo: string | null;
+    83→  bankName: string | null;
+    84→  collectedBy: string | null;
+    85→  remarks: string | null;
+    86→  property?: { propertyNo: string; ownerName?: string; ownerNameMr?: string };
+    87→  [key: string]: unknown;
+    88→}
+    89→
+    90→interface TaxManagementProps {
+    91→  financialYear: string;
+    92→}
+    93→
+    94→// ===== HELPER =====
+    95→function safeExtractData(res: { data?: unknown }): unknown[] {
+    96→  if (Array.isArray(res.data)) return res.data;
+    97→  if (res.data && typeof res.data === 'object' && Array.isArray((res.data as Record<string, unknown>).data)) {
+    98→    return (res.data as Record<string, unknown>).data as unknown[];
+    99→  }
+   100→  return [];
+   101→}
+   102→
+   103→function formatCurrency(val: number | string | null | undefined): string {
+   104→  const num = parseFloat(String(val || 0));
+   105→  return '₹' + num.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+   106→}
+   107→
+   108→function getPropertyLabel(prop: { propertyNo?: string; ownerName?: string; ownerNameMr?: string } | undefined): string {
+   109→  if (!prop) return '-';
+   110→  return `${prop.propertyNo || '-'}${prop.ownerNameMr ? ` (${prop.ownerNameMr})` : prop.ownerName ? ` (${prop.ownerName})` : ''}`;
+   111→}
+   112→
+   113→// ===== MAIN COMPONENT =====
+   114→
+   115→export default function TaxManagement({ financialYear }: TaxManagementProps) {
+   116→  // Properties for dropdown
+   117→  const [properties, setProperties] = useState<PropertyOption[]>([]);
+   118→  const [propertiesLoading, setPropertiesLoading] = useState(true);
+   119→
+   120→  // Tab 1: Tax Assessment
+   121→  const [assessments, setAssessments] = useState<TaxAssessmentRecord[]>([]);
+   122→  const [assessmentsLoading, setAssessmentsLoading] = useState(true);
+   123→  const [assessmentDialogOpen, setAssessmentDialogOpen] = useState(false);
+   124→  const [assessmentEditing, setAssessmentEditing] = useState<TaxAssessmentRecord | null>(null);
+   125→  const [assessmentSaving, setAssessmentSaving] = useState(false);
+   126→  const [assessmentForm, setAssessmentForm] = useState({
+   127→    propertyId: '',
+   128→    propertyTax: 0, waterTax: 0, lightTax: 0, professionTax: 0, miscTax: 0,
+   129→    concession: 0, remarks: '',
+   130→    totalArea: 0, capitalValue: 0, taxRatePercent: 0,
+   131→    houseTaxAmt: 0, lightTaxAmt: 0, healthTaxAmt: 0, waterTaxAmt: 0,
+   132→  });
+   133→
+   134→  // Tab 2: Demand Register
+   135→  const [demands, setDemands] = useState<DemandRegisterRecord[]>([]);
+   136→  const [demandsLoading, setDemandsLoading] = useState(true);
+   137→  const [demandDialogOpen, setDemandDialogOpen] = useState(false);
+   138→  const [demandEditing, setDemandEditing] = useState<DemandRegisterRecord | null>(null);
+   139→  const [demandSaving, setDemandSaving] = useState(false);
+   140→  const [demandForm, setDemandForm] = useState({
+   141→    propertyId: '',
+   142→    openingBalance: 0, totalDemand: 0, totalCollection: 0,
+   143→    penalty: 0, discount: 0, currentTax: 0, previousBalance: 0,
+   144→    interest: 0, remarks: '',
+   145→  });
+   146→
+   147→  // Tab 3: Tax Payment
+   148→  const [payments, setPayments] = useState<TaxPaymentRecord[]>([]);
+   149→  const [paymentsLoading, setPaymentsLoading] = useState(true);
+   150→  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+   151→  const [paymentEditing, setPaymentEditing] = useState<TaxPaymentRecord | null>(null);
+   152→  const [paymentSaving, setPaymentSaving] = useState(false);
+   153→  const [paymentForm, setPaymentForm] = useState({
+   154→    propertyId: '', receiptNo: '',
+   155→    amount: 0, amountPaid: 0, totalDemand: 0,
+   156→    paymentDate: new Date().toISOString().split('T')[0],
+   157→    paymentMode: 'cash', chequeNo: '', bankName: '',
+   158→    collectedBy: '', remarks: '',
+   159→  });
+   160→
+   161→  // ===== FETCH PROPERTIES =====
+   162→  const fetchProperties = useCallback(async () => {
+   163→    setPropertiesLoading(true);
+   164→    try {
+   165→      const res = await fetch('/api/master?table=property');
+   166→      const data = await res.json();
+   167→      const records = safeExtractData({ data });
+   168→      const mapped = Array.isArray(records)
+   169→        ? records.map((p: Record<string, unknown>) => ({
+   170→            id: String(p.id || ''),
+   171→            propertyNo: String(p.propertyNo || p.propertyNumber || ''),
+   172→            ownerName: String(p.ownerName || ''),
+   173→            ownerNameMr: String(p.ownerNameMr || ''),
+   174→          }))
+   175→        : [];
+   176→      setProperties(mapped);
+   177→    } catch {
+   178→      setProperties([]);
+   179→    } finally {
+   180→      setPropertiesLoading(false);
+   181→    }
+   182→  }, []);
+   183→
+   184→  // ===== FETCH ASSESSMENTS =====
+   185→  const fetchAssessments = useCallback(async () => {
+   186→    setAssessmentsLoading(true);
+   187→    try {
+   188→      const res = await fetch(`/api/tax-assessment?financialYear=${financialYear}`);
+   189→      const data = await res.json();
+   190→      const records = safeExtractData(data);
+   191→      setAssessments(Array.isArray(records) ? records as TaxAssessmentRecord[] : []);
+   192→    } catch {
+   193→      setAssessments([]);
+   194→    } finally {
+   195→      setAssessmentsLoading(false);
+   196→    }
+   197→  }, [financialYear]);
+   198→
+   199→  // ===== FETCH DEMANDS =====
+   200→  const fetchDemands = useCallback(async () => {
+   201→    setDemandsLoading(true);
+   202→    try {
+   203→      const res = await fetch(`/api/demand?financialYear=${financialYear}`);
+   204→      const data = await res.json();
+   205→      const records = safeExtractData(data);
+   206→      setDemands(Array.isArray(records) ? records as DemandRegisterRecord[] : []);
+   207→    } catch {
+   208→      setDemands([]);
+   209→    } finally {
+   210→      setDemandsLoading(false);
+   211→    }
+   212→  }, [financialYear]);
+   213→
+   214→  // ===== FETCH PAYMENTS =====
+   215→  const fetchPayments = useCallback(async () => {
+   216→    setPaymentsLoading(true);
+   217→    try {
+   218→      const res = await fetch(`/api/tax-payment?financialYear=${financialYear}`);
+   219→      const data = await res.json();
+   220→      const records = safeExtractData(data);
+   221→      setPayments(Array.isArray(records) ? records as TaxPaymentRecord[] : []);
+   222→    } catch {
+   223→      setPayments([]);
+   224→    } finally {
+   225→      setPaymentsLoading(false);
+   226→    }
+   227→  }, [financialYear]);
+   228→
+   229→  useEffect(() => {
+   230→    fetchProperties();
+   231→  }, [fetchProperties]);
+   232→
+   233→  useEffect(() => {
+   234→    fetchAssessments();
+   235→    fetchDemands();
+   236→    fetchPayments();
+   237→  }, [fetchAssessments, fetchDemands, fetchPayments]);
+   238→
+   239→  // ===== AUTO-CALCULATE ASSESSMENT =====
+   240→  const assessmentTotalTax = assessmentForm.propertyTax + assessmentForm.waterTax + assessmentForm.lightTax + assessmentForm.professionTax + assessmentForm.miscTax;
+   241→  const assessmentNetDemand = assessmentTotalTax - assessmentForm.concession;
+   242→
+   243→  // ===== AUTO-CALCULATE DEMAND =====
+   244→  const demandClosingBalance = assessmentForm ? 
+   245→    demandForm.openingBalance + demandForm.totalDemand - demandForm.totalCollection + demandForm.penalty + demandForm.interest - demandForm.discount : 0;
+   246→
+   247→  // ===== AUTO-CALCULATE PAYMENT =====
+   248→  const paymentBalance = paymentForm.totalDemand - paymentForm.amountPaid;
+   249→
+   250→  // ===== ASSESSMENT CRUD =====
+   251→  const openAssessmentDialog = (record?: TaxAssessmentRecord) => {
+   252→    if (record) {
+   253→      setAssessmentEditing(record);
+   254→      setAssessmentForm({
+   255→        propertyId: record.propertyId,
+   256→        propertyTax: record.propertyTax || 0,
+   257→        waterTax: record.waterTax || 0,
+   258→        lightTax: record.lightTax || 0,
+   259→        professionTax: record.professionTax || 0,
+   260→        miscTax: record.miscTax || 0,
+   261→        concession: record.concession || 0,
+   262→        remarks: record.remarks || '',
+   263→        totalArea: record.totalArea || 0,
+   264→        capitalValue: record.capitalValue || 0,
+   265→        taxRatePercent: record.taxRatePercent || 0,
+   266→        houseTaxAmt: record.houseTaxAmt || 0,
+   267→        lightTaxAmt: record.lightTaxAmt || 0,
+   268→        healthTaxAmt: record.healthTaxAmt || 0,
+   269→        waterTaxAmt: record.waterTaxAmt || 0,
+   270→      });
+   271→    } else {
+   272→      setAssessmentEditing(null);
+   273→      setAssessmentForm({
+   274→        propertyId: '', propertyTax: 0, waterTax: 0, lightTax: 0,
+   275→        professionTax: 0, miscTax: 0, concession: 0, remarks: '',
+   276→        totalArea: 0, capitalValue: 0, taxRatePercent: 0,
+   277→        houseTaxAmt: 0, lightTaxAmt: 0, healthTaxAmt: 0, waterTaxAmt: 0,
+   278→      });
+   279→    }
+   280→    setAssessmentDialogOpen(true);
+   281→  };
+   282→
+   283→  const saveAssessment = async () => {
+   284→    if (!assessmentForm.propertyId) {
+   285→      toast({ title: 'त्रुटी', description: 'कृपया मालमत्ता निवडा', variant: 'destructive' });
+   286→      return;
+   287→    }
+   288→    setAssessmentSaving(true);
+   289→    try {
+   290→      const body = {
+   291→        ...(assessmentEditing ? { id: assessmentEditing.id } : {}),
+   292→        ...assessmentForm,
+   293→        financialYear,
+   294→      };
+   295→      const res = await fetch('/api/tax-assessment', {
+   296→        method: 'POST',
+   297→        headers: { 'Content-Type': 'application/json' },
+   298→        body: JSON.stringify(body),
+   299→      });
+   300→      const data = await res.json();
+   301→      if (data.success) {
+   302→        toast({ title: 'यशस्वी', description: assessmentEditing ? 'कर आकारणी अपडेट झाली' : 'कर आकारणी जोडली' });
+   303→        setAssessmentDialogOpen(false);
+   304→        fetchAssessments();
+   305→      } else {
+   306→        toast({ title: 'त्रुटी', description: data.error || 'जतन करण्यात अयशस्वी', variant: 'destructive' });
+   307→      }
+   308→    } catch {
+   309→      toast({ title: 'त्रुटी', description: 'कर आकारणी जतन करण्यात अयशस्वी', variant: 'destructive' });
+   310→    } finally {
+   311→      setAssessmentSaving(false);
+   312→    }
+   313→  };
+   314→
+   315→  const deleteAssessment = async (id: string) => {
+   316→    if (!confirm('ही कर आकारणी खात्रीने हटवायची आहे का?')) return;
+   317→    try {
+   318→      const res = await fetch(`/api/tax-assessment?id=${id}`, { method: 'DELETE' });
+   319→      const data = await res.json();
+   320→      if (data.success) {
+   321→        toast({ title: 'यशस्वी', description: 'कर आकारणी हटवली' });
+   322→        fetchAssessments();
+   323→      } else {
+   324→        toast({ title: 'त्रुटी', description: data.error || 'हटवण्यात अयशस्वी', variant: 'destructive' });
+   325→      }
+   326→    } catch {
+   327→      toast({ title: 'त्रुटी', description: 'हटवण्यात अयशस्वी', variant: 'destructive' });
+   328→    }
+   329→  };
+   330→
+   331→  // ===== DEMAND CRUD =====
+   332→  const openDemandDialog = (record?: DemandRegisterRecord) => {
+   333→    if (record) {
+   334→      setDemandEditing(record);
+   335→      setDemandForm({
+   336→        propertyId: record.propertyId,
+   337→        openingBalance: record.openingBalance || 0,
+   338→        totalDemand: record.totalDemand || 0,
+   339→        totalCollection: record.totalCollection || 0,
+   340→        penalty: record.penalty || 0,
+   341→        discount: record.discount || 0,
+   342→        currentTax: record.currentTax || 0,
+   343→        previousBalance: record.previousBalance || 0,
+   344→        interest: record.interest || 0,
+   345→        remarks: record.remarks || '',
+   346→      });
+   347→    } else {
+   348→      setDemandEditing(null);
+   349→      setDemandForm({
+   350→        propertyId: '', openingBalance: 0, totalDemand: 0, totalCollection: 0,
+   351→        penalty: 0, discount: 0, currentTax: 0, previousBalance: 0,
+   352→        interest: 0, remarks: '',
+   353→      });
+   354→    }
+   355→    setDemandDialogOpen(true);
+   356→  };
+   357→
+   358→  const saveDemand = async () => {
+   359→    if (!demandForm.propertyId) {
+   360→      toast({ title: 'त्रुटी', description: 'कृपया मालमत्ता निवडा', variant: 'destructive' });
+   361→      return;
+   362→    }
+   363→    setDemandSaving(true);
+   364→    try {
+   365→      const body = {
+   366→        ...(demandEditing ? { id: demandEditing.id } : {}),
+   367→        ...demandForm,
+   368→        financialYear,
+   369→      };
+   370→      const res = await fetch('/api/demand', {
+   371→        method: 'POST',
+   372→        headers: { 'Content-Type': 'application/json' },
+   373→        body: JSON.stringify(body),
+   374→      });
+   375→      const data = await res.json();
+   376→      if (data.success) {
+   377→        toast({ title: 'यशस्वी', description: demandEditing ? 'मागणी रजिस्टर अपडेट झाला' : 'मागणी रजिस्टर जोडला' });
+   378→        setDemandDialogOpen(false);
+   379→        fetchDemands();
+   380→      } else {
+   381→        toast({ title: 'त्रुटी', description: data.error || 'जतन करण्यात अयशस्वी', variant: 'destructive' });
+   382→      }
+   383→    } catch {
+   384→      toast({ title: 'त्रुटी', description: 'मागणी रजिस्टर जतन करण्यात अयशस्वी', variant: 'destructive' });
+   385→    } finally {
+   386→      setDemandSaving(false);
+   387→    }
+   388→  };
+   389→
+   390→  const deleteDemand = async (id: string) => {
+   391→    if (!confirm('हा मागणी रजिस्टर खात्रीने हटवायचा आहे का?')) return;
+   392→    try {
+   393→      const res = await fetch(`/api/demand?id=${id}`, { method: 'DELETE' });
+   394→      const data = await res.json();
+   395→      if (data.success) {
+   396→        toast({ title: 'यशस्वी', description: 'मागणी रजिस्टर हटवला' });
+   397→        fetchDemands();
+   398→      } else {
+   399→        toast({ title: 'त्रुटी', description: data.error || 'हटवण्यात अयशस्वी', variant: 'destructive' });
+   400→      }
+   401→    } catch {
+   402→      toast({ title: 'त्रुटी', description: 'हटवण्यात अयशस्वी', variant: 'destructive' });
+   403→    }
+   404→  };
+   405→
+   406→  // ===== PAYMENT CRUD =====
+   407→  const openPaymentDialog = (record?: TaxPaymentRecord) => {
+   408→    if (record) {
+   409→      setPaymentEditing(record);
+   410→      setPaymentForm({
+   411→        propertyId: record.propertyId,
+   412→        receiptNo: record.receiptNo || '',
+   413→        amount: record.amount || 0,
+   414→        amountPaid: record.amountPaid || 0,
+   415→        totalDemand: record.totalDemand || 0,
+   416→        paymentDate: record.paymentDate ? new Date(record.paymentDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+   417→        paymentMode: record.paymentMode || 'cash',
+   418→        chequeNo: record.chequeNo || '',
+   419→        bankName: record.bankName || '',
+   420→        collectedBy: record.collectedBy || '',
+   421→        remarks: record.remarks || '',
+   422→      });
+   423→    } else {
+   424→      setPaymentEditing(null);
+   425→      setPaymentForm({
+   426→        propertyId: '', receiptNo: '',
+   427→        amount: 0, amountPaid: 0, totalDemand: 0,
+   428→        paymentDate: new Date().toISOString().split('T')[0],
+   429→        paymentMode: 'cash', chequeNo: '', bankName: '',
+   430→        collectedBy: '', remarks: '',
+   431→      });
+   432→    }
+   433→    setPaymentDialogOpen(true);
+   434→  };
+   435→
+   436→  const savePayment = async () => {
+   437→    if (!paymentForm.propertyId) {
+   438→      toast({ title: 'त्रुटी', description: 'कृपया मालमत्ता निवडा', variant: 'destructive' });
+   439→      return;
+   440→    }
+   441→    setPaymentSaving(true);
+   442→    try {
+   443→      const body = {
+   444→        ...(paymentEditing ? { id: paymentEditing.id } : {}),
+   445→        ...paymentForm,
+   446→        financialYear,
+   447→      };
+   448→      const res = await fetch('/api/tax-payment', {
+   449→        method: 'POST',
+   450→        headers: { 'Content-Type': 'application/json' },
+   451→        body: JSON.stringify(body),
+   452→      });
+   453→      const data = await res.json();
+   454→      if (data.success) {
+   455→        toast({ title: 'यशस्वी', description: paymentEditing ? 'कर वसूल अपडेट झाली' : 'कर वसूल जोडली' });
+   456→        setPaymentDialogOpen(false);
+   457→        fetchPayments();
+   458→        fetchDemands(); // Refresh demand to see updated collection
+   459→      } else {
+   460→        toast({ title: 'त्रुटी', description: data.error || 'जतन करण्यात अयशस्वी', variant: 'destructive' });
+   461→      }
+   462→    } catch {
+   463→      toast({ title: 'त्रुटी', description: 'कर वसूल जतन करण्यात अयशस्वी', variant: 'destructive' });
+   464→    } finally {
+   465→      setPaymentSaving(false);
+   466→    }
+   467→  };
+   468→
+   469→  const deletePayment = async (id: string) => {
+   470→    if (!confirm('ही कर वसूल खात्रीने हटवायची आहे का?')) return;
+   471→    try {
+   472→      const res = await fetch(`/api/tax-payment?id=${id}`, { method: 'DELETE' });
+   473→      const data = await res.json();
+   474→      if (data.success) {
+   475→        toast({ title: 'यशस्वी', description: 'कर वसूल हटवली' });
+   476→        fetchPayments();
+   477→        fetchDemands();
+   478→      } else {
+   479→        toast({ title: 'त्रुटी', description: data.error || 'हटवण्यात अयशस्वी', variant: 'destructive' });
+   480→      }
+   481→    } catch {
+   482→      toast({ title: 'त्रुटी', description: 'हटवण्यात अयशस्वी', variant: 'destructive' });
+   483→    }
+   484→  };
+   485→
+   486→  // ===== SUMMARY STATS =====
+   487→  const totalAssessmentNetDemand = assessments.reduce((s, a) => s + (a.netDemand || 0), 0);
+   488→  const totalDemandClosingBalance = demands.reduce((s, d) => s + (d.closingBalance || 0), 0);
+   489→  const totalPaymentsCollected = payments.reduce((s, p) => s + (p.amountPaid || 0), 0);
+   490→
+   491→  return (
+   492→    <div className="space-y-6">
+   493→      {/* Summary Cards */}
+   494→      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+   495→        <Card>
+   496→          <CardContent className="p-4">
+   497→            <div className="flex items-center gap-3">
+   498→              <div className="p-2 bg-emerald-100 rounded-lg">
+   499→                <Calculator className="h-5 w-5 text-emerald-600" />
+   500→              </div>
+   501→              <div>
+   502→                <p className="text-xs text-muted-foreground">एकूण निव्वळ मागणी</p>
+   503→                <p className="text-lg font-bold">{formatCurrency(totalAssessmentNetDemand)}</p>
+   504→              </div>
+   505→            </div>
+   506→          </CardContent>
+   507→        </Card>
+   508→        <Card>
+   509→          <CardContent className="p-4">
+   510→            <div className="flex items-center gap-3">
+   511→              <div className="p-2 bg-amber-100 rounded-lg">
+   512→                <FileText className="h-5 w-5 text-amber-600" />
+   513→              </div>
+   514→              <div>
+   515→                <p className="text-xs text-muted-foreground">शेवटची शिल्लक</p>
+   516→                <p className="text-lg font-bold">{formatCurrency(totalDemandClosingBalance)}</p>
+   517→              </div>
+   518→            </div>
+   519→          </CardContent>
+   520→        </Card>
+   521→        <Card>
+   522→          <CardContent className="p-4">
+   523→            <div className="flex items-center gap-3">
+   524→              <div className="p-2 bg-rose-100 rounded-lg">
+   525→                <IndianRupee className="h-5 w-5 text-rose-600" />
+   526→              </div>
+   527→              <div>
+   528→                <p className="text-xs text-muted-foreground">एकूण वसूल</p>
+   529→                <p className="text-lg font-bold">{formatCurrency(totalPaymentsCollected)}</p>
+   530→              </div>
+   531→            </div>
+   532→          </CardContent>
+   533→        </Card>
+   534→      </div>
+   535→
+   536→      {/* Main Tabs */}
+   537→      <Card>
+   538→        <CardContent className="p-4 sm:p-6">
+   539→          <Tabs defaultValue="assessment" className="w-full">
+   540→            <TabsList className="w-full flex-wrap mb-4">
+   541→              <TabsTrigger value="assessment" className="flex-1 text-xs sm:text-sm">
+   542→                <Calculator className="h-4 w-4 mr-1" /> कर आकारणी
+   543→              </TabsTrigger>
+   544→              <TabsTrigger value="demand" className="flex-1 text-xs sm:text-sm">
+   545→                <FileText className="h-4 w-4 mr-1" /> मागणी रजिस्टर
+   546→              </TabsTrigger>
+   547→              <TabsTrigger value="collection" className="flex-1 text-xs sm:text-sm">
+   548→                <Landmark className="h-4 w-4 mr-1" /> कर वसूल
+   549→              </TabsTrigger>
+   550→            </TabsList>
+   551→
+   552→            {/* ===== TAB 1: कर आकारणी ===== */}
+   553→            <TabsContent value="assessment">
+   554→              <div className="flex items-center justify-between flex-wrap gap-4 mb-4">
+   555→                <h3 className="text-lg font-semibold">कर आकारणी ({financialYear})</h3>
+   556→                <div className="flex gap-2">
+   557→                  <Button variant="outline" size="sm" onClick={fetchAssessments} disabled={assessmentsLoading}>
+   558→                    <RefreshCw className={`h-4 w-4 mr-1 ${assessmentsLoading ? 'animate-spin' : ''}`} /> रिफ्रेश
+   559→                  </Button>
+   560→                  <Button size="sm" onClick={() => openAssessmentDialog()}>
+   561→                    <Plus className="h-4 w-4 mr-1" /> नवीन आकारणी
+   562→                  </Button>
+   563→                </div>
+   564→              </div>
+   565→
+   566→              {assessmentsLoading ? (
+   567→                <div className="space-y-3">
+   568→                  {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 w-full" />)}
+   569→                </div>
+   570→              ) : !Array.isArray(assessments) || assessments.length === 0 ? (
+   571→                <div className="text-center py-12 text-muted-foreground">
+   572→                  <AlertCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
+   573→                  <p>कर आकारणी डेटा उपलब्ध नाही</p>
+   574→                  <p className="text-sm">नवीन आकारणी जोडण्यासाठी वरील बटण वापरा</p>
+   575→                </div>
+   576→              ) : (
+   577→                <div className="max-h-96 overflow-y-auto border rounded-lg">
+   578→                  <Table>
+   579→                    <TableHeader>
+   580→                      <TableRow>
+   581→                        <TableHead className="w-10">क्र.</TableHead>
+   582→                        <TableHead>मालमत्ता</TableHead>
+   583→                        <TableHead className="text-right">संपत्ती कर</TableHead>
+   584→                        <TableHead className="text-right">पाणी कर</TableHead>
+   585→                        <TableHead className="text-right">दिवाबत्ती कर</TableHead>
+   586→                        <TableHead className="text-right">एकूण कर</TableHead>
+   587→                        <TableHead className="text-right">सवलत</TableHead>
+   588→                        <TableHead className="text-right">निव्वळ मागणी</TableHead>
+   589→                        <TableHead className="text-center w-24">कृती</TableHead>
+   590→                      </TableRow>
+   591→                    </TableHeader>
+   592→                    <TableBody>
+   593→                      {assessments.map((rec, idx) => (
+   594→                        <TableRow key={rec.id}>
+   595→                          <TableCell className="font-medium">{idx + 1}</TableCell>
+   596→                          <TableCell>
+   597→                            <div className="font-medium">{getPropertyLabel(rec.property as PropertyOption & { propertyNo: string })}</div>
+   598→                          </TableCell>
+   599→                          <TableCell className="text-right">{formatCurrency(rec.propertyTax)}</TableCell>
+   600→                          <TableCell className="text-right">{formatCurrency(rec.waterTax)}</TableCell>
+   601→                          <TableCell className="text-right">{formatCurrency(rec.lightTax)}</TableCell>
+   602→                          <TableCell className="text-right font-semibold">{formatCurrency(rec.totalTax)}</TableCell>
+   603→                          <TableCell className="text-right text-emerald-600">-{formatCurrency(rec.concession)}</TableCell>
+   604→                          <TableCell className="text-right font-bold">{formatCurrency(rec.netDemand)}</TableCell>
+   605→                          <TableCell className="text-center">
+   606→                            <div className="flex justify-center gap-1">
+   607→                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openAssessmentDialog(rec)}>
+   608→                                <Pencil className="h-3.5 w-3.5" />
+   609→                              </Button>
+   610→                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteAssessment(rec.id)}>
+   611→                                <Trash2 className="h-3.5 w-3.5" />
+   612→                              </Button>
+   613→                            </div>
+   614→                          </TableCell>
+   615→                        </TableRow>
+   616→                      ))}
+   617→                    </TableBody>
+   618→                  </Table>
+   619→                </div>
+   620→              )}
+   621→            </TabsContent>
+   622→
+   623→            {/* ===== TAB 2: मागणी रजिस्टर ===== */}
+   624→            <TabsContent value="demand">
+   625→              <div className="flex items-center justify-between flex-wrap gap-4 mb-4">
+   626→                <h3 className="text-lg font-semibold">मागणी रजिस्टर ({financialYear})</h3>
+   627→                <div className="flex gap-2">
+   628→                  <Button variant="outline" size="sm" onClick={fetchDemands} disabled={demandsLoading}>
+   629→                    <RefreshCw className={`h-4 w-4 mr-1 ${demandsLoading ? 'animate-spin' : ''}`} /> रिफ्रेश
+   630→                  </Button>
+   631→                  <Button size="sm" onClick={() => openDemandDialog()}>
+   632→                    <Plus className="h-4 w-4 mr-1" /> नवीन मागणी
+   633→                  </Button>
+   634→                </div>
+   635→              </div>
+   636→
+   637→              {demandsLoading ? (
+   638→                <div className="space-y-3">
+   639→                  {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 w-full" />)}
+   640→                </div>
+   641→              ) : !Array.isArray(demands) || demands.length === 0 ? (
+   642→                <div className="text-center py-12 text-muted-foreground">
+   643→                  <AlertCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
+   644→                  <p>मागणी रजिस्टर डेटा उपलब्ध नाही</p>
+   645→                  <p className="text-sm">नवीन मागणी जोडण्यासाठी वरील बटण वापरा</p>
+   646→                </div>
+   647→              ) : (
+   648→                <div className="max-h-96 overflow-y-auto border rounded-lg">
+   649→                  <Table>
+   650→                    <TableHeader>
+   651→                      <TableRow>
+   652→                        <TableHead className="w-10">क्र.</TableHead>
+   653→                        <TableHead>मालमत्ता</TableHead>
+   654→                        <TableHead className="text-right">आरंभी शिल्लक</TableHead>
+   655→                        <TableHead className="text-right">एकूण मागणी</TableHead>
+   656→                        <TableHead className="text-right">एकूण वसूल</TableHead>
+   657→                        <TableHead className="text-right">दंड</TableHead>
+   658→                        <TableHead className="text-right">व्याज</TableHead>
+   659→                        <TableHead className="text-right">सूट</TableHead>
+   660→                        <TableHead className="text-right">शेवटची शिल्लक</TableHead>
+   661→                        <TableHead className="text-center w-24">कृती</TableHead>
+   662→                      </TableRow>
+   663→                    </TableHeader>
+   664→                    <TableBody>
+   665→                      {demands.map((rec, idx) => (
+   666→                        <TableRow key={rec.id}>
+   667→                          <TableCell className="font-medium">{idx + 1}</TableCell>
+   668→                          <TableCell>
+   669→                            <div className="font-medium">{getPropertyLabel(rec.property as PropertyOption & { propertyNo: string })}</div>
+   670→                          </TableCell>
+   671→                          <TableCell className="text-right">{formatCurrency(rec.openingBalance)}</TableCell>
+   672→                          <TableCell className="text-right">{formatCurrency(rec.totalDemand)}</TableCell>
+   673→                          <TableCell className="text-right text-emerald-600">{formatCurrency(rec.totalCollection)}</TableCell>
+   674→                          <TableCell className="text-right text-amber-600">{formatCurrency(rec.penalty)}</TableCell>
+   675→                          <TableCell className="text-right text-amber-600">{formatCurrency(rec.interest)}</TableCell>
+   676→                          <TableCell className="text-right text-emerald-600">-{formatCurrency(rec.discount)}</TableCell>
+   677→                          <TableCell className="text-right font-bold">
+   678→                            <Badge variant={rec.closingBalance > 0 ? 'destructive' : 'default'}>
+   679→                              {formatCurrency(rec.closingBalance)}
+   680→                            </Badge>
+   681→                          </TableCell>
+   682→                          <TableCell className="text-center">
+   683→                            <div className="flex justify-center gap-1">
+   684→                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openDemandDialog(rec)}>
+   685→                                <Pencil className="h-3.5 w-3.5" />
+   686→                              </Button>
+   687→                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteDemand(rec.id)}>
+   688→                                <Trash2 className="h-3.5 w-3.5" />
+   689→                              </Button>
+   690→                            </div>
+   691→                          </TableCell>
+   692→                        </TableRow>
+   693→                      ))}
+   694→                    </TableBody>
+   695→                  </Table>
+   696→                </div>
+   697→              )}
+   698→            </TabsContent>
+   699→
+   700→            {/* ===== TAB 3: कर वसूल ===== */}
+   701→            <TabsContent value="collection">
+   702→              <div className="flex items-center justify-between flex-wrap gap-4 mb-4">
+   703→                <h3 className="text-lg font-semibold">कर वसूल ({financialYear})</h3>
+   704→                <div className="flex gap-2">
+   705→                  <Button variant="outline" size="sm" onClick={fetchPayments} disabled={paymentsLoading}>
+   706→                    <RefreshCw className={`h-4 w-4 mr-1 ${paymentsLoading ? 'animate-spin' : ''}`} /> रिफ्रेश
+   707→                  </Button>
+   708→                  <Button size="sm" onClick={() => openPaymentDialog()}>
+   709→                    <Plus className="h-4 w-4 mr-1" /> नवीन वसूल
+   710→                  </Button>
+   711→                </div>
+   712→              </div>
+   713→
+   714→              {paymentsLoading ? (
+   715→                <div className="space-y-3">
+   716→                  {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 w-full" />)}
+   717→                </div>
+   718→              ) : !Array.isArray(payments) || payments.length === 0 ? (
+   719→                <div className="text-center py-12 text-muted-foreground">
+   720→                  <AlertCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
+   721→                  <p>कर वसूल डेटा उपलब्ध नाही</p>
+   722→                  <p className="text-sm">नवीन वसूल जोडण्यासाठी वरील बटण वापरा</p>
+   723→                </div>
+   724→              ) : (
+   725→                <div className="max-h-96 overflow-y-auto border rounded-lg">
+   726→                  <Table>
+   727→                    <TableHeader>
+   728→                      <TableRow>
+   729→                        <TableHead className="w-10">क्र.</TableHead>
+   730→                        <TableHead>पावती क्र.</TableHead>
+   731→                        <TableHead>मालमत्ता</TableHead>
+   732→                        <TableHead className="text-right">एकूण मागणी</TableHead>
+   733→                        <TableHead className="text-right">भरलेली रक्कम</TableHead>
+   734→                        <TableHead className="text-right">शिल्लक</TableHead>
+   735→                        <TableHead>दिनांक</TableHead>
+   736→                        <TableHead>पद्धत</TableHead>
+   737→                        <TableHead className="text-center w-24">कृती</TableHead>
+   738→                      </TableRow>
+   739→                    </TableHeader>
+   740→                    <TableBody>
+   741→                      {payments.map((rec, idx) => (
+   742→                        <TableRow key={rec.id}>
+   743→                          <TableCell className="font-medium">{idx + 1}</TableCell>
+   744→                          <TableCell>
+   745→                            <Badge variant="outline" className="font-mono text-xs">{rec.receiptNo}</Badge>
+   746→                          </TableCell>
+   747→                          <TableCell>
+   748→                            <div className="font-medium">{getPropertyLabel(rec.property as PropertyOption & { propertyNo: string })}</div>
+   749→                          </TableCell>
+   750→                          <TableCell className="text-right">{formatCurrency(rec.totalDemand)}</TableCell>
+   751→                          <TableCell className="text-right text-emerald-600 font-semibold">{formatCurrency(rec.amountPaid)}</TableCell>
+   752→                          <TableCell className="text-right">
+   753→                            <Badge variant={rec.balance > 0 ? 'destructive' : 'default'}>
+   754→                              {formatCurrency(rec.balance)}
+   755→                            </Badge>
+   756→                          </TableCell>
+   757→                          <TableCell className="text-sm">
+   758→                            {rec.paymentDate ? new Date(rec.paymentDate).toLocaleDateString('mr-IN') : '-'}
+   759→                          </TableCell>
+   760→                          <TableCell>
+   761→                            <Badge variant="secondary" className="text-xs">
+   762→                              {rec.paymentMode === 'cash' ? 'रोख' : rec.paymentMode === 'cheque' ? 'चेक' : 'ऑनलाइन'}
+   763→                            </Badge>
+   764→                          </TableCell>
+   765→                          <TableCell className="text-center">
+   766→                            <div className="flex justify-center gap-1">
+   767→                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openPaymentDialog(rec)}>
+   768→                                <Pencil className="h-3.5 w-3.5" />
+   769→                              </Button>
+   770→                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deletePayment(rec.id)}>
+   771→                                <Trash2 className="h-3.5 w-3.5" />
+   772→                              </Button>
+   773→                            </div>
+   774→                          </TableCell>
+   775→                        </TableRow>
+   776→                      ))}
+   777→                    </TableBody>
+   778→                  </Table>
+   779→                </div>
+   780→              )}
+   781→            </TabsContent>
+   782→          </Tabs>
+   783→        </CardContent>
+   784→      </Card>
+   785→
+   786→      {/* ===== DIALOG: TAX ASSESSMENT ===== */}
+   787→      <Dialog open={assessmentDialogOpen} onOpenChange={setAssessmentDialogOpen}>
+   788→        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+   789→          <DialogHeader>
+   790→            <DialogTitle className="flex items-center gap-2">
+   791→              <Calculator className="h-5 w-5" />
+   792→              {assessmentEditing ? 'कर आकारणी संपादन' : 'नवीन कर आकारणी'}
+   793→            </DialogTitle>
+   794→          </DialogHeader>
+   795→
+   796→          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
+   797→            {/* Property Select */}
+   798→            <div className="sm:col-span-2">
+   799→              <Label>मालमत्ता *</Label>
+   800→              <Select value={assessmentForm.propertyId} onValueChange={(v) => setAssessmentForm(prev => ({ ...prev, propertyId: v }))}>
+   801→                <SelectTrigger><SelectValue placeholder="मालमत्ता निवडा" /></SelectTrigger>
+   802→                <SelectContent>
+   803→                  {propertiesLoading ? (
+   804→                    <SelectItem value="_loading" disabled>लोड होत आहे...</SelectItem>
+   805→                  ) : properties.length === 0 ? (
+   806→                    <SelectItem value="_empty" disabled>मालमत्ता उपलब्ध नाही</SelectItem>
+   807→                  ) : (
+   808→                    properties.map(p => (
+   809→                      <SelectItem key={p.id} value={p.id}>
+   810→                        {p.propertyNo}{p.ownerNameMr ? ` (${p.ownerNameMr})` : p.ownerName ? ` (${p.ownerName})` : ''}
+   811→                      </SelectItem>
+   812→                    ))
+   813→                  )}
+   814→                </SelectContent>
+   815→              </Select>
+   816→            </div>
+   817→
+   818→            {/* Assessment Details */}
+   819→            <div>
+   820→              <Label>एकूण क्षेत्रफळ</Label>
+   821→              <Input type="number" value={assessmentForm.totalArea || ''} onChange={(e) => setAssessmentForm(prev => ({ ...prev, totalArea: parseFloat(e.target.value) || 0 }))} placeholder="0" />
+   822→            </div>
+   823→            <div>
+   824→              <Label>भांडवली मूल्य</Label>
+   825→              <Input type="number" value={assessmentForm.capitalValue || ''} onChange={(e) => setAssessmentForm(prev => ({ ...prev, capitalValue: parseFloat(e.target.value) || 0 }))} placeholder="0" />
+   826→            </div>
+   827→            <div>
+   828→              <Label>कर दर %</Label>
+   829→              <Input type="number" step="0.01" value={assessmentForm.taxRatePercent || ''} onChange={(e) => setAssessmentForm(prev => ({ ...prev, taxRatePercent: parseFloat(e.target.value) || 0 }))} placeholder="0" />
+   830→            </div>
+   831→
+   832→            {/* Tax Breakdown */}
+   833→            <div className="sm:col-span-2 mt-2">
+   834→              <p className="font-semibold text-sm border-b pb-1 mb-2">कर तपशील</p>
+   835→            </div>
+   836→            <div>
+   837→              <Label>संपत्ती कर</Label>
+   838→              <Input type="number" value={assessmentForm.propertyTax || ''} onChange={(e) => setAssessmentForm(prev => ({ ...prev, propertyTax: parseFloat(e.target.value) || 0 }))} placeholder="0" />
+   839→            </div>
+   840→            <div>
+   841→              <Label>पाणी कर</Label>
+   842→              <Input type="number" value={assessmentForm.waterTax || ''} onChange={(e) => setAssessmentForm(prev => ({ ...prev, waterTax: parseFloat(e.target.value) || 0 }))} placeholder="0" />
+   843→            </div>
+   844→            <div>
+   845→              <Label>दिवाबत्ती कर</Label>
+   846→              <Input type="number" value={assessmentForm.lightTax || ''} onChange={(e) => setAssessmentForm(prev => ({ ...prev, lightTax: parseFloat(e.target.value) || 0 }))} placeholder="0" />
+   847→            </div>
+   848→            <div>
+   849→              <Label>व्यवसाय कर</Label>
+   850→              <Input type="number" value={assessmentForm.professionTax || ''} onChange={(e) => setAssessmentForm(prev => ({ ...prev, professionTax: parseFloat(e.target.value) || 0 }))} placeholder="0" />
+   851→            </div>
+   852→            <div>
+   853→              <Label>इतर कर</Label>
+   854→              <Input type="number" value={assessmentForm.miscTax || ''} onChange={(e) => setAssessmentForm(prev => ({ ...prev, miscTax: parseFloat(e.target.value) || 0 }))} placeholder="0" />
+   855→            </div>
+   856→            <div>
+   857→              <Label>सवलत</Label>
+   858→              <Input type="number" value={assessmentForm.concession || ''} onChange={(e) => setAssessmentForm(prev => ({ ...prev, concession: parseFloat(e.target.value) || 0 }))} placeholder="0" />
+   859→            </div>
+   860→
+   861→            {/* Individual Tax Amounts */}
+   862→            <div className="sm:col-span-2 mt-2">
+   863→              <p className="font-semibold text-sm border-b pb-1 mb-2">वैयक्तिक कर रक्कम</p>
+   864→            </div>
+   865→            <div>
+   866→              <Label>घरकर रक्कम</Label>
+   867→              <Input type="number" value={assessmentForm.houseTaxAmt || ''} onChange={(e) => setAssessmentForm(prev => ({ ...prev, houseTaxAmt: parseFloat(e.target.value) || 0 }))} placeholder="0" />
+   868→            </div>
+   869→            <div>
+   870→              <Label>दिवाबत्ती कर रक्कम</Label>
+   871→              <Input type="number" value={assessmentForm.lightTaxAmt || ''} onChange={(e) => setAssessmentForm(prev => ({ ...prev, lightTaxAmt: parseFloat(e.target.value) || 0 }))} placeholder="0" />
+   872→            </div>
+   873→            <div>
+   874→              <Label>आरोग्य कर रक्कम</Label>
+   875→              <Input type="number" value={assessmentForm.healthTaxAmt || ''} onChange={(e) => setAssessmentForm(prev => ({ ...prev, healthTaxAmt: parseFloat(e.target.value) || 0 }))} placeholder="0" />
+   876→            </div>
+   877→            <div>
+   878→              <Label>पाणी कर रक्कम</Label>
+   879→              <Input type="number" value={assessmentForm.waterTaxAmt || ''} onChange={(e) => setAssessmentForm(prev => ({ ...prev, waterTaxAmt: parseFloat(e.target.value) || 0 }))} placeholder="0" />
+   880→            </div>
+   881→
+   882→            {/* Auto-Calculated Totals */}
+   883→            <div className="sm:col-span-2 mt-2 bg-muted/50 p-3 rounded-lg space-y-1">
+   884→              <div className="flex justify-between text-sm">
+   885→                <span>एकूण कर:</span>
+   886→                <span className="font-bold">{formatCurrency(assessmentTotalTax)}</span>
+   887→              </div>
+   888→              <div className="flex justify-between text-sm">
+   889→                <span>सवलत:</span>
+   890→                <span className="text-emerald-600">-{formatCurrency(assessmentForm.concession)}</span>
+   891→              </div>
+   892→              <div className="flex justify-between text-sm border-t pt-1">
+   893→                <span className="font-semibold">निव्वळ मागणी:</span>
+   894→                <span className="font-bold text-lg">{formatCurrency(assessmentNetDemand)}</span>
+   895→              </div>
+   896→            </div>
+   897→
+   898→            <div className="sm:col-span-2">
+   899→              <Label>शेरा</Label>
+   900→              <Input value={assessmentForm.remarks} onChange={(e) => setAssessmentForm(prev => ({ ...prev, remarks: e.target.value }))} placeholder="शेरा" />
+   901→            </div>
+   902→          </div>
+   903→
+   904→          <DialogFooter>
+   905→            <Button variant="outline" onClick={() => setAssessmentDialogOpen(false)}>रद्द करा</Button>
+   906→            <Button onClick={saveAssessment} disabled={assessmentSaving}>
+   907→              {assessmentSaving ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> जतन होत आहे...</> : 'जतन करा'}
+   908→            </Button>
+   909→          </DialogFooter>
+   910→        </DialogContent>
+   911→      </Dialog>
+   912→
+   913→      {/* ===== DIALOG: DEMAND REGISTER ===== */}
+   914→      <Dialog open={demandDialogOpen} onOpenChange={setDemandDialogOpen}>
+   915→        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+   916→          <DialogHeader>
+   917→            <DialogTitle className="flex items-center gap-2">
+   918→              <FileText className="h-5 w-5" />
+   919→              {demandEditing ? 'मागणी रजिस्टर संपादन' : 'नवीन मागणी रजिस्टर'}
+   920→            </DialogTitle>
+   921→          </DialogHeader>
+   922→
+   923→          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
+   924→            {/* Property Select */}
+   925→            <div className="sm:col-span-2">
+   926→              <Label>मालमत्ता *</Label>
+   927→              <Select value={demandForm.propertyId} onValueChange={(v) => setDemandForm(prev => ({ ...prev, propertyId: v }))}>
+   928→                <SelectTrigger><SelectValue placeholder="मालमत्ता निवडा" /></SelectTrigger>
+   929→                <SelectContent>
+   930→                  {propertiesLoading ? (
+   931→                    <SelectItem value="_loading" disabled>लोड होत आहे...</SelectItem>
+   932→                  ) : properties.length === 0 ? (
+   933→                    <SelectItem value="_empty" disabled>मालमत्ता उपलब्ध नाही</SelectItem>
+   934→                  ) : (
+   935→                    properties.map(p => (
+   936→                      <SelectItem key={p.id} value={p.id}>
+   937→                        {p.propertyNo}{p.ownerNameMr ? ` (${p.ownerNameMr})` : p.ownerName ? ` (${p.ownerName})` : ''}
+   938→                      </SelectItem>
+   939→                    ))
+   940→                  )}
+   941→                </SelectContent>
+   942→              </Select>
+   943→            </div>
+   944→
+   945→            <div>
+   946→              <Label>आरंभी शिल्लक</Label>
+   947→              <Input type="number" value={demandForm.openingBalance || ''} onChange={(e) => setDemandForm(prev => ({ ...prev, openingBalance: parseFloat(e.target.value) || 0 }))} placeholder="0" />
+   948→            </div>
+   949→            <div>
+   950→              <Label>मागील शिल्लक</Label>
+   951→              <Input type="number" value={demandForm.previousBalance || ''} onChange={(e) => setDemandForm(prev => ({ ...prev, previousBalance: parseFloat(e.target.value) || 0 }))} placeholder="0" />
+   952→            </div>
+   953→            <div>
+   954→              <Label>चालू कर</Label>
+   955→              <Input type="number" value={demandForm.currentTax || ''} onChange={(e) => setDemandForm(prev => ({ ...prev, currentTax: parseFloat(e.target.value) || 0 }))} placeholder="0" />
+   956→            </div>
+   957→            <div>
+   958→              <Label>एकूण मागणी</Label>
+   959→              <Input type="number" value={demandForm.totalDemand || ''} onChange={(e) => setDemandForm(prev => ({ ...prev, totalDemand: parseFloat(e.target.value) || 0 }))} placeholder="0" />
+   960→            </div>
+   961→            <div>
+   962→              <Label>एकूण वसूल</Label>
+   963→              <Input type="number" value={demandForm.totalCollection || ''} onChange={(e) => setDemandForm(prev => ({ ...prev, totalCollection: parseFloat(e.target.value) || 0 }))} placeholder="0" />
+   964→            </div>
+   965→            <div>
+   966→              <Label>दंड</Label>
+   967→              <Input type="number" value={demandForm.penalty || ''} onChange={(e) => setDemandForm(prev => ({ ...prev, penalty: parseFloat(e.target.value) || 0 }))} placeholder="0" />
+   968→            </div>
+   969→            <div>
+   970→              <Label>व्याज</Label>
+   971→              <Input type="number" value={demandForm.interest || ''} onChange={(e) => setDemandForm(prev => ({ ...prev, interest: parseFloat(e.target.value) || 0 }))} placeholder="0" />
+   972→            </div>
+   973→            <div>
+   974→              <Label>सूट</Label>
+   975→              <Input type="number" value={demandForm.discount || ''} onChange={(e) => setDemandForm(prev => ({ ...prev, discount: parseFloat(e.target.value) || 0 }))} placeholder="0" />
+   976→            </div>
+   977→
+   978→            {/* Auto-Calculated Closing Balance */}
+   979→            <div className="sm:col-span-2 mt-2 bg-muted/50 p-3 rounded-lg space-y-1">
+   980→              <div className="flex justify-between text-sm">
+   981→                <span>आरंभी शिल्लक:</span>
+   982→                <span>{formatCurrency(demandForm.openingBalance)}</span>
+   983→              </div>
+   984→              <div className="flex justify-between text-sm">
+   985→                <span>+ एकूण मागणी:</span>
+   986→                <span>{formatCurrency(demandForm.totalDemand)}</span>
+   987→              </div>
+   988→              <div className="flex justify-between text-sm">
+   989→                <span>- एकूण वसूल:</span>
+   990→                <span className="text-emerald-600">{formatCurrency(demandForm.totalCollection)}</span>
+   991→              </div>
+   992→              <div className="flex justify-between text-sm">
+   993→                <span>+ दंड:</span>
+   994→                <span className="text-amber-600">{formatCurrency(demandForm.penalty)}</span>
+   995→              </div>
+   996→              <div className="flex justify-between text-sm">
+   997→                <span>+ व्याज:</span>
+   998→                <span className="text-amber-600">{formatCurrency(demandForm.interest)}</span>
+   999→              </div>
+  1000→              <div className="flex justify-between text-sm">
+  1001→                <span>- सूट:</span>
+  1002→                <span className="text-emerald-600">{formatCurrency(demandForm.discount)}</span>
+  1003→              </div>
+  1004→              <div className="flex justify-between text-sm border-t pt-1">
+  1005→                <span className="font-semibold">शेवटची शिल्लक:</span>
+  1006→                <span className="font-bold text-lg">{formatCurrency(demandClosingBalance)}</span>
+  1007→              </div>
+  1008→            </div>
+  1009→
+  1010→            <div className="sm:col-span-2">
+  1011→              <Label>शेरा</Label>
+  1012→              <Input value={demandForm.remarks} onChange={(e) => setDemandForm(prev => ({ ...prev, remarks: e.target.value }))} placeholder="शेरा" />
+  1013→            </div>
+  1014→          </div>
+  1015→
+  1016→          <DialogFooter>
+  1017→            <Button variant="outline" onClick={() => setDemandDialogOpen(false)}>रद्द करा</Button>
+  1018→            <Button onClick={saveDemand} disabled={demandSaving}>
+  1019→              {demandSaving ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> जतन होत आहे...</> : 'जतन करा'}
+  1020→            </Button>
+  1021→          </DialogFooter>
+  1022→        </DialogContent>
+  1023→      </Dialog>
+  1024→
+  1025→      {/* ===== DIALOG: TAX PAYMENT ===== */}
+  1026→      <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
+  1027→        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+  1028→          <DialogHeader>
+  1029→            <DialogTitle className="flex items-center gap-2">
+  1030→              <Receipt className="h-5 w-5" />
+  1031→              {paymentEditing ? 'कर वसूल संपादन' : 'नवीन कर वसूल'}
+  1032→            </DialogTitle>
+  1033→          </DialogHeader>
+  1034→
+  1035→          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
+  1036→            {/* Property Select */}
+  1037→            <div className="sm:col-span-2">
+  1038→              <Label>मालमत्ता *</Label>
+  1039→              <Select value={paymentForm.propertyId} onValueChange={(v) => setPaymentForm(prev => ({ ...prev, propertyId: v }))}>
+  1040→                <SelectTrigger><SelectValue placeholder="मालमत्ता निवडा" /></SelectTrigger>
+  1041→                <SelectContent>
+  1042→                  {propertiesLoading ? (
+  1043→                    <SelectItem value="_loading" disabled>लोड होत आहे...</SelectItem>
+  1044→                  ) : properties.length === 0 ? (
+  1045→                    <SelectItem value="_empty" disabled>मालमत्ता उपलब्ध नाही</SelectItem>
+  1046→                  ) : (
+  1047→                    properties.map(p => (
+  1048→                      <SelectItem key={p.id} value={p.id}>
+  1049→                        {p.propertyNo}{p.ownerNameMr ? ` (${p.ownerNameMr})` : p.ownerName ? ` (${p.ownerName})` : ''}
+  1050→                      </SelectItem>
+  1051→                    ))
+  1052→                  )}
+  1053→                </SelectContent>
+  1054→              </Select>
+  1055→            </div>
+  1056→
+  1057→            <div>
+  1058→              <Label>पावती क्र.</Label>
+  1059→              <Input
+  1060→                value={paymentForm.receiptNo}
+  1061→                onChange={(e) => setPaymentForm(prev => ({ ...prev, receiptNo: e.target.value }))}
+  1062→                placeholder="स्वयं-निर्मित"
+  1063→                disabled={!!paymentEditing}
+  1064→              />
+  1065→              {!paymentEditing && <p className="text-xs text-muted-foreground mt-1">रिकामे सोडल्यास स्वयं-निर्मित होईल</p>}
+  1066→            </div>
+  1067→            <div>
+  1068→              <Label>दिनांक</Label>
+  1069→              <Input type="date" value={paymentForm.paymentDate} onChange={(e) => setPaymentForm(prev => ({ ...prev, paymentDate: e.target.value }))} />
+  1070→            </div>
+  1071→            <div>
+  1072→              <Label>एकूण मागणी</Label>
+  1073→              <Input type="number" value={paymentForm.totalDemand || ''} onChange={(e) => setPaymentForm(prev => ({ ...prev, totalDemand: parseFloat(e.target.value) || 0 }))} placeholder="0" />
+  1074→            </div>
+  1075→            <div>
+  1076→              <Label>रक्कम</Label>
+  1077→              <Input type="number" value={paymentForm.amount || ''} onChange={(e) => setPaymentForm(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))} placeholder="0" />
+  1078→            </div>
+  1079→            <div>
+  1080→              <Label>भरलेली रक्कम</Label>
+  1081→              <Input type="number" value={paymentForm.amountPaid || ''} onChange={(e) => setPaymentForm(prev => ({ ...prev, amountPaid: parseFloat(e.target.value) || 0 }))} placeholder="0" />
+  1082→            </div>
+  1083→
+  1084→            {/* Auto-Calculated Balance */}
+  1085→            <div className="bg-muted/50 p-3 rounded-lg space-y-1">
+  1086→              <div className="flex justify-between text-sm">
+  1087→                <span>एकूण मागणी:</span>
+  1088→                <span>{formatCurrency(paymentForm.totalDemand)}</span>
+  1089→              </div>
+  1090→              <div className="flex justify-between text-sm">
+  1091→                <span>- भरलेली रक्कम:</span>
+  1092→                <span className="text-emerald-600">{formatCurrency(paymentForm.amountPaid)}</span>
+  1093→              </div>
+  1094→              <div className="flex justify-between text-sm border-t pt-1">
+  1095→                <span className="font-semibold">शिल्लक:</span>
+  1096→                <span className="font-bold text-lg">{formatCurrency(paymentBalance)}</span>
+  1097→              </div>
+  1098→            </div>
+  1099→
+  1100→            <div className="sm:col-span-2 mt-2">
+  1101→              <p className="font-semibold text-sm border-b pb-1 mb-2">पेमेंट तपशील</p>
+  1102→            </div>
+  1103→
+  1104→            <div>
+  1105→              <Label>पद्धत</Label>
+  1106→              <Select value={paymentForm.paymentMode} onValueChange={(v) => setPaymentForm(prev => ({ ...prev, paymentMode: v }))}>
+  1107→                <SelectTrigger><SelectValue /></SelectTrigger>
+  1108→                <SelectContent>
+  1109→                  <SelectItem value="cash">रोख</SelectItem>
+  1110→                  <SelectItem value="cheque">चेक</SelectItem>
+  1111→                  <SelectItem value="online">ऑनलाइन</SelectItem>
+  1112→                </SelectContent>
+  1113→              </Select>
+  1114→            </div>
+  1115→
+  1116→            {paymentForm.paymentMode === 'cheque' && (
+  1117→              <>
+  1118→                <div>
+  1119→                  <Label>चेक क्र.</Label>
+  1120→                  <Input value={paymentForm.chequeNo} onChange={(e) => setPaymentForm(prev => ({ ...prev, chequeNo: e.target.value }))} placeholder="चेक क्रमांक" />
+  1121→                </div>
+  1122→                <div>
+  1123→                  <Label>बँकेचे नाव</Label>
+  1124→                  <Input value={paymentForm.bankName} onChange={(e) => setPaymentForm(prev => ({ ...prev, bankName: e.target.value }))} placeholder="बँकेचे नाव" />
+  1125→                </div>
+  1126→              </>
+  1127→            )}
+  1128→
+  1129→            <div>
+  1130→              <Label>वसूल करणारे</Label>
+  1131→              <Input value={paymentForm.collectedBy} onChange={(e) => setPaymentForm(prev => ({ ...prev, collectedBy: e.target.value }))} placeholder="वसूल करणाऱ्याचे नाव" />
+  1132→            </div>
+  1133→            <div>
+  1134→              <Label>शेरा</Label>
+  1135→              <Input value={paymentForm.remarks} onChange={(e) => setPaymentForm(prev => ({ ...prev, remarks: e.target.value }))} placeholder="शेरा" />
+  1136→            </div>
+  1137→          </div>
+  1138→
+  1139→          <DialogFooter>
+  1140→            <Button variant="outline" onClick={() => setPaymentDialogOpen(false)}>रद्द करा</Button>
+  1141→            <Button onClick={savePayment} disabled={paymentSaving}>
+  1142→              {paymentSaving ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> जतन होत आहे...</> : 'जतन करा'}
+  1143→            </Button>
+  1144→          </DialogFooter>
+  1145→        </DialogContent>
+  1146→      </Dialog>
+  1147→    </div>
+  1148→  );
+  1149→}
+  1150→

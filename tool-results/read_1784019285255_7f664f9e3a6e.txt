@@ -1,0 +1,784 @@
+     1→'use client';
+     2→
+     3→import React, { useState, useEffect, useCallback } from 'react';
+     4→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+     5→import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+     6→import { Button } from '@/components/ui/button';
+     7→import { Input } from '@/components/ui/input';
+     8→import { Label } from '@/components/ui/label';
+     9→import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+    10→import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+    11→import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+    12→import { Checkbox } from '@/components/ui/checkbox';
+    13→import { Badge } from '@/components/ui/badge';
+    14→import { toast } from '@/hooks/use-toast';
+    15→import {
+    16→  Plus, Pencil, Trash2, RefreshCw, Loader2, Landmark, MapPin,
+    17→  User, Building2, Route, Percent, Users, HardHat, Search
+    18→} from 'lucide-react';
+    19→
+    20→// ===== TYPES =====
+    21→
+    22→interface MastersProps {
+    23→  financialYear: string;
+    24→}
+    25→
+    26→interface MasterRecord {
+    27→  id: string;
+    28→  [key: string]: unknown;
+    29→}
+    30→
+    31→// ===== API HELPERS =====
+    32→
+    33→async function apiGet(table: string, search?: string): Promise<MasterRecord[]> {
+    34→  const params = new URLSearchParams({ table });
+    35→  if (search) params.set('search', search);
+    36→  const res = await fetch(`/api/master?${params}`);
+    37→  if (!res.ok) throw new Error('Fetch failed');
+    38→  const data = await res.json();
+    39→  // Handle both array and single object responses
+    40→  if (Array.isArray(data)) return data;
+    41→  if (data && typeof data === 'object' && !data.error) {
+    42→    // Single record (village) - wrap in array
+    43→    return [data];
+    44→  }
+    45→  return [];
+    46→}
+    47→
+    48→async function apiCreate(table: string, data: Record<string, unknown>) {
+    49→  const res = await fetch('/api/master', {
+    50→    method: 'POST',
+    51→    headers: { 'Content-Type': 'application/json' },
+    52→    body: JSON.stringify({ action: 'create', table, data }),
+    53→  });
+    54→  const json = await res.json();
+    55→  if (!res.ok) throw new Error(json.error || 'निर्मिणी अयशस्वी');
+    56→  return json;
+    57→}
+    58→
+    59→async function apiUpdate(table: string, id: string, data: Record<string, unknown>) {
+    60→  const res = await fetch('/api/master', {
+    61→    method: 'POST',
+    62→    headers: { 'Content-Type': 'application/json' },
+    63→    body: JSON.stringify({ action: 'update', table, id, data: { id, ...data } }),
+    64→  });
+    65→  const json = await res.json();
+    66→  if (!res.ok) throw new Error(json.error || 'अपडेट अयशस्वी');
+    67→  return json;
+    68→}
+    69→
+    70→async function apiDelete(table: string, id: string) {
+    71→  const res = await fetch(`/api/master?table=${table}&id=${id}`, { method: 'DELETE' });
+    72→  if (!res.ok) {
+    73→    const json = await res.json().catch(() => ({ error: 'Delete failed' }));
+    74→    throw new Error(json.error || 'हटवणे अयशस्वी');
+    75→  }
+    76→  return res.json();
+    77→}
+    78→
+    79→// ===== TAB CONFIG =====
+    80→
+    81→interface TabConfig {
+    82→  key: string;
+    83→  label: string;
+    84→  icon: React.ReactNode;
+    85→  apiTable: string;
+    86→  columns: { key: string; label: string }[];
+    87→  formFields: FormFieldConfig[];
+    88→  isSingleRecord?: boolean;
+    89→}
+    90→
+    91→interface FormFieldConfig {
+    92→  key: string;
+    93→  label: string;
+    94→  type: 'text' | 'number' | 'select' | 'checkbox';
+    95→  placeholder?: string;
+    96→  options?: { value: string; label: string }[];
+    97→  required?: boolean;
+    98→}
+    99→
+   100→const tabConfigs: TabConfig[] = [
+   101→  {
+   102→    key: 'village',
+   103→    label: 'गाव माहिती',
+   104→    icon: <Landmark className="h-4 w-4" />,
+   105→    apiTable: 'village',
+   106→    isSingleRecord: true,
+   107→    columns: [
+   108→      { key: 'gramPanchayatName', label: 'ग्रामपंचायत' },
+   109→      { key: 'taluka', label: 'तालुका' },
+   110→      { key: 'district', label: 'जिल्हा' },
+   111→      { key: 'pinCode', label: 'पिन कोड' },
+   112→      { key: 'population', label: 'लोकसंख्या' },
+   113→      { key: 'sarpanchName', label: 'सरपंच' },
+   114→    ],
+   115→    formFields: [
+   116→      { key: 'gramPanchayatName', label: 'ग्रामपंचायतचे नाव', type: 'text', required: true },
+   117→      { key: 'gramPanchayatNameMr', label: 'मराठीत नाव', type: 'text' },
+   118→      { key: 'taluka', label: 'तालुका', type: 'text', required: true },
+   119→      { key: 'district', label: 'जिल्हा', type: 'text', required: true },
+   120→      { key: 'pinCode', label: 'पिन कोड', type: 'text' },
+   121→      { key: 'population', label: 'लोकसंख्या', type: 'number' },
+   122→      { key: 'sarpanchName', label: 'सरपंच', type: 'text' },
+   123→      { key: 'secretaryName', label: 'ग्रामसेवक', type: 'text' },
+   124→    ],
+   125→  },
+   126→  {
+   127→    key: 'ward',
+   128→    label: 'वार्ड',
+   129→    icon: <MapPin className="h-4 w-4" />,
+   130→    apiTable: 'ward',
+   131→    columns: [
+   132→      { key: 'wardNo', label: 'वार्ड क्र.' },
+   133→      { key: 'wardName', label: 'वार्ड नाव' },
+   134→      { key: 'wardNameMr', label: 'वार्ड नाव (मराठी)' },
+   135→      { key: 'population', label: 'लोकसंख्या' },
+   136→      { key: 'households', label: 'कुटुंबे' },
+   137→      { key: 'area', label: 'क्षेत्रफळ' },
+   138→    ],
+   139→    formFields: [
+   140→      { key: 'wardNo', label: 'वार्ड क्र.', type: 'number', required: true },
+   141→      { key: 'wardName', label: 'वार्ड नाव', type: 'text', required: true },
+   142→      { key: 'wardNameMr', label: 'वार्ड नाव मराठी', type: 'text' },
+   143→      { key: 'population', label: 'लोकसंख्या', type: 'number' },
+   144→      { key: 'households', label: 'कुटुंबे', type: 'number' },
+   145→      { key: 'area', label: 'क्षेत्रफळ', type: 'number' },
+   146→    ],
+   147→  },
+   148→  {
+   149→    key: 'owner',
+   150→    label: 'मालक',
+   151→    icon: <User className="h-4 w-4" />,
+   152→    apiTable: 'owner',
+   153→    columns: [
+   154→      { key: 'ownerName', label: 'मालकाचे नाव' },
+   155→      { key: 'ownerNameMr', label: 'नाव (मराठी)' },
+   156→      { key: 'aadhaarNo', label: 'आधार क्र.' },
+   157→      { key: 'mobileNo', label: 'मोबाईल' },
+   158→      { key: 'address', label: 'पत्ता' },
+   159→    ],
+   160→    formFields: [
+   161→      { key: 'ownerName', label: 'मालकाचे नाव', type: 'text', required: true },
+   162→      { key: 'ownerNameMr', label: 'मराठीत नाव', type: 'text' },
+   163→      { key: 'aadhaarNo', label: 'आधार क्र.', type: 'text', placeholder: 'XXXX XXXX XXXX' },
+   164→      { key: 'mobileNo', label: 'मोबाईल', type: 'text', placeholder: '10 अंकी मोबाईल क्र.' },
+   165→      { key: 'address', label: 'पत्ता', type: 'text' },
+   166→    ],
+   167→  },
+   168→  {
+   169→    key: 'property',
+   170→    label: 'मालमत्ता',
+   171→    icon: <Building2 className="h-4 w-4" />,
+   172→    apiTable: 'property',
+   173→    columns: [
+   174→      { key: 'propertyNo', label: 'मालमत्ता क्र.' },
+   175→      { key: 'ownerName', label: 'मालकाचे नाव' },
+   176→      { key: 'propertyType', label: 'प्रकार' },
+   177→      { key: 'wardId', label: 'वार्ड' },
+   178→      { key: 'areaSqFt', label: 'क्षेत्रफळ' },
+   179→      { key: 'isTaxExempt', label: 'करमुक्त' },
+   180→    ],
+   181→    formFields: [
+   182→      { key: 'propertyNo', label: 'मालमत्ता क्रमांक', type: 'text', required: true },
+   183→      { key: 'ownerName', label: 'मालकाचे नाव', type: 'text', required: true },
+   184→      { key: 'propertyType', label: 'मालमत्ता प्रकार', type: 'select', required: true, options: [
+   185→        { value: 'residential', label: 'राहणीमान' },
+   186→        { value: 'commercial', label: 'व्यावसायिक' },
+   187→        { value: 'industrial', label: 'औद्योगिक' },
+   188→        { value: 'agricultural', label: 'शेती' },
+   189→        { value: 'vacant', label: 'रिकामी जागा' },
+   190→        { value: 'mixed', label: 'मिश्र' },
+   191→      ] },
+   192→      { key: 'propertyUse', label: 'वापर', type: 'select', options: [
+   193→        { value: 'self_occupied', label: 'स्वतःचा वापर' },
+   194→        { value: 'rented', label: 'भाड्याने दिलेली' },
+   195→        { value: 'vacant', label: 'रिकामी' },
+   196→        { value: 'commercial_use', label: 'व्यावसायिक वापर' },
+   197→      ] },
+   198→      { key: 'constructionType', label: 'बांधकाम प्रकार', type: 'select', options: [
+   199→        { value: 'pucca', label: 'पक्के' },
+   200→        { value: 'semi_pucca', label: 'अर्धपक्के' },
+   201→        { value: 'kutcha', label: 'कच्चे' },
+   202→        { value: 'open', label: 'खुली जागा' },
+   203→      ] },
+   204→      { key: 'wardId', label: 'वार्ड', type: 'text' },
+   205→      { key: 'roadId', label: 'रस्ता', type: 'text' },
+   206→      { key: 'areaSqFt', label: 'क्षेत्रफळ चौ.फूट', type: 'number' },
+   207→      { key: 'builtUpArea', label: 'बांधलेले क्षेत्रफळ', type: 'number' },
+   208→      { key: 'isTaxExempt', label: 'करमुक्त', type: 'checkbox' },
+   209→      { key: 'waterConnection', label: 'पाणी जोडणी', type: 'checkbox' },
+   210→      { key: 'electricityConnection', label: 'वीज जोडणी', type: 'checkbox' },
+   211→    ],
+   212→  },
+   213→  {
+   214→    key: 'road',
+   215→    label: 'रस्ते',
+   216→    icon: <Route className="h-4 w-4" />,
+   217→    apiTable: 'road',
+   218→    columns: [
+   219→      { key: 'roadNo', label: 'रस्ता क्र.' },
+   220→      { key: 'roadName', label: 'रस्ता नाव' },
+   221→      { key: 'roadNameMr', label: 'नाव (मराठी)' },
+   222→      { key: 'roadType', label: 'प्रकार' },
+   223→      { key: 'lengthM', label: 'लांबी (मी)' },
+   224→      { key: 'widthM', label: 'रुंदी (मी)' },
+   225→    ],
+   226→    formFields: [
+   227→      { key: 'roadNo', label: 'रस्ता क्र.', type: 'text', required: true },
+   228→      { key: 'roadName', label: 'रस्ता नाव', type: 'text', required: true },
+   229→      { key: 'roadNameMr', label: 'मराठीत नाव', type: 'text' },
+   230→      { key: 'roadType', label: 'प्रकार', type: 'select', options: [
+   231→        { value: 'pucca', label: 'पक्का' },
+   232→        { value: 'kutcha', label: 'कच्चा' },
+   233→        { value: 'wbm', label: 'WBM' },
+   234→        { value: 'concrete', label: 'कॉंक्रीट' },
+   235→        { value: 'paver', label: 'पेव्हर' },
+   236→      ] },
+   237→      { key: 'lengthM', label: 'लांबी मी.', type: 'number' },
+   238→      { key: 'widthM', label: 'रुंदी मी.', type: 'number' },
+   239→    ],
+   240→  },
+   241→  {
+   242→    key: 'tax',
+   243→    label: 'कर प्रकार',
+   244→    icon: <Percent className="h-4 w-4" />,
+   245→    apiTable: 'tax',
+   246→    columns: [
+   247→      { key: 'taxName', label: 'कराचे नाव' },
+   248→      { key: 'taxNameMr', label: 'नाव (मराठी)' },
+   249→      { key: 'taxType', label: 'प्रकार' },
+   250→      { key: 'taxRate', label: 'दर' },
+   251→      { key: 'isEnabled', label: 'सक्षम' },
+   252→    ],
+   253→    formFields: [
+   254→      { key: 'taxName', label: 'कराचे नाव', type: 'text', required: true },
+   255→      { key: 'taxNameMr', label: 'मराठीत नाव', type: 'text', required: true },
+   256→      { key: 'taxType', label: 'प्रकार', type: 'select', required: true, options: [
+   257→        { value: 'general', label: 'सामान्य' },
+   258→        { value: 'penalty', label: 'दंड' },
+   259→        { value: 'interest', label: 'व्याज' },
+   260→        { value: 'other', label: 'इतर' },
+   261→      ] },
+   262→      { key: 'taxRate', label: 'दर', type: 'number', required: true },
+   263→      { key: 'isEnabled', label: 'सक्षम', type: 'checkbox' },
+   264→    ],
+   265→  },
+   266→  {
+   267→    key: 'employee',
+   268→    label: 'कर्मचारी',
+   269→    icon: <Users className="h-4 w-4" />,
+   270→    apiTable: 'employee',
+   271→    columns: [
+   272→      { key: 'employeeName', label: 'नाव' },
+   273→      { key: 'designation', label: 'पद' },
+   274→      { key: 'department', label: 'विभाग' },
+   275→      { key: 'basicPay', label: 'मूळ वेतन' },
+   276→      { key: 'isActive', label: 'सक्रिय' },
+   277→    ],
+   278→    formFields: [
+   279→      { key: 'employeeName', label: 'नाव', type: 'text', required: true },
+   280→      { key: 'employeeNameMr', label: 'मराठीत नाव', type: 'text' },
+   281→      { key: 'designation', label: 'पद', type: 'text', required: true },
+   282→      { key: 'department', label: 'विभाग', type: 'select', options: [
+   283→        { value: 'administration', label: 'प्रशासन' },
+   284→        { value: 'accounts', label: 'लेखा' },
+   285→        { value: 'revenue', label: 'महसूल' },
+   286→        { value: 'public_works', label: 'सार्वजनिक बांधकाम' },
+   287→        { value: 'water_supply', label: 'पाणीपुरवठा' },
+   288→        { value: 'sanitation', label: 'स्वच्छता' },
+   289→        { value: 'health', label: 'आरोग्य' },
+   290→        { value: 'education', label: 'शिक्षण' },
+   291→      ] },
+   292→      { key: 'basicPay', label: 'मूळ वेतन', type: 'number' },
+   293→      { key: 'da', label: 'महागाई भत्ता', type: 'number' },
+   294→      { key: 'hra', label: 'घरभाडे भत्ता', type: 'number' },
+   295→      { key: 'isActive', label: 'सक्रिय', type: 'checkbox' },
+   296→    ],
+   297→  },
+   298→  {
+   299→    key: 'contractor',
+   300→    label: 'कंत्राटदार',
+   301→    icon: <HardHat className="h-4 w-4" />,
+   302→    apiTable: 'contractor',
+   303→    columns: [
+   304→      { key: 'contractorName', label: 'नाव' },
+   305→      { key: 'contractorNameMr', label: 'नाव (मराठी)' },
+   306→      { key: 'mobileNo', label: 'मोबाईल' },
+   307→      { key: 'bankName', label: 'बँक' },
+   308→      { key: 'address', label: 'पत्ता' },
+   309→    ],
+   310→    formFields: [
+   311→      { key: 'contractorName', label: 'नाव', type: 'text', required: true },
+   312→      { key: 'contractorNameMr', label: 'मराठीत नाव', type: 'text' },
+   313→      { key: 'aadhaarNo', label: 'आधार क्र.', type: 'text', placeholder: 'XXXX XXXX XXXX' },
+   314→      { key: 'mobileNo', label: 'मोबाईल', type: 'text', placeholder: '10 अंकी मोबाईल क्र.' },
+   315→      { key: 'bankName', label: 'बँक', type: 'text' },
+   316→      { key: 'ifscCode', label: 'IFSC कोड', type: 'text' },
+   317→      { key: 'address', label: 'पत्ता', type: 'text' },
+   318→    ],
+   319→  },
+   320→];
+   321→
+   322→// ===== MAIN COMPONENT =====
+   323→
+   324→export default function Masters({ financialYear }: MastersProps) {
+   325→  const [activeTab, setActiveTab] = useState('village');
+   326→  const [records, setRecords] = useState<MasterRecord[]>([]);
+   327→  const [loading, setLoading] = useState(false);
+   328→  const [error, setError] = useState<string | null>(null);
+   329→  const [searchTerm, setSearchTerm] = useState('');
+   330→  const [dialogOpen, setDialogOpen] = useState(false);
+   331→  const [editingRecord, setEditingRecord] = useState<MasterRecord | null>(null);
+   332→  const [formData, setFormData] = useState<Record<string, unknown>>({});
+   333→  const [saving, setSaving] = useState(false);
+   334→  const [deleting, setDeleting] = useState<string | null>(null);
+   335→
+   336→  const currentConfig = tabConfigs.find(t => t.key === activeTab)!;
+   337→
+   338→  // Fetch records
+   339→  const fetchRecords = useCallback(async () => {
+   340→    setLoading(true);
+   341→    setError(null);
+   342→    try {
+   343→      const data = await apiGet(currentConfig.apiTable, searchTerm || undefined);
+   344→      setRecords(Array.isArray(data) ? data : []);
+   345→    } catch (err) {
+   346→      console.error('Fetch error:', err);
+   347→      setError('माहिती लोड करण्यात त्रुटी आली');
+   348→      setRecords([]);
+   349→    } finally {
+   350→      setLoading(false);
+   351→    }
+   352→  }, [currentConfig.apiTable, searchTerm]);
+   353→
+   354→  useEffect(() => {
+   355→    fetchRecords();
+   356→  }, [fetchRecords]);
+   357→
+   358→  // Reset search when tab changes
+   359→  useEffect(() => {
+   360→    setSearchTerm('');
+   361→    setError(null);
+   362→  }, [activeTab]);
+   363→
+   364→  // Open dialog for add
+   365→  const handleAdd = () => {
+   366→    setEditingRecord(null);
+   367→    const initialData: Record<string, unknown> = {};
+   368→    currentConfig.formFields.forEach(f => {
+   369→      if (f.type === 'checkbox') {
+   370→        initialData[f.key] = false;
+   371→      } else if (f.type === 'number') {
+   372→        initialData[f.key] = '';
+   373→      } else {
+   374→        initialData[f.key] = '';
+   375→      }
+   376→    });
+   377→    setFormData(initialData);
+   378→    setDialogOpen(true);
+   379→  };
+   380→
+   381→  // Open dialog for edit
+   382→  const handleEdit = (record: MasterRecord) => {
+   383→    setEditingRecord(record);
+   384→    const initialData: Record<string, unknown> = {};
+   385→    currentConfig.formFields.forEach(f => {
+   386→      initialData[f.key] = record[f.key] ?? (f.type === 'checkbox' ? false : '');
+   387→    });
+   388→    setFormData(initialData);
+   389→    setDialogOpen(true);
+   390→  };
+   391→
+   392→  // Save (create or update)
+   393→  const handleSave = async () => {
+   394→    // Validate required fields
+   395→    const missingFields = currentConfig.formFields
+   396→      .filter(f => f.required && !formData[f.key] && formData[f.key] !== 0)
+   397→      .map(f => f.label);
+   398→    if (missingFields.length > 0) {
+   399→      toast({
+   400→        title: 'प्रमाणित त्रुटी',
+   401→        description: `खालील फील्ड आवश्यक आहेत: ${missingFields.join(', ')}`,
+   402→        variant: 'destructive',
+   403→      });
+   404→      return;
+   405→    }
+   406→
+   407→    setSaving(true);
+   408→    try {
+   409→      // Prepare data: convert number fields and clean empty strings
+   410→      const cleanData: Record<string, unknown> = {};
+   411→      currentConfig.formFields.forEach(f => {
+   412→        const val = formData[f.key];
+   413→        if (f.type === 'number') {
+   414→          cleanData[f.key] = val === '' || val === null || val === undefined ? null : Number(val);
+   415→        } else if (f.type === 'checkbox') {
+   416→          cleanData[f.key] = val === true || val === 'true' || val === 1;
+   417→        } else {
+   418→          cleanData[f.key] = val || null;
+   419→        }
+   420→      });
+   421→
+   422→      if (editingRecord) {
+   423→        await apiUpdate(currentConfig.apiTable, editingRecord.id, cleanData);
+   424→        toast({ title: 'यशस्वी', description: 'माहिती अपडेट झाली' });
+   425→      } else {
+   426→        await apiCreate(currentConfig.apiTable, cleanData);
+   427→        toast({ title: 'यशस्वी', description: 'नवीन रेकॉर्ड जोडला' });
+   428→      }
+   429→      setDialogOpen(false);
+   430→      fetchRecords();
+   431→    } catch (err: unknown) {
+   432→      const message = err instanceof Error ? err.message : 'जतन करण्यात त्रुटी';
+   433→      toast({
+   434→        title: 'त्रुटी',
+   435→        description: message,
+   436→        variant: 'destructive',
+   437→      });
+   438→    } finally {
+   439→      setSaving(false);
+   440→    }
+   441→  };
+   442→
+   443→  // Delete
+   444→  const handleDelete = async (id: string) => {
+   445→    if (!confirm('हे रेकॉर्ड हटवायचे आहे का?')) return;
+   446→    setDeleting(id);
+   447→    try {
+   448→      await apiDelete(currentConfig.apiTable, id);
+   449→      toast({ title: 'यशस्वी', description: 'रेकॉर्ड हटवला' });
+   450→      fetchRecords();
+   451→    } catch (err: unknown) {
+   452→      const message = err instanceof Error ? err.message : 'हटवण्यात त्रुटी';
+   453→      toast({
+   454→        title: 'त्रुटी',
+   455→        description: message,
+   456→        variant: 'destructive',
+   457→      });
+   458→    } finally {
+   459→      setDeleting(null);
+   460→    }
+   461→  };
+   462→
+   463→  // Render cell value
+   464→  const renderCellValue = (record: MasterRecord, colKey: string) => {
+   465→    const value = record[colKey];
+   466→    if (colKey === 'isEnabled' || colKey === 'isActive') {
+   467→      return value ? (
+   468→        <Badge className="bg-green-100 text-green-800 hover:bg-green-100">होय</Badge>
+   469→      ) : (
+   470→        <Badge className="bg-red-100 text-red-800 hover:bg-red-100">नाही</Badge>
+   471→      );
+   472→    }
+   473→    if (colKey === 'isTaxExempt' || colKey === 'waterConnection' || colKey === 'electricityConnection') {
+   474→      return value ? (
+   475→        <Badge className="bg-green-100 text-green-800 hover:bg-green-100">होय</Badge>
+   476→      ) : (
+   477→        <Badge className="bg-gray-100 text-gray-600 hover:bg-gray-100">नाही</Badge>
+   478→      );
+   479→    }
+   480→    if (value === null || value === undefined) return '-';
+   481→    return String(value);
+   482→  };
+   483→
+   484→  // ===== FORM FIELD RENDERER =====
+   485→
+   486→  const renderFormField = (field: FormFieldConfig) => {
+   487→    const value = formData[field.key];
+   488→
+   489→    if (field.type === 'checkbox') {
+   490→      return (
+   491→        <div key={field.key} className="flex items-center space-x-2">
+   492→          <Checkbox
+   493→            id={field.key}
+   494→            checked={value === true || value === 'true'}
+   495→            onCheckedChange={(checked) =>
+   496→              setFormData(prev => ({ ...prev, [field.key]: checked }))
+   497→            }
+   498→          />
+   499→          <Label htmlFor={field.key} className="cursor-pointer text-sm">
+   500→            {field.label}
+   501→          </Label>
+   502→        </div>
+   503→      );
+   504→    }
+   505→
+   506→    if (field.type === 'select') {
+   507→      return (
+   508→        <div key={field.key} className="space-y-1.5">
+   509→          <Label htmlFor={field.key} className="text-sm">
+   510→            {field.label} {field.required && <span className="text-red-500">*</span>}
+   511→          </Label>
+   512→          <Select
+   513→            value={value ? String(value) : ''}
+   514→            onValueChange={(val) =>
+   515→              setFormData(prev => ({ ...prev, [field.key]: val }))
+   516→            }
+   517→          >
+   518→            <SelectTrigger className="w-full">
+   519→              <SelectValue placeholder={field.label + ' निवडा'} />
+   520→            </SelectTrigger>
+   521→            <SelectContent>
+   522→              {field.options?.map(opt => (
+   523→                <SelectItem key={opt.value} value={opt.value}>
+   524→                  {opt.label}
+   525→                </SelectItem>
+   526→              ))}
+   527→            </SelectContent>
+   528→          </Select>
+   529→        </div>
+   530→      );
+   531→    }
+   532→
+   533→    return (
+   534→      <div key={field.key} className="space-y-1.5">
+   535→        <Label htmlFor={field.key} className="text-sm">
+   536→          {field.label} {field.required && <span className="text-red-500">*</span>}
+   537→        </Label>
+   538→        <Input
+   539→          id={field.key}
+   540→          type={field.type === 'number' ? 'number' : 'text'}
+   541→          value={value === null || value === undefined ? '' : String(value)}
+   542→          onChange={(e) =>
+   543→            setFormData(prev => ({ ...prev, [field.key]: field.type === 'number' ? (e.target.value === '' ? '' : Number(e.target.value)) : e.target.value }))
+   544→          }
+   545→          placeholder={field.placeholder || field.label + ' टाका'}
+   546→          className="w-full"
+   547→        />
+   548→      </div>
+   549→    );
+   550→  };
+   551→
+   552→  // ===== MAIN RENDER =====
+   553→
+   554→  return (
+   555→    <div className="w-full space-y-4">
+   556→      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+   557→        {/* Tab List - Scrollable on mobile */}
+   558→        <div className="w-full overflow-x-auto">
+   559→          <TabsList className="inline-flex h-auto min-w-full flex-nowrap gap-1 bg-muted p-1 rounded-lg">
+   560→            {tabConfigs.map(tab => (
+   561→              <TabsTrigger
+   562→                key={tab.key}
+   563→                value={tab.key}
+   564→                className="flex items-center gap-1.5 whitespace-nowrap px-3 py-2 text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm"
+   565→              >
+   566→                {tab.icon}
+   567→                <span className="hidden sm:inline">{tab.label}</span>
+   568→                <span className="sm:hidden">{tab.label.slice(0, 4)}</span>
+   569→              </TabsTrigger>
+   570→            ))}
+   571→          </TabsList>
+   572→        </div>
+   573→
+   574→        {/* Tab Content */}
+   575→        {tabConfigs.map(tab => (
+   576→          <TabsContent key={tab.key} value={tab.key} className="mt-4">
+   577→            <Card>
+   578→              <CardHeader className="pb-3">
+   579→                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+   580→                  <CardTitle className="text-lg flex items-center gap-2">
+   581→                    {tab.icon}
+   582→                    {tab.label}
+   583→                    {!loading && Array.isArray(records) && (
+   584→                      <Badge variant="secondary" className="ml-2">
+   585→                        {records.length} रेकॉर्ड
+   586→                      </Badge>
+   587→                    )}
+   588→                  </CardTitle>
+   589→                  <div className="flex flex-wrap items-center gap-2">
+   590→                    {/* Search */}
+   591→                    <div className="relative">
+   592→                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+   593→                      <Input
+   594→                        type="text"
+   595→                        placeholder="शोधा..."
+   596→                        value={searchTerm}
+   597→                        onChange={(e) => setSearchTerm(e.target.value)}
+   598→                        className="pl-8 h-9 w-40 sm:w-56"
+   599→                      />
+   600→                    </div>
+   601→                    {/* Refresh */}
+   602→                    <Button
+   603→                      variant="outline"
+   604→                      size="sm"
+   605→                      onClick={fetchRecords}
+   606→                      disabled={loading}
+   607→                    >
+   608→                      <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+   609→                    </Button>
+   610→                    {/* Add button */}
+   611→                    <Button size="sm" onClick={handleAdd}>
+   612→                      <Plus className="h-4 w-4 mr-1" />
+   613→                      {tab.isSingleRecord ? 'संपादन' : 'नवीन'}
+   614→                    </Button>
+   615→                  </div>
+   616→                </div>
+   617→              </CardHeader>
+   618→              <CardContent>
+   619→                {/* Loading State */}
+   620→                {loading && (
+   621→                  <div className="flex items-center justify-center py-12">
+   622→                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+   623→                    <span className="ml-3 text-muted-foreground">लोड होत आहे...</span>
+   624→                  </div>
+   625→                )}
+   626→
+   627→                {/* Error State */}
+   628→                {error && !loading && (
+   629→                  <div className="flex flex-col items-center justify-center py-12 text-center">
+   630→                    <p className="text-red-500 font-medium">{error}</p>
+   631→                    <Button variant="outline" size="sm" className="mt-3" onClick={fetchRecords}>
+   632→                      पुन्हा प्रयत्न करा
+   633→                    </Button>
+   634→                  </div>
+   635→                )}
+   636→
+   637→                {/* Data Table */}
+   638→                {!loading && !error && (
+   639→                  <>
+   640→                    {/* Single record view (Village Info) */}
+   641→                    {tab.isSingleRecord && Array.isArray(records) && records.length === 1 && (
+   642→                      <div className="space-y-4">
+   643→                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+   644→                          {tab.formFields.map(field => (
+   645→                            <div key={field.key} className="space-y-1">
+   646→                              <Label className="text-xs text-muted-foreground">{field.label}</Label>
+   647→                              <p className="text-sm font-medium">
+   648→                                {records[0][field.key] !== null && records[0][field.key] !== undefined
+   649→                                  ? String(records[0][field.key])
+   650→                                  : '-'}
+   651→                              </p>
+   652→                            </div>
+   653→                          ))}
+   654→                        </div>
+   655→                        <Button
+   656→                          variant="outline"
+   657→                          size="sm"
+   658→                          onClick={() => handleEdit(records[0])}
+   659→                        >
+   660→                          <Pencil className="h-4 w-4 mr-1" /> संपादन
+   661→                        </Button>
+   662→                      </div>
+   663→                    )}
+   664→
+   665→                    {/* Single record view - no data yet */}
+   666→                    {tab.isSingleRecord && Array.isArray(records) && records.length === 0 && (
+   667→                      <div className="flex flex-col items-center justify-center py-12 text-center">
+   668→                        <p className="text-muted-foreground mb-4">गाव माहिती उपलब्ध नाही</p>
+   669→                        <Button size="sm" onClick={handleAdd}>
+   670→                          <Plus className="h-4 w-4 mr-1" /> माहिती जोडा
+   671→                        </Button>
+   672→                      </div>
+   673→                    )}
+   674→
+   675→                    {/* Table view for multiple records */}
+   676→                    {!tab.isSingleRecord && (
+   677→                      <>
+   678→                        {Array.isArray(records) && records.length === 0 ? (
+   679→                          <div className="flex flex-col items-center justify-center py-12 text-center">
+   680→                            <p className="text-muted-foreground mb-2">कोणतेही रेकॉर्ड आढळले नाहीत</p>
+   681→                            <Button size="sm" onClick={handleAdd}>
+   682→                              <Plus className="h-4 w-4 mr-1" /> नवीन रेकॉर्ड जोडा
+   683→                            </Button>
+   684→                          </div>
+   685→                        ) : (
+   686→                          <div className="max-h-96 overflow-y-auto rounded-md border">
+   687→                            <Table>
+   688→                              <TableHeader>
+   689→                                <TableRow>
+   690→                                  <TableHead className="w-12 text-center">क्र.</TableHead>
+   691→                                  {tab.columns.map(col => (
+   692→                                    <TableHead key={col.key}>{col.label}</TableHead>
+   693→                                  ))}
+   694→                                  <TableHead className="text-center sticky right-0 bg-background">क्रिया</TableHead>
+   695→                                </TableRow>
+   696→                              </TableHeader>
+   697→                              <TableBody>
+   698→                                {Array.isArray(records) && records.map((record, idx) => (
+   699→                                  <TableRow key={record.id || idx}>
+   700→                                    <TableCell className="text-center font-medium">{idx + 1}</TableCell>
+   701→                                    {tab.columns.map(col => (
+   702→                                      <TableCell key={col.key}>
+   703→                                        {renderCellValue(record, col.key)}
+   704→                                      </TableCell>
+   705→                                    ))}
+   706→                                    <TableCell className="text-center sticky right-0 bg-background">
+   707→                                      <div className="flex items-center justify-center gap-1">
+   708→                                        <Button
+   709→                                          variant="ghost"
+   710→                                          size="icon"
+   711→                                          className="h-8 w-8"
+   712→                                          onClick={() => handleEdit(record)}
+   713→                                          title="संपादन"
+   714→                                        >
+   715→                                          <Pencil className="h-4 w-4 text-blue-600" />
+   716→                                        </Button>
+   717→                                        <Button
+   718→                                          variant="ghost"
+   719→                                          size="icon"
+   720→                                          className="h-8 w-8"
+   721→                                          onClick={() => handleDelete(record.id)}
+   722→                                          disabled={deleting === record.id}
+   723→                                          title="हटवा"
+   724→                                        >
+   725→                                          {deleting === record.id ? (
+   726→                                            <Loader2 className="h-4 w-4 animate-spin" />
+   727→                                          ) : (
+   728→                                            <Trash2 className="h-4 w-4 text-red-600" />
+   729→                                          )}
+   730→                                        </Button>
+   731→                                      </div>
+   732→                                    </TableCell>
+   733→                                  </TableRow>
+   734→                                ))}
+   735→                              </TableBody>
+   736→                            </Table>
+   737→                          </div>
+   738→                        )}
+   739→                      </>
+   740→                    )}
+   741→                  </>
+   742→                )}
+   743→              </CardContent>
+   744→            </Card>
+   745→          </TabsContent>
+   746→        ))}
+   747→      </Tabs>
+   748→
+   749→      {/* Add/Edit Dialog */}
+   750→      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+   751→        <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
+   752→          <DialogHeader>
+   753→            <DialogTitle>
+   754→              {editingRecord ? `${currentConfig.label} संपादन` : `नवीन ${currentConfig.label}`}
+   755→            </DialogTitle>
+   756→          </DialogHeader>
+   757→          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
+   758→            {currentConfig.formFields.map(field => renderFormField(field))}
+   759→          </div>
+   760→          <DialogFooter className="gap-2">
+   761→            <Button
+   762→              variant="outline"
+   763→              onClick={() => setDialogOpen(false)}
+   764→              disabled={saving}
+   765→            >
+   766→              रद्द करा
+   767→            </Button>
+   768→            <Button onClick={handleSave} disabled={saving}>
+   769→              {saving ? (
+   770→                <>
+   771→                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+   772→                  जतन होत आहे...
+   773→                </>
+   774→              ) : (
+   775→                'जतन करा'
+   776→              )}
+   777→            </Button>
+   778→          </DialogFooter>
+   779→        </DialogContent>
+   780→      </Dialog>
+   781→    </div>
+   782→  );
+   783→}
+   784→

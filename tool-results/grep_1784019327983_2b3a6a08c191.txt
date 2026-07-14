@@ -1,0 +1,252 @@
+/home/z/my-project/src/app/api/registers/route.ts:29:        // Namuna 3: Cash book - all receipt + payment entries combined
+/home/z/my-project/src/app/api/registers/route.ts:102:          namuna: 'नमुना ३',
+/home/z/my-project/src/app/api/registers/route.ts:116:        // Namuna 4: Bank book - bank-related transactions
+/home/z/my-project/src/app/api/registers/route.ts:211:          namuna: 'नमुना ४',
+/home/z/my-project/src/app/api/registers/route.ts:295:        // Namuna 9 data with property info
+/home/z/my-project/src/app/api/registers/route.ts:347:          namuna: 'नमुना ९',
+/home/z/my-project/src/app/api/registers/route.ts:429:        // Namuna 5: Asset register
+/home/z/my-project/src/app/api/registers/route.ts:461:          namuna: 'नमुना ५',
+/home/z/my-project/src/app/api/registers/route.ts:475:        // Namuna 6: Stock register
+/home/z/my-project/src/app/api/registers/route.ts:506:          namuna: 'नमुना ६',
+/home/z/my-project/src/app/api/registers/route.ts:520:        // Namuna 10: Grant register from SchemeFundEntry
+/home/z/my-project/src/app/api/registers/route.ts:569:          namuna: 'नमुना १०',
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:116:    // Namuna status tracker
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:117:    const namunaStatus: { number: number; name: string; nameMr: string; status: 'available' | 'partial' | 'none'; viewId: string }[] = [
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:118:      { number: 1, name: 'Budget Estimate', nameMr: 'अर्थसंकल्प/अंदाजपत्रक', status: totalTaxAssessments > 0 ? 'available' : totalProperties > 0 ? 'partial' : 'none', viewId: 'namuna-1' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:119:      { number: 2, name: 'Re-appropriation & Revised Budget', nameMr: 'पुनर्विनियोजन व नियत वाटप (सुधारित अर्थसंकल्प)', status: totalProperties > 0 ? 'partial' : 'none', viewId: 'namuna-2' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:120:      { number: 3, name: 'Income & Expenditure Statement', nameMr: 'ग्रामपंचायत जमा-खर्च विवरण', status: totalReceiptEntries > 0 || totalPaymentEntries > 0 ? 'partial' : 'none', viewId: 'namuna-3' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:121:      { number: 4, name: 'Assets & Liabilities', nameMr: 'ग्रामपंचायतीची मत्ता व दायित्वे', status: totalBankAccounts > 0 ? 'partial' : 'none', viewId: 'namuna-4' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:122:      { number: 5, name: 'General Cash Book', nameMr: 'सामान्य रोकड वही', status: totalAssetEntries > 0 ? 'available' : 'none', viewId: 'namuna-5' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:123:      { number: 6, name: 'Classified Receipt Register', nameMr: 'वर्गीकृत नोंदवही', status: totalStockEntries > 0 ? 'available' : 'none', viewId: 'namuna-6' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:124:      { number: 7, name: 'General Receipt', nameMr: 'सामान्य पावती', status: totalSchemeFunds > 0 ? 'partial' : 'none', viewId: 'namuna-7' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:125:      { number: 8, name: 'Tax Assessment Register', nameMr: 'कर आकारणी नोंदवही', status: totalTaxAssessments > 0 ? 'available' : 'partial', viewId: 'namuna-8' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:126:      { number: 9, name: 'Tax Demand Register', nameMr: 'कर मागणी नोंदवही', status: totalDemandRegisters > 0 ? 'available' : 'partial', viewId: 'namuna-9' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:127:      { number: 10, name: 'Tax & Fee Receipt', nameMr: 'कर व फी बाबत पावती', status: totalTaxPayments > 0 ? 'available' : 'partial', viewId: 'namuna-10' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:128:      { number: 11, name: 'Miscellaneous Tax & Fee Assessment', nameMr: 'किरकोळ कर व फी आकारणी नोंदवही', status: 'none', viewId: 'namuna-11' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:129:      { number: 12, name: 'Contingent Expense Voucher', nameMr: 'अकस्मात खर्चाचे प्रमाणक', status: 'none', viewId: 'namuna-12' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:130:      { number: 13, name: 'Employee Register', nameMr: 'कर्मचारी नोंदवही', status: totalEmployees > 0 ? 'partial' : 'none', viewId: 'namuna-13' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:131:      { number: 14, name: 'Stamp Account Register', nameMr: 'मुद्रांक हिशोब नोंदवही', status: 'none', viewId: 'namuna-14' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:132:      { number: 15, name: 'Consumable Stock Register', nameMr: 'उपभोग्य वस्तू साठा नोंदवही', status: 'none', viewId: 'namuna-15' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:133:      { number: 16, name: 'Dead Stock & Movable Property', nameMr: 'जडवस्तू संग्रह व जंगम मालमत्ता नोंदवही', status: totalAssetEntries > 0 ? 'partial' : 'none', viewId: 'namuna-16' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:134:      { number: 17, name: 'Advance & Deposit Register', nameMr: 'अग्रीम/अनामत रक्कम नोंदवही', status: totalAssetEntries > 0 ? 'partial' : 'none', viewId: 'namuna-17' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:135:      { number: 18, name: 'Petty Cash Book', nameMr: 'किरकोळ रोकडवही', status: totalAssetEntries > 0 ? 'partial' : 'none', viewId: 'namuna-18' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:136:      { number: 19, name: 'Muster Roll / Attendance', nameMr: 'हजेरीपट (मजुरांची हजेरी)', status: totalCollectionEntries > 0 ? 'available' : 'partial', viewId: 'namuna-19' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:137:      { number: 20, name: 'Estimate Register for Works', nameMr: 'कामाच्या अंदाजाची नोंदवही', status: totalWorkEntries > 0 ? 'partial' : 'none', viewId: 'namuna-20' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:138:      { number: 21, name: 'Employee Bill Register', nameMr: 'कर्मचाऱ्याच्या देयकाची नोंदवही', status: totalSalaryEntries > 0 ? 'partial' : 'none', viewId: 'namuna-21' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:139:      { number: 22, name: 'Immovable Property Register', nameMr: 'स्थावर मालमत्ता नोंदवही', status: totalImmovableProperties > 0 ? 'available' : 'partial', viewId: 'namuna-22' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:140:      { number: 23, name: 'Road Register', nameMr: 'ताब्यातील रस्त्यांची नोंदवही', status: totalRoadAssets > 0 ? 'available' : 'partial', viewId: 'namuna-23' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:141:      { number: 24, name: 'Land Register', nameMr: 'जमिनीची नोंदवही', status: totalLandAssets > 0 ? 'available' : 'partial', viewId: 'namuna-24' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:142:      { number: 25, name: 'Investment Register', nameMr: 'गुंतवणूक नोंदवही', status: 'none', viewId: 'namuna-25' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:143:      { number: 26, name: 'Monthly Statement', nameMr: 'मासिक विवरण', status: 'none', viewId: 'namuna-26ka' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:144:      { number: 27, name: 'Audit Objection Compliance Statement', nameMr: 'लेखापरीक्षण आक्षेपांच्या पुर्तेचे मासिक विवरण', status: 'none', viewId: 'namuna-27' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:145:      { number: 28, name: 'SC 15% & Women/Child Welfare 10%', nameMr: 'मागासवर्गीय 15% व महिला बालकल्याण 10% खर्चाचे मासिक विवरण', status: totalSchemes > 0 ? 'partial' : 'none', viewId: 'namuna-28' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:146:      { number: 29, name: 'Loan Register', nameMr: 'कर्जाची नोंदवही', status: totalSchemes > 0 ? 'partial' : 'none', viewId: 'namuna-29' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:147:      { number: 30, name: 'Audit Objection Compliance Register', nameMr: 'लेखा परीक्षण आक्षेप पूर्तता नोंदवही', status: totalSchemes > 0 ? 'partial' : 'none', viewId: 'namuna-30' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:148:      { number: 31, name: 'Travel Allowance Bill', nameMr: 'प्रवास भत्ता देयक', status: 'none', viewId: 'namuna-31' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:149:      { number: 32, name: 'Refund Order', nameMr: 'रकमेच्या परताव्यासाठीचा आदेश', status: 'none', viewId: 'namuna-32' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:150:      { number: 33, name: 'Tree Register', nameMr: 'वृक्ष नोंदवही', status: totalTreeAssets > 0 ? 'available' : 'partial', viewId: 'namuna-33' },
+/home/z/my-project/src/app/api/dashboard/enhanced/route.ts:172:        recentReceipts, recentPayments, namunaStatus,
+/home/z/my-project/src/app/api/auto-generate/route.ts:30:  const namuna = searchParams.get('namuna') || '1';
+/home/z/my-project/src/app/api/auto-generate/route.ts:35:    if (namuna === 'all') {
+/home/z/my-project/src/app/api/auto-generate/route.ts:39:    const namunaNum = parseInt(namuna, 10);
+/home/z/my-project/src/app/api/auto-generate/route.ts:40:    if (isNaN(namunaNum) || namunaNum < 1 || namunaNum > 33) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:41:      return NextResponse.json({ error: 'Invalid namuna number. Must be 1-33 or "all"' }, { status: 400 });
+/home/z/my-project/src/app/api/auto-generate/route.ts:45:    switch (namunaNum) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:46:      case 1: data = await generateNamuna1(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:47:      case 2: data = await generateNamuna2(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:48:      case 3: data = await generateNamuna3(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:49:      case 4: data = await generateNamuna4(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:50:      case 5: data = await generateNamuna5(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:51:      case 6: data = await generateNamuna6(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:52:      case 7: data = await generateNamuna7(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:53:      case 8: data = await generateNamuna8(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:54:      case 9: data = await generateNamuna9(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:55:      case 10: data = await generateNamuna10(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:56:      case 11: data = await generateNamuna11(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:57:      case 12: data = await generateNamuna12(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:58:      case 13: data = await generateNamuna13(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:59:      case 14: data = await generateNamuna14(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:60:      case 15: data = await generateNamuna15(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:61:      case 16: data = await generateNamuna16(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:62:      case 17: data = await generateNamuna17(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:63:      case 18: data = await generateNamuna18(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:64:      case 19: data = await generateNamuna19(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:65:      case 20: data = await generateNamuna20(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:66:      case 21: data = await generateNamuna21(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:67:      case 22: data = await generateNamuna22(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:68:      case 23: data = await generateNamuna23(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:69:      case 24: data = await generateNamuna24(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:70:      case 25: data = await generateNamuna25(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:71:      case 26: data = await generateNamuna26(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:72:      case 27: data = await generateNamuna27(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:73:      case 28: data = await generateNamuna28(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:74:      case 29: data = await generateNamuna29(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:75:      case 30: data = await generateNamuna30(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:76:      case 31: data = await generateNamuna31(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:77:      case 32: data = await generateNamuna32(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:78:      case 33: data = await generateNamuna33(financialYear); break;
+/home/z/my-project/src/app/api/auto-generate/route.ts:79:      default: data = { error: 'Invalid namuna number' };
+/home/z/my-project/src/app/api/auto-generate/route.ts:89:// NAMUNA 1 - अंदाजपत्रक मालमत्ता पत्र (Budget Assets Sheet)
+/home/z/my-project/src/app/api/auto-generate/route.ts:92:async function generateNamuna1(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:114:    title: 'नमुना १ - अंदाजपत्रक मालमत्ता पत्र',
+/home/z/my-project/src/app/api/auto-generate/route.ts:115:    titleEn: 'Namuna 1 - Budget Assets Sheet',
+/home/z/my-project/src/app/api/auto-generate/route.ts:130:// NAMUNA 2 - अंदाजपत्रक उत्पन्न व खर्च (Budget Income vs Expenditure)
+/home/z/my-project/src/app/api/auto-generate/route.ts:132:async function generateNamuna2(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:164:    title: 'नमुना २ - अंदाजपत्रक उत्पन्न व खर्च',
+/home/z/my-project/src/app/api/auto-generate/route.ts:165:    titleEn: 'Namuna 2 - Budget Income vs Expenditure',
+/home/z/my-project/src/app/api/auto-generate/route.ts:182:// NAMUNA 3 - रोकड वही (Cash Book)
+/home/z/my-project/src/app/api/auto-generate/route.ts:185:async function generateNamuna3(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:229:    title: 'नमुना ३ - रोकड वही',
+/home/z/my-project/src/app/api/auto-generate/route.ts:230:    titleEn: 'Namuna 3 - Cash Book',
+/home/z/my-project/src/app/api/auto-generate/route.ts:245:// NAMUNA 4 - बँक वही (Bank Book)
+/home/z/my-project/src/app/api/auto-generate/route.ts:247:async function generateNamuna4(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:300:    title: 'नमुना ४ - बँक वही',
+/home/z/my-project/src/app/api/auto-generate/route.ts:301:    titleEn: 'Namuna 4 - Bank Book',
+/home/z/my-project/src/app/api/auto-generate/route.ts:315:// NAMUNA 5 - मालमत्ता रजिस्टर (Asset Register)
+/home/z/my-project/src/app/api/auto-generate/route.ts:317:async function generateNamuna5(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:346:    title: 'नमुना ५ - मालमत्ता रजिस्टर',
+/home/z/my-project/src/app/api/auto-generate/route.ts:347:    titleEn: 'Namuna 5 - Asset Register',
+/home/z/my-project/src/app/api/auto-generate/route.ts:363:// NAMUNA 6 - साठा रजिस्टर (Stock Register)
+/home/z/my-project/src/app/api/auto-generate/route.ts:365:async function generateNamuna6(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:387:    title: 'नमुना ६ - साठा रजिस्टर',
+/home/z/my-project/src/app/api/auto-generate/route.ts:388:    titleEn: 'Namuna 6 - Stock Register',
+/home/z/my-project/src/app/api/auto-generate/route.ts:404:// NAMUNA 7 - अनुदान नोंदवही (Grant Register)
+/home/z/my-project/src/app/api/auto-generate/route.ts:406:async function generateNamuna7(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:442:    title: 'नमुना ७ - अनुदान नोंदवही',
+/home/z/my-project/src/app/api/auto-generate/route.ts:443:    titleEn: 'Namuna 7 - Grant Register',
+/home/z/my-project/src/app/api/auto-generate/route.ts:458:// NAMUNA 8 - कर आकारणी (Tax Assessment)
+/home/z/my-project/src/app/api/auto-generate/route.ts:460:async function generateNamuna8(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:461:  const [namuna8s, village] = await Promise.all([
+/home/z/my-project/src/app/api/auto-generate/route.ts:470:  const rows = namuna8s.map(n => {
+/home/z/my-project/src/app/api/auto-generate/route.ts:489:    title: 'नमुना ८ - कर आकारणी नोंदवही',
+/home/z/my-project/src/app/api/auto-generate/route.ts:490:    titleEn: 'Namuna 8 - Tax Assessment Register',
+/home/z/my-project/src/app/api/auto-generate/route.ts:494:      totalEntries: namuna8s.length,
+/home/z/my-project/src/app/api/auto-generate/route.ts:495:      totalTax: r2(namuna8s.reduce((s, n) => s + (n.totalTaxAmt || n.totalTax), 0)),
+/home/z/my-project/src/app/api/auto-generate/route.ts:496:      totalHouseTax: r2(namuna8s.reduce((s, n) => s + (n.houseTaxAmt || 0), 0)),
+/home/z/my-project/src/app/api/auto-generate/route.ts:497:      totalLightTax: r2(namuna8s.reduce((s, n) => s + (n.lightTaxAmt || 0), 0)),
+/home/z/my-project/src/app/api/auto-generate/route.ts:498:      totalHealthTax: r2(namuna8s.reduce((s, n) => s + (n.healthTaxAmt || 0), 0)),
+/home/z/my-project/src/app/api/auto-generate/route.ts:499:      totalWaterTax: r2(namuna8s.reduce((s, n) => s + (n.waterTaxAmt || 0), 0)),
+/home/z/my-project/src/app/api/auto-generate/route.ts:506:// NAMUNA 9 - मागणी नोंदवही (Demand Register)
+/home/z/my-project/src/app/api/auto-generate/route.ts:508:async function generateNamuna9(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:509:  const [namuna9s, village] = await Promise.all([
+/home/z/my-project/src/app/api/auto-generate/route.ts:518:  const rows = namuna9s.map(n => {
+/home/z/my-project/src/app/api/auto-generate/route.ts:536:    title: 'नमुना ९ - मागणी नोंदवही',
+/home/z/my-project/src/app/api/auto-generate/route.ts:537:    titleEn: 'Namuna 9 - Demand Register',
+/home/z/my-project/src/app/api/auto-generate/route.ts:541:      totalEntries: namuna9s.length,
+/home/z/my-project/src/app/api/auto-generate/route.ts:551:// NAMUNA 10 - थकबाकी/DCB (Demand Collection Balance)
+/home/z/my-project/src/app/api/auto-generate/route.ts:553:async function generateNamuna10(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:583:    title: 'नमुना १० - मागणी, वसूल व शिल्लक',
+/home/z/my-project/src/app/api/auto-generate/route.ts:584:    titleEn: 'Namuna 10 - DCB (Demand Collection Balance)',
+/home/z/my-project/src/app/api/auto-generate/route.ts:597:// NAMUNA 11 - दैनंदिन रोकड वही (Daily Cash Summary)
+/home/z/my-project/src/app/api/auto-generate/route.ts:599:async function generateNamuna11(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:633:    title: 'नमुना ११ - दैनंदिन रोकड वही',
+/home/z/my-project/src/app/api/auto-generate/route.ts:634:    titleEn: 'Namuna 11 - Daily Cash Summary',
+/home/z/my-project/src/app/api/auto-generate/route.ts:648:// NAMUNA 12 - जमा खाते रजिस्टर (Credit Account Register)
+/home/z/my-project/src/app/api/auto-generate/route.ts:650:async function generateNamuna12(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:681:    title: 'नमुना १२ - जमा खाते रजिस्टर',
+/home/z/my-project/src/app/api/auto-generate/route.ts:682:    titleEn: 'Namuna 12 - Credit Account Register',
+/home/z/my-project/src/app/api/auto-generate/route.ts:695:// NAMUNA 13 - नामे खाते रजिस्टर (Debit Account Register)
+/home/z/my-project/src/app/api/auto-generate/route.ts:697:async function generateNamuna13(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:728:    title: 'नमुना १३ - नामे खाते रजिस्टर',
+/home/z/my-project/src/app/api/auto-generate/route.ts:729:    titleEn: 'Namuna 13 - Debit Account Register',
+/home/z/my-project/src/app/api/auto-generate/route.ts:742:// NAMUNA 14 - खाते खत (Ledger)
+/home/z/my-project/src/app/api/auto-generate/route.ts:744:async function generateNamuna14(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:797:    title: 'नमुना १४ - खाते खत',
+/home/z/my-project/src/app/api/auto-generate/route.ts:798:    titleEn: 'Namuna 14 - Ledger',
+/home/z/my-project/src/app/api/auto-generate/route.ts:815:// NAMUNA 15 - तपासणी पत्र (Trial Balance)
+/home/z/my-project/src/app/api/auto-generate/route.ts:817:async function generateNamuna15(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:864:    title: 'नमुना १५ - तपासणी पत्र',
+/home/z/my-project/src/app/api/auto-generate/route.ts:865:    titleEn: 'Namuna 15 - Trial Balance',
+/home/z/my-project/src/app/api/auto-generate/route.ts:880:// NAMUNA 16 - मालमत्ता वही (Asset Verification)
+/home/z/my-project/src/app/api/auto-generate/route.ts:882:async function generateNamuna16(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:903:    title: 'नमुना १६ - मालमत्ता वही',
+/home/z/my-project/src/app/api/auto-generate/route.ts:904:    titleEn: 'Namuna 16 - Asset Verification Register',
+/home/z/my-project/src/app/api/auto-generate/route.ts:919:// NAMUNA 17 - देताणी वही (Liabilities Register)
+/home/z/my-project/src/app/api/auto-generate/route.ts:921:async function generateNamuna17(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:951:    title: 'नमुना १७ - देताणी वही',
+/home/z/my-project/src/app/api/auto-generate/route.ts:952:    titleEn: 'Namuna 17 - Liabilities Register',
+/home/z/my-project/src/app/api/auto-generate/route.ts:966:// NAMUNA 18 - आढावा मालमत्ता (Asset Verification Report)
+/home/z/my-project/src/app/api/auto-generate/route.ts:968:async function generateNamuna18(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:992:    title: 'नमुना १८ - आढावा मालमत्ता',
+/home/z/my-project/src/app/api/auto-generate/route.ts:993:    titleEn: 'Namuna 18 - Asset Verification Report',
+/home/z/my-project/src/app/api/auto-generate/route.ts:1007:// NAMUNA 19 - कर वसूल वही (Tax Collection Register)
+/home/z/my-project/src/app/api/auto-generate/route.ts:1009:async function generateNamuna19(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:1034:    title: 'नमुना १९ - कर वसूल वही',
+/home/z/my-project/src/app/api/auto-generate/route.ts:1035:    titleEn: 'Namuna 19 - Tax Collection Register',
+/home/z/my-project/src/app/api/auto-generate/route.ts:1048:// NAMUNA 20 - पाणीपट्टी वसूल वही (Water Tax Collection)
+/home/z/my-project/src/app/api/auto-generate/route.ts:1050:async function generateNamuna20(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:1069:    title: 'नमुना २० - पाणीपट्टी वसूल वही',
+/home/z/my-project/src/app/api/auto-generate/route.ts:1070:    titleEn: 'Namuna 20 - Water Tax Collection Register',
+/home/z/my-project/src/app/api/auto-generate/route.ts:1085:// NAMUNA 21 - वसूल तपासणी (Collection Verification)
+/home/z/my-project/src/app/api/auto-generate/route.ts:1087:async function generateNamuna21(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:1088:  const [collections, namuna9s, village] = await Promise.all([
+/home/z/my-project/src/app/api/auto-generate/route.ts:1095:  const totalPayments = namuna9s.reduce((s, n) => s + n.payments.reduce((ps, p) => ps + p.amountPaid, 0), 0);
+/home/z/my-project/src/app/api/auto-generate/route.ts:1099:    { source: 'Payment (Namuna9)', sourceMr: 'पावती (नमुना ९)', count: namuna9s.reduce((s, n) => s + n.payments.length, 0), total: r2(totalPayments) },
+/home/z/my-project/src/app/api/auto-generate/route.ts:1104:    title: 'नमुना २१ - वसूल तपासणी',
+/home/z/my-project/src/app/api/auto-generate/route.ts:1105:    titleEn: 'Namuna 21 - Collection Verification Report',
+/home/z/my-project/src/app/api/auto-generate/route.ts:1119:// NAMUNA 22 - देणेदार यादी (Debtors List)
+/home/z/my-project/src/app/api/auto-generate/route.ts:1121:async function generateNamuna22(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:1122:  const [namuna9s, village] = await Promise.all([
+/home/z/my-project/src/app/api/auto-generate/route.ts:1130:  const rows = namuna9s
+/home/z/my-project/src/app/api/auto-generate/route.ts:1149:    title: 'नमुना २२ - देणेदार यादी',
+/home/z/my-project/src/app/api/auto-generate/route.ts:1150:    titleEn: 'Namuna 22 - Debtors List',
+/home/z/my-project/src/app/api/auto-generate/route.ts:1164:// NAMUNA 23 - फाळवणार यादी (Creditors List)
+/home/z/my-project/src/app/api/auto-generate/route.ts:1166:async function generateNamuna23(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:1187:    title: 'नमुना २३ - फाळवणार यादी',
+/home/z/my-project/src/app/api/auto-generate/route.ts:1188:    titleEn: 'Namuna 23 - Creditors List',
+/home/z/my-project/src/app/api/auto-generate/route.ts:1201:// NAMUNA 24 - वसूल अहवाल (Collection Summary)
+/home/z/my-project/src/app/api/auto-generate/route.ts:1203:async function generateNamuna24(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:1204:  const [collections, namuna9s, namuna8s, waterBills, village] = await Promise.all([
+/home/z/my-project/src/app/api/auto-generate/route.ts:1212:  const totalTaxAssessed = namuna8s.reduce((s, n) => s + (n.totalTaxAmt || n.totalTax), 0);
+/home/z/my-project/src/app/api/auto-generate/route.ts:1213:  const totalDemand = namuna9s.reduce((s, n) => s + n.totalDemand, 0);
+/home/z/my-project/src/app/api/auto-generate/route.ts:1214:  const totalTaxPaid = namuna9s.reduce((s, n) => s + n.payments.reduce((ps, p) => ps + p.amountPaid, 0), 0);
+/home/z/my-project/src/app/api/auto-generate/route.ts:1227:    title: 'नमुना २४ - वसूल अहवाल',
+/home/z/my-project/src/app/api/auto-generate/route.ts:1228:    titleEn: 'Namuna 24 - Collection Summary Report',
+/home/z/my-project/src/app/api/auto-generate/route.ts:1242:// NAMUNA 25 - हिशेब तपासणी (Audit Report)
+/home/z/my-project/src/app/api/auto-generate/route.ts:1244:async function generateNamuna25(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:1245:  const [receipts, payments, journals, assets, stocks, namuna8s, namuna9s, collections, village] = await Promise.all([
+/home/z/my-project/src/app/api/auto-generate/route.ts:1259:  const totalDemand = namuna9s.reduce((s, n) => s + n.totalDemand, 0);
+/home/z/my-project/src/app/api/auto-generate/route.ts:1260:  const totalPaid = namuna9s.reduce((s, n) => s + n.payments.reduce((ps, p) => ps + p.amountPaid, 0), 0);
+/home/z/my-project/src/app/api/auto-generate/route.ts:1266:    { item: 'कर आकारणी', itemEn: 'Tax Assessment', count: namuna8s.length, amount: r2(namuna8s.reduce((s, n) => s + (n.totalTaxAmt || n.totalTax), 0)) },
+/home/z/my-project/src/app/api/auto-generate/route.ts:1267:    { item: 'मागणी नोंद', itemEn: 'Demand Register', count: namuna9s.length, amount: r2(totalDemand) },
+/home/z/my-project/src/app/api/auto-generate/route.ts:1268:    { item: 'कर वसूल', itemEn: 'Tax Collection', count: namuna9s.reduce((s, n) => s + n.payments.length, 0), amount: r2(totalPaid) },
+/home/z/my-project/src/app/api/auto-generate/route.ts:1279:    title: 'नमुना २५ - हिशेब तपासणी',
+/home/z/my-project/src/app/api/auto-generate/route.ts:1280:    titleEn: 'Namuna 25 - Audit Report',
+/home/z/my-project/src/app/api/auto-generate/route.ts:1294:// NAMUNA 26 - चौकशी अहवाल (Inquiry Summary)
+/home/z/my-project/src/app/api/auto-generate/route.ts:1296:async function generateNamuna26(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:1297:  const [receipts, payments, namuna8s, namuna9s, village] = await Promise.all([
+/home/z/my-project/src/app/api/auto-generate/route.ts:1307:  const totalDemand = namuna9s.reduce((s, n) => s + n.totalDemand, 0);
+/home/z/my-project/src/app/api/auto-generate/route.ts:1308:  const totalPaid = namuna9s.reduce((s, n) => s + n.payments.reduce((ps, p) => ps + p.amountPaid, 0), 0);
+/home/z/my-project/src/app/api/auto-generate/route.ts:1314:    { inquiry: 'कर आकारणी', value: r2(namuna8s.reduce((s, n) => s + (n.totalTaxAmt || n.totalTax), 0)), count: namuna8s.length },
+/home/z/my-project/src/app/api/auto-generate/route.ts:1315:    { inquiry: 'एकूण मागणी', value: r2(totalDemand), count: namuna9s.length },
+/home/z/my-project/src/app/api/auto-generate/route.ts:1316:    { inquiry: 'एकूण वसूल', value: r2(totalPaid), count: namuna9s.reduce((s, n) => s + n.payments.length, 0) },
+/home/z/my-project/src/app/api/auto-generate/route.ts:1322:    title: 'नमुना २६ - चौकशी अहवाल',
+/home/z/my-project/src/app/api/auto-generate/route.ts:1323:    titleEn: 'Namuna 26 - Inquiry Summary',
+/home/z/my-project/src/app/api/auto-generate/route.ts:1332:// NAMUNA 27 - शेरा नोंद (Remarks/Observations)
+/home/z/my-project/src/app/api/auto-generate/route.ts:1334:async function generateNamuna27(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:1335:  const [receipts, payments, namuna8s, namuna9s, village] = await Promise.all([
+/home/z/my-project/src/app/api/auto-generate/route.ts:1351:  const totalDemand = namuna9s.reduce((s, n) => s + n.totalDemand, 0);
+/home/z/my-project/src/app/api/auto-generate/route.ts:1352:  const totalPaid = namuna9s.reduce((s, n) => s + n.payments.reduce((ps, p) => ps + p.amountPaid, 0), 0);
+/home/z/my-project/src/app/api/auto-generate/route.ts:1358:  if (namuna8s.length === 0) remarks.push({ remark: 'कर आकारणी नाही', remarkEn: 'No Tax Assessment', severity: 'Critical', details: 'No Namuna 8 entries' });
+/home/z/my-project/src/app/api/auto-generate/route.ts:1359:  if (namuna9s.length === 0) remarks.push({ remark: 'मागणी नोंद नाही', remarkEn: 'No Demand Register', severity: 'Critical', details: 'No Namuna 9 entries' });
+/home/z/my-project/src/app/api/auto-generate/route.ts:1364:    title: 'नमुना २७ - शेरा नोंद',
+/home/z/my-project/src/app/api/auto-generate/route.ts:1365:    titleEn: 'Namuna 27 - Remarks/Observations',
+/home/z/my-project/src/app/api/auto-generate/route.ts:1379:// NAMUNA 28 - योजना निधी वही (Scheme Fund Register)
+/home/z/my-project/src/app/api/auto-generate/route.ts:1381:async function generateNamuna28(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:1419:    title: 'नमुना २८ - योजना निधी वही',
+/home/z/my-project/src/app/api/auto-generate/route.ts:1420:    titleEn: 'Namuna 28 - Scheme Fund Register',
+/home/z/my-project/src/app/api/auto-generate/route.ts:1436:// NAMUNA 29 - योजना कामे वही (Scheme Works Register)
+/home/z/my-project/src/app/api/auto-generate/route.ts:1438:async function generateNamuna29(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:1464:    title: 'नमुना २९ - योजना कामे वही',
+/home/z/my-project/src/app/api/auto-generate/route.ts:1465:    titleEn: 'Namuna 29 - Scheme Works Register',
+/home/z/my-project/src/app/api/auto-generate/route.ts:1480:// NAMUNA 30 - योजना अहवाल (Scheme Completion Report)
+/home/z/my-project/src/app/api/auto-generate/route.ts:1482:async function generateNamuna30(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:1515:    title: 'नमुना ३० - योजना अहवाल',
+/home/z/my-project/src/app/api/auto-generate/route.ts:1516:    titleEn: 'Namuna 30 - Scheme Completion Report',
+/home/z/my-project/src/app/api/auto-generate/route.ts:1531:// NAMUNA 31 - उत्पन्न व खर्च खाते (Income & Expenditure Account)
+/home/z/my-project/src/app/api/auto-generate/route.ts:1533:async function generateNamuna31(fy: string) {
+/home/z/my-project/src/app/api/auto-generate/route.ts:1563:    title: 'नमुना ३१ - उत्पन्न व खर्च खाते',
+/home/z/my-project/src/app/api/auto-generate/route.ts:1564:    titleEn: 'Namuna 31 - Income & Expenditure Account',
+/home/z/my-project/src/app/api/auto-generate/route.ts:1580:// NAMUNA 32 - मालमत्ता व देणेदारीपत्र (Balance Sheet)
+
+[Showing results with pagination = limit: 250]

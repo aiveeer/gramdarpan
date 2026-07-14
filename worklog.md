@@ -36,3 +36,22 @@ Stage Summary:
 - Safe API response handling throughout (Array.isArray guards)
 - All text in Marathi
 - Login: gpo/gpo123
+---
+Task ID: 1
+Agent: Main Agent
+Task: Remove custom gp-* colors from the ERP
+
+Work Log:
+- Removed all 17 custom gp-* color variable definitions from globals.css (gp-teal, gp-saffron, gp-green, gp-red, gp-purple, gp-amber, gp-cyan, gp-rose and their light/dark variants)
+- Updated dashboard.tsx to replace all gp-* color class references with standard Tailwind colors:
+  - gp-saffron → orange-600/orange-50
+  - gp-green → emerald-600/emerald-50
+  - gp-red → red-600/red-50
+- Verified no remaining gp-* references in codebase via grep
+- Ran lint check - all clean
+- Browser verified: login works, dashboard renders properly with new colors, no console errors
+
+Stage Summary:
+- All custom Maharashtra-specific (gp-*) color definitions removed from CSS
+- Dashboard metric cards now use standard Tailwind color system (orange/emerald/red)
+- No breaking changes - all components render correctly

@@ -1,0 +1,307 @@
+    50→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`ReceiptEntry`.`amount` FROM `main`.`ReceiptEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    51→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`PaymentEntry`.`amount` FROM `main`.`PaymentEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    52→prisma:query SELECT SUM(`purchaseCost`) AS `_sum$purchaseCost` FROM (SELECT `main`.`AssetEntry`.`purchaseCost` FROM `main`.`AssetEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    53→prisma:query SELECT SUM(`currentValue`) AS `_sum$currentValue` FROM (SELECT `main`.`AssetEntry`.`currentValue` FROM `main`.`AssetEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    54→prisma:query SELECT SUM(`totalValue`) AS `_sum$totalValue` FROM (SELECT `main`.`StockEntry`.`totalValue` FROM `main`.`StockEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    55→prisma:query SELECT SUM(`balance`) AS `_sum$balance` FROM (SELECT `main`.`BankAccount`.`balance` FROM `main`.`BankAccount` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    56→ GET /api/dashboard 200 in 117ms (compile: 96ms, render: 22ms)
+    57→ GET / 200 in 64ms (compile: 19ms, render: 44ms)
+    58→ GET /api/auth/session 200 in 10ms (compile: 2ms, render: 7ms)
+    59→prisma:query SELECT 1
+    60→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`User`.`id` FROM `main`.`User` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    61→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`username`, `main`.`User`.`password`, `main`.`User`.`name`, `main`.`User`.`nameMarathi`, `main`.`User`.`role`, `main`.`User`.`isActive`, `main`.`User`.`createdAt`, `main`.`User`.`updatedAt` FROM `main`.`User` WHERE (`main`.`User`.`username` = ? AND 1=1) LIMIT ? OFFSET ?
+    62→prisma:query INSERT INTO `main`.`UserSession` (`id`, `userId`, `loginAt`, `userAgent`, `action`) VALUES (?,?,?,?,?) RETURNING `id` AS `id`, `userId` AS `userId`, `loginAt` AS `loginAt`, `logoutAt` AS `logoutAt`, `ipAddress` AS `ipAddress`, `userAgent` AS `userAgent`, `action` AS `action`
+    63→prisma:query INSERT INTO `main`.`AuditLog` (`id`, `userId`, `action`, `module`, `details`, `createdAt`) VALUES (?,?,?,?,?,?) RETURNING `id` AS `id`, `userId` AS `userId`, `action` AS `action`, `module` AS `module`, `recordId` AS `recordId`, `details` AS `details`, `createdAt` AS `createdAt`
+    64→ POST /api/auth/login 200 in 11ms (compile: 1865µs, render: 9ms)
+    65→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxMaster`.`id` FROM `main`.`TaxMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    66→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxMaster`.`id` FROM `main`.`TaxMaster` WHERE `main`.`TaxMaster`.`isEnabled` = ? LIMIT ? OFFSET ?) AS `sub`
+    67→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxPayment`.`id` FROM `main`.`TaxPayment` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    68→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`WardMaster`.`id` FROM `main`.`WardMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    69→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxAssessment`.`id` FROM `main`.`TaxAssessment` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    70→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`OwnerMaster`.`id` FROM `main`.`OwnerMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    71→prisma:query SELECT 1
+    72→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`PropertyMaster`.`id` FROM `main`.`PropertyMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    73→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`RoadMaster`.`id` FROM `main`.`RoadMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    74→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`BankAccount`.`id` FROM `main`.`BankAccount` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    75→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`EmployeeMaster`.`id` FROM `main`.`EmployeeMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    76→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`SchemeInfo`.`id` FROM `main`.`SchemeInfo` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    77→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`ReceiptEntry`.`id` FROM `main`.`ReceiptEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    78→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`BudgetHead`.`id` FROM `main`.`BudgetHead` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    79→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`PaymentEntry`.`id` FROM `main`.`PaymentEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    80→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`FinancialYear`.`id` FROM `main`.`FinancialYear` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    81→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`AssetEntry`.`id` FROM `main`.`AssetEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    82→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`FloorInfo`.`id` FROM `main`.`FloorInfo` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    83→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`StockEntry`.`id` FROM `main`.`StockEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    84→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`DemandRegister`.`id` FROM `main`.`DemandRegister` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    85→prisma:query SELECT SUM(`totalDemand`) AS `_sum$totalDemand` FROM (SELECT `main`.`DemandRegister`.`totalDemand` FROM `main`.`DemandRegister` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    86→prisma:query SELECT SUM(`amountPaid`) AS `_sum$amountPaid` FROM (SELECT `main`.`TaxPayment`.`amountPaid` FROM `main`.`TaxPayment` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    87→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`ReceiptEntry`.`amount` FROM `main`.`ReceiptEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    88→prisma:query SELECT SUM(`currentValue`) AS `_sum$currentValue` FROM (SELECT `main`.`AssetEntry`.`currentValue` FROM `main`.`AssetEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    89→prisma:query SELECT SUM(`totalValue`) AS `_sum$totalValue` FROM (SELECT `main`.`StockEntry`.`totalValue` FROM `main`.`StockEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    90→prisma:query SELECT SUM(`balance`) AS `_sum$balance` FROM (SELECT `main`.`BankAccount`.`balance` FROM `main`.`BankAccount` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    91→prisma:query SELECT SUM(`purchaseCost`) AS `_sum$purchaseCost` FROM (SELECT `main`.`AssetEntry`.`purchaseCost` FROM `main`.`AssetEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    92→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`PaymentEntry`.`amount` FROM `main`.`PaymentEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+    93→ GET /api/dashboard 200 in 15ms (compile: 3ms, render: 12ms)
+    94→ GET /api/master?table=village 400 in 119ms (compile: 112ms, render: 6ms)
+    95→⚠ Cross origin request detected from preview-chat-f9b0f926-d27e-4677-8637-41390200668a.space-z.ai to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+    96→Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+    97→✓ Compiled in 608ms
+    98→ GET /api/master?table=village 400 in 6ms (compile: 1785µs, render: 5ms)
+    99→✓ Compiled in 182ms
+   100→prisma:query SELECT 1
+   101→prisma:query SELECT 1
+   102→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`PropertyMaster`.`id` FROM `main`.`PropertyMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   103→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxMaster`.`id` FROM `main`.`TaxMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   104→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxMaster`.`id` FROM `main`.`TaxMaster` WHERE `main`.`TaxMaster`.`isEnabled` = ? LIMIT ? OFFSET ?) AS `sub`
+   105→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxPayment`.`id` FROM `main`.`TaxPayment` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   106→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxAssessment`.`id` FROM `main`.`TaxAssessment` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   107→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`OwnerMaster`.`id` FROM `main`.`OwnerMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   108→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`EmployeeMaster`.`id` FROM `main`.`EmployeeMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   109→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`RoadMaster`.`id` FROM `main`.`RoadMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   110→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`ReceiptEntry`.`id` FROM `main`.`ReceiptEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   111→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`PaymentEntry`.`id` FROM `main`.`PaymentEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   112→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`SchemeInfo`.`id` FROM `main`.`SchemeInfo` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   113→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`AssetEntry`.`id` FROM `main`.`AssetEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   114→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`BudgetHead`.`id` FROM `main`.`BudgetHead` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   115→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`StockEntry`.`id` FROM `main`.`StockEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   116→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`FinancialYear`.`id` FROM `main`.`FinancialYear` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   117→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`BankAccount`.`id` FROM `main`.`BankAccount` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   118→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`FloorInfo`.`id` FROM `main`.`FloorInfo` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   119→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`DemandRegister`.`id` FROM `main`.`DemandRegister` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   120→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`WardMaster`.`id` FROM `main`.`WardMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   121→prisma:query SELECT SUM(`totalDemand`) AS `_sum$totalDemand` FROM (SELECT `main`.`DemandRegister`.`totalDemand` FROM `main`.`DemandRegister` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   122→prisma:query SELECT SUM(`amountPaid`) AS `_sum$amountPaid` FROM (SELECT `main`.`TaxPayment`.`amountPaid` FROM `main`.`TaxPayment` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   123→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`ReceiptEntry`.`amount` FROM `main`.`ReceiptEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   124→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`PaymentEntry`.`amount` FROM `main`.`PaymentEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   125→prisma:query SELECT SUM(`purchaseCost`) AS `_sum$purchaseCost` FROM (SELECT `main`.`AssetEntry`.`purchaseCost` FROM `main`.`AssetEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   126→prisma:query SELECT SUM(`currentValue`) AS `_sum$currentValue` FROM (SELECT `main`.`AssetEntry`.`currentValue` FROM `main`.`AssetEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   127→prisma:query SELECT SUM(`totalValue`) AS `_sum$totalValue` FROM (SELECT `main`.`StockEntry`.`totalValue` FROM `main`.`StockEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   128→prisma:query SELECT SUM(`balance`) AS `_sum$balance` FROM (SELECT `main`.`BankAccount`.`balance` FROM `main`.`BankAccount` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   129→ GET /api/dashboard 200 in 21ms (compile: 3ms, render: 18ms)
+   130→ GET /api/master?table=village 400 in 10ms (compile: 4ms, render: 7ms)
+   131→✓ Compiled in 193ms
+   132→prisma:query SELECT 1
+   133→prisma:query SELECT 1
+   134→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`PropertyMaster`.`id` FROM `main`.`PropertyMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   135→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxMaster`.`id` FROM `main`.`TaxMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   136→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxMaster`.`id` FROM `main`.`TaxMaster` WHERE `main`.`TaxMaster`.`isEnabled` = ? LIMIT ? OFFSET ?) AS `sub`
+   137→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxAssessment`.`id` FROM `main`.`TaxAssessment` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   138→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`DemandRegister`.`id` FROM `main`.`DemandRegister` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   139→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxPayment`.`id` FROM `main`.`TaxPayment` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   140→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`WardMaster`.`id` FROM `main`.`WardMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   141→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`RoadMaster`.`id` FROM `main`.`RoadMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   142→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`OwnerMaster`.`id` FROM `main`.`OwnerMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   143→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`EmployeeMaster`.`id` FROM `main`.`EmployeeMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   144→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`ReceiptEntry`.`id` FROM `main`.`ReceiptEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   145→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`BankAccount`.`id` FROM `main`.`BankAccount` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   146→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`PaymentEntry`.`id` FROM `main`.`PaymentEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   147→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`SchemeInfo`.`id` FROM `main`.`SchemeInfo` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   148→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`AssetEntry`.`id` FROM `main`.`AssetEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   149→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`BudgetHead`.`id` FROM `main`.`BudgetHead` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   150→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`StockEntry`.`id` FROM `main`.`StockEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   151→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`FinancialYear`.`id` FROM `main`.`FinancialYear` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   152→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`FloorInfo`.`id` FROM `main`.`FloorInfo` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   153→prisma:query SELECT SUM(`totalDemand`) AS `_sum$totalDemand` FROM (SELECT `main`.`DemandRegister`.`totalDemand` FROM `main`.`DemandRegister` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   154→prisma:query SELECT SUM(`amountPaid`) AS `_sum$amountPaid` FROM (SELECT `main`.`TaxPayment`.`amountPaid` FROM `main`.`TaxPayment` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   155→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`ReceiptEntry`.`amount` FROM `main`.`ReceiptEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   156→prisma:query SELECT SUM(`purchaseCost`) AS `_sum$purchaseCost` FROM (SELECT `main`.`AssetEntry`.`purchaseCost` FROM `main`.`AssetEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   157→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`PaymentEntry`.`amount` FROM `main`.`PaymentEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   158→prisma:query SELECT SUM(`currentValue`) AS `_sum$currentValue` FROM (SELECT `main`.`AssetEntry`.`currentValue` FROM `main`.`AssetEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   159→prisma:query SELECT SUM(`totalValue`) AS `_sum$totalValue` FROM (SELECT `main`.`StockEntry`.`totalValue` FROM `main`.`StockEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   160→prisma:query SELECT SUM(`balance`) AS `_sum$balance` FROM (SELECT `main`.`BankAccount`.`balance` FROM `main`.`BankAccount` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   161→ GET /api/dashboard 200 in 14ms (compile: 3ms, render: 11ms)
+   162→ GET /api/master?table=village 400 in 7ms (compile: 2ms, render: 5ms)
+   163→✓ Compiled in 223ms
+   164→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxMaster`.`id` FROM `main`.`TaxMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   165→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxAssessment`.`id` FROM `main`.`TaxAssessment` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   166→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxMaster`.`id` FROM `main`.`TaxMaster` WHERE `main`.`TaxMaster`.`isEnabled` = ? LIMIT ? OFFSET ?) AS `sub`
+   167→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`DemandRegister`.`id` FROM `main`.`DemandRegister` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   168→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxPayment`.`id` FROM `main`.`TaxPayment` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   169→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`ReceiptEntry`.`id` FROM `main`.`ReceiptEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   170→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`WardMaster`.`id` FROM `main`.`WardMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   171→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`PaymentEntry`.`id` FROM `main`.`PaymentEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   172→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`OwnerMaster`.`id` FROM `main`.`OwnerMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   173→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`AssetEntry`.`id` FROM `main`.`AssetEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   174→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`RoadMaster`.`id` FROM `main`.`RoadMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   175→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`StockEntry`.`id` FROM `main`.`StockEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   176→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`EmployeeMaster`.`id` FROM `main`.`EmployeeMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   177→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`BankAccount`.`id` FROM `main`.`BankAccount` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   178→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`FinancialYear`.`id` FROM `main`.`FinancialYear` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   179→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`SchemeInfo`.`id` FROM `main`.`SchemeInfo` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   180→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`FloorInfo`.`id` FROM `main`.`FloorInfo` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   181→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`BudgetHead`.`id` FROM `main`.`BudgetHead` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   182→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`PropertyMaster`.`id` FROM `main`.`PropertyMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   183→prisma:query SELECT SUM(`totalDemand`) AS `_sum$totalDemand` FROM (SELECT `main`.`DemandRegister`.`totalDemand` FROM `main`.`DemandRegister` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   184→prisma:query SELECT SUM(`amountPaid`) AS `_sum$amountPaid` FROM (SELECT `main`.`TaxPayment`.`amountPaid` FROM `main`.`TaxPayment` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   185→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`ReceiptEntry`.`amount` FROM `main`.`ReceiptEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   186→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`PaymentEntry`.`amount` FROM `main`.`PaymentEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   187→prisma:query SELECT SUM(`purchaseCost`) AS `_sum$purchaseCost` FROM (SELECT `main`.`AssetEntry`.`purchaseCost` FROM `main`.`AssetEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   188→prisma:query SELECT SUM(`currentValue`) AS `_sum$currentValue` FROM (SELECT `main`.`AssetEntry`.`currentValue` FROM `main`.`AssetEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   189→prisma:query SELECT SUM(`totalValue`) AS `_sum$totalValue` FROM (SELECT `main`.`StockEntry`.`totalValue` FROM `main`.`StockEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   190→prisma:query SELECT SUM(`balance`) AS `_sum$balance` FROM (SELECT `main`.`BankAccount`.`balance` FROM `main`.`BankAccount` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   191→ GET /api/dashboard 200 in 23ms (compile: 5ms, render: 19ms)
+   192→✓ Compiled in 164ms
+   193→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxMaster`.`id` FROM `main`.`TaxMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   194→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxMaster`.`id` FROM `main`.`TaxMaster` WHERE `main`.`TaxMaster`.`isEnabled` = ? LIMIT ? OFFSET ?) AS `sub`
+   195→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxAssessment`.`id` FROM `main`.`TaxAssessment` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   196→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`DemandRegister`.`id` FROM `main`.`DemandRegister` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   197→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`PropertyMaster`.`id` FROM `main`.`PropertyMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   198→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`OwnerMaster`.`id` FROM `main`.`OwnerMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   199→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxPayment`.`id` FROM `main`.`TaxPayment` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   200→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`WardMaster`.`id` FROM `main`.`WardMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   201→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`RoadMaster`.`id` FROM `main`.`RoadMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   202→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`EmployeeMaster`.`id` FROM `main`.`EmployeeMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   203→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`ReceiptEntry`.`id` FROM `main`.`ReceiptEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   204→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`AssetEntry`.`id` FROM `main`.`AssetEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   205→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`PaymentEntry`.`id` FROM `main`.`PaymentEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   206→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`StockEntry`.`id` FROM `main`.`StockEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   207→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`BankAccount`.`id` FROM `main`.`BankAccount` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   208→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`BudgetHead`.`id` FROM `main`.`BudgetHead` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   209→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`SchemeInfo`.`id` FROM `main`.`SchemeInfo` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   210→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`FinancialYear`.`id` FROM `main`.`FinancialYear` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   211→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`FloorInfo`.`id` FROM `main`.`FloorInfo` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   212→prisma:query SELECT SUM(`totalDemand`) AS `_sum$totalDemand` FROM (SELECT `main`.`DemandRegister`.`totalDemand` FROM `main`.`DemandRegister` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   213→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`PaymentEntry`.`amount` FROM `main`.`PaymentEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   214→prisma:query SELECT SUM(`amountPaid`) AS `_sum$amountPaid` FROM (SELECT `main`.`TaxPayment`.`amountPaid` FROM `main`.`TaxPayment` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   215→prisma:query SELECT SUM(`purchaseCost`) AS `_sum$purchaseCost` FROM (SELECT `main`.`AssetEntry`.`purchaseCost` FROM `main`.`AssetEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   216→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`ReceiptEntry`.`amount` FROM `main`.`ReceiptEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   217→prisma:query SELECT SUM(`currentValue`) AS `_sum$currentValue` FROM (SELECT `main`.`AssetEntry`.`currentValue` FROM `main`.`AssetEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   218→prisma:query SELECT SUM(`balance`) AS `_sum$balance` FROM (SELECT `main`.`BankAccount`.`balance` FROM `main`.`BankAccount` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   219→prisma:query SELECT SUM(`totalValue`) AS `_sum$totalValue` FROM (SELECT `main`.`StockEntry`.`totalValue` FROM `main`.`StockEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   220→ GET /api/dashboard 200 in 17ms (compile: 2ms, render: 15ms)
+   221→✓ Compiled in 73ms
+   222→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`PropertyMaster`.`id` FROM `main`.`PropertyMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   223→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxMaster`.`id` FROM `main`.`TaxMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   224→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`DemandRegister`.`id` FROM `main`.`DemandRegister` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   225→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxMaster`.`id` FROM `main`.`TaxMaster` WHERE `main`.`TaxMaster`.`isEnabled` = ? LIMIT ? OFFSET ?) AS `sub`
+   226→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxAssessment`.`id` FROM `main`.`TaxAssessment` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   227→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxPayment`.`id` FROM `main`.`TaxPayment` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   228→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`WardMaster`.`id` FROM `main`.`WardMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   229→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`OwnerMaster`.`id` FROM `main`.`OwnerMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   230→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`RoadMaster`.`id` FROM `main`.`RoadMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   231→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`EmployeeMaster`.`id` FROM `main`.`EmployeeMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   232→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`PaymentEntry`.`id` FROM `main`.`PaymentEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   233→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`ReceiptEntry`.`id` FROM `main`.`ReceiptEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   234→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`AssetEntry`.`id` FROM `main`.`AssetEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   235→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`StockEntry`.`id` FROM `main`.`StockEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   236→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`BankAccount`.`id` FROM `main`.`BankAccount` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   237→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`SchemeInfo`.`id` FROM `main`.`SchemeInfo` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   238→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`BudgetHead`.`id` FROM `main`.`BudgetHead` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   239→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`FinancialYear`.`id` FROM `main`.`FinancialYear` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   240→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`FloorInfo`.`id` FROM `main`.`FloorInfo` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   241→prisma:query SELECT SUM(`totalDemand`) AS `_sum$totalDemand` FROM (SELECT `main`.`DemandRegister`.`totalDemand` FROM `main`.`DemandRegister` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   242→prisma:query SELECT SUM(`amountPaid`) AS `_sum$amountPaid` FROM (SELECT `main`.`TaxPayment`.`amountPaid` FROM `main`.`TaxPayment` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   243→prisma:query SELECT SUM(`currentValue`) AS `_sum$currentValue` FROM (SELECT `main`.`AssetEntry`.`currentValue` FROM `main`.`AssetEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   244→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`ReceiptEntry`.`amount` FROM `main`.`ReceiptEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   245→prisma:query SELECT SUM(`totalValue`) AS `_sum$totalValue` FROM (SELECT `main`.`StockEntry`.`totalValue` FROM `main`.`StockEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   246→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`PaymentEntry`.`amount` FROM `main`.`PaymentEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   247→prisma:query SELECT SUM(`balance`) AS `_sum$balance` FROM (SELECT `main`.`BankAccount`.`balance` FROM `main`.`BankAccount` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   248→prisma:query SELECT SUM(`purchaseCost`) AS `_sum$purchaseCost` FROM (SELECT `main`.`AssetEntry`.`purchaseCost` FROM `main`.`AssetEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   249→ GET /api/dashboard 200 in 17ms (compile: 1848µs, render: 15ms)
+   250→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`PropertyMaster`.`id` FROM `main`.`PropertyMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   251→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxMaster`.`id` FROM `main`.`TaxMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   252→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxMaster`.`id` FROM `main`.`TaxMaster` WHERE `main`.`TaxMaster`.`isEnabled` = ? LIMIT ? OFFSET ?) AS `sub`
+   253→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxAssessment`.`id` FROM `main`.`TaxAssessment` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   254→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`DemandRegister`.`id` FROM `main`.`DemandRegister` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   255→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`RoadMaster`.`id` FROM `main`.`RoadMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   256→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxPayment`.`id` FROM `main`.`TaxPayment` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   257→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`EmployeeMaster`.`id` FROM `main`.`EmployeeMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   258→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`WardMaster`.`id` FROM `main`.`WardMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   259→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`ReceiptEntry`.`id` FROM `main`.`ReceiptEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   260→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`OwnerMaster`.`id` FROM `main`.`OwnerMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   261→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`PaymentEntry`.`id` FROM `main`.`PaymentEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   262→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`AssetEntry`.`id` FROM `main`.`AssetEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   263→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`BudgetHead`.`id` FROM `main`.`BudgetHead` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   264→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`StockEntry`.`id` FROM `main`.`StockEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   265→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`FinancialYear`.`id` FROM `main`.`FinancialYear` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   266→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`BankAccount`.`id` FROM `main`.`BankAccount` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   267→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`FloorInfo`.`id` FROM `main`.`FloorInfo` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   268→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`SchemeInfo`.`id` FROM `main`.`SchemeInfo` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   269→prisma:query SELECT SUM(`totalDemand`) AS `_sum$totalDemand` FROM (SELECT `main`.`DemandRegister`.`totalDemand` FROM `main`.`DemandRegister` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   270→prisma:query SELECT SUM(`amountPaid`) AS `_sum$amountPaid` FROM (SELECT `main`.`TaxPayment`.`amountPaid` FROM `main`.`TaxPayment` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   271→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`ReceiptEntry`.`amount` FROM `main`.`ReceiptEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   272→prisma:query SELECT SUM(`purchaseCost`) AS `_sum$purchaseCost` FROM (SELECT `main`.`AssetEntry`.`purchaseCost` FROM `main`.`AssetEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   273→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`PaymentEntry`.`amount` FROM `main`.`PaymentEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   274→prisma:query SELECT SUM(`currentValue`) AS `_sum$currentValue` FROM (SELECT `main`.`AssetEntry`.`currentValue` FROM `main`.`AssetEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   275→prisma:query SELECT SUM(`totalValue`) AS `_sum$totalValue` FROM (SELECT `main`.`StockEntry`.`totalValue` FROM `main`.`StockEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   276→prisma:query SELECT SUM(`balance`) AS `_sum$balance` FROM (SELECT `main`.`BankAccount`.`balance` FROM `main`.`BankAccount` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   277→ GET /api/dashboard 200 in 14ms (compile: 2ms, render: 12ms)
+   278→ GET /api/master?table=village 400 in 7ms (compile: 2ms, render: 4ms)
+   279→ GET /api/master?table=village 400 in 5ms (compile: 2ms, render: 3ms)
+   280→ GET / 200 in 189ms (compile: 56ms, render: 132ms)
+   281→ GET /api/auth/session 200 in 10ms (compile: 3ms, render: 7ms)
+   282→ GET / 200 in 298ms (compile: 8ms, render: 291ms)
+   283→ GET /api/auth/session 200 in 10ms (compile: 2ms, render: 8ms)
+   284→prisma:query SELECT 1
+   285→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`User`.`id` FROM `main`.`User` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   286→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`username`, `main`.`User`.`password`, `main`.`User`.`name`, `main`.`User`.`nameMarathi`, `main`.`User`.`role`, `main`.`User`.`isActive`, `main`.`User`.`createdAt`, `main`.`User`.`updatedAt` FROM `main`.`User` WHERE (`main`.`User`.`username` = ? AND 1=1) LIMIT ? OFFSET ?
+   287→prisma:query INSERT INTO `main`.`UserSession` (`id`, `userId`, `loginAt`, `userAgent`, `action`) VALUES (?,?,?,?,?) RETURNING `id` AS `id`, `userId` AS `userId`, `loginAt` AS `loginAt`, `logoutAt` AS `logoutAt`, `ipAddress` AS `ipAddress`, `userAgent` AS `userAgent`, `action` AS `action`
+   288→ POST /api/auth/login 200 in 33ms (compile: 5ms, render: 28ms)
+   289→prisma:query INSERT INTO `main`.`AuditLog` (`id`, `userId`, `action`, `module`, `details`, `createdAt`) VALUES (?,?,?,?,?,?) RETURNING `id` AS `id`, `userId` AS `userId`, `action` AS `action`, `module` AS `module`, `recordId` AS `recordId`, `details` AS `details`, `createdAt` AS `createdAt`
+   290→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`PropertyMaster`.`id` FROM `main`.`PropertyMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   291→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxMaster`.`id` FROM `main`.`TaxMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   292→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxMaster`.`id` FROM `main`.`TaxMaster` WHERE `main`.`TaxMaster`.`isEnabled` = ? LIMIT ? OFFSET ?) AS `sub`
+   293→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxAssessment`.`id` FROM `main`.`TaxAssessment` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   294→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`DemandRegister`.`id` FROM `main`.`DemandRegister` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   295→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxPayment`.`id` FROM `main`.`TaxPayment` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   296→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`WardMaster`.`id` FROM `main`.`WardMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   297→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`OwnerMaster`.`id` FROM `main`.`OwnerMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   298→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`RoadMaster`.`id` FROM `main`.`RoadMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   299→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`EmployeeMaster`.`id` FROM `main`.`EmployeeMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   300→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`ReceiptEntry`.`id` FROM `main`.`ReceiptEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   301→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`PaymentEntry`.`id` FROM `main`.`PaymentEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   302→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`AssetEntry`.`id` FROM `main`.`AssetEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   303→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`StockEntry`.`id` FROM `main`.`StockEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   304→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`BankAccount`.`id` FROM `main`.`BankAccount` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   305→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`SchemeInfo`.`id` FROM `main`.`SchemeInfo` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   306→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`BudgetHead`.`id` FROM `main`.`BudgetHead` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   307→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`FinancialYear`.`id` FROM `main`.`FinancialYear` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   308→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`FloorInfo`.`id` FROM `main`.`FloorInfo` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   309→prisma:query SELECT SUM(`totalDemand`) AS `_sum$totalDemand` FROM (SELECT `main`.`DemandRegister`.`totalDemand` FROM `main`.`DemandRegister` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   310→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`ReceiptEntry`.`amount` FROM `main`.`ReceiptEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   311→prisma:query SELECT SUM(`amountPaid`) AS `_sum$amountPaid` FROM (SELECT `main`.`TaxPayment`.`amountPaid` FROM `main`.`TaxPayment` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   312→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`PaymentEntry`.`amount` FROM `main`.`PaymentEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   313→prisma:query SELECT SUM(`currentValue`) AS `_sum$currentValue` FROM (SELECT `main`.`AssetEntry`.`currentValue` FROM `main`.`AssetEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   314→prisma:query SELECT SUM(`purchaseCost`) AS `_sum$purchaseCost` FROM (SELECT `main`.`AssetEntry`.`purchaseCost` FROM `main`.`AssetEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   315→prisma:query SELECT SUM(`totalValue`) AS `_sum$totalValue` FROM (SELECT `main`.`StockEntry`.`totalValue` FROM `main`.`StockEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   316→prisma:query SELECT SUM(`balance`) AS `_sum$balance` FROM (SELECT `main`.`BankAccount`.`balance` FROM `main`.`BankAccount` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   317→ GET /api/dashboard 200 in 27ms (compile: 3ms, render: 24ms)
+   318→ GET /api/master?table=village 400 in 7ms (compile: 2ms, render: 5ms)
+   319→ GET /api/master?table=property 400 in 10ms (compile: 3ms, render: 7ms)
+   320→ GET /api/master?table=owner 400 in 7ms (compile: 4ms, render: 3ms)
+   321→ GET /api/master?table=ward 400 in 7ms (compile: 2ms, render: 5ms)
+   322→ GET /api/master?table=village 400 in 6ms (compile: 2ms, render: 4ms)
+   323→ GET /api/master?table=employee 400 in 7ms (compile: 3ms, render: 4ms)
+   324→prisma:query SELECT 1
+   325→prisma:query SELECT `main`.`ContractorMaster`.`id`, `main`.`ContractorMaster`.`contractorName`, `main`.`ContractorMaster`.`contractorNameMr`, `main`.`ContractorMaster`.`aadhaarNo`, `main`.`ContractorMaster`.`bankAccountNo`, `main`.`ContractorMaster`.`bankName`, `main`.`ContractorMaster`.`ifscCode`, `main`.`ContractorMaster`.`mobileNo`, `main`.`ContractorMaster`.`address`, `main`.`ContractorMaster`.`isActive`, `main`.`ContractorMaster`.`createdAt`, `main`.`ContractorMaster`.`updatedAt` FROM `main`.`ContractorMaster` WHERE 1=1 ORDER BY `main`.`ContractorMaster`.`createdAt` DESC LIMIT ? OFFSET ?
+   326→ GET /api/master?table=contractor 200 in 10ms (compile: 1983µs, render: 8ms)
+   327→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`PropertyMaster`.`id` FROM `main`.`PropertyMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   328→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxMaster`.`id` FROM `main`.`TaxMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   329→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxMaster`.`id` FROM `main`.`TaxMaster` WHERE `main`.`TaxMaster`.`isEnabled` = ? LIMIT ? OFFSET ?) AS `sub`
+   330→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`WardMaster`.`id` FROM `main`.`WardMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   331→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxAssessment`.`id` FROM `main`.`TaxAssessment` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   332→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`OwnerMaster`.`id` FROM `main`.`OwnerMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   333→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`DemandRegister`.`id` FROM `main`.`DemandRegister` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   334→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`RoadMaster`.`id` FROM `main`.`RoadMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   335→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`TaxPayment`.`id` FROM `main`.`TaxPayment` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   336→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`EmployeeMaster`.`id` FROM `main`.`EmployeeMaster` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   337→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`ReceiptEntry`.`id` FROM `main`.`ReceiptEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   338→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`SchemeInfo`.`id` FROM `main`.`SchemeInfo` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   339→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`PaymentEntry`.`id` FROM `main`.`PaymentEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   340→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`BudgetHead`.`id` FROM `main`.`BudgetHead` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   341→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`AssetEntry`.`id` FROM `main`.`AssetEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   342→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`FinancialYear`.`id` FROM `main`.`FinancialYear` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   343→prisma:query SELECT 1
+   344→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`FloorInfo`.`id` FROM `main`.`FloorInfo` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   345→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`BankAccount`.`id` FROM `main`.`BankAccount` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   346→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`StockEntry`.`id` FROM `main`.`StockEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   347→prisma:query SELECT SUM(`totalDemand`) AS `_sum$totalDemand` FROM (SELECT `main`.`DemandRegister`.`totalDemand` FROM `main`.`DemandRegister` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   348→prisma:query SELECT SUM(`amountPaid`) AS `_sum$amountPaid` FROM (SELECT `main`.`TaxPayment`.`amountPaid` FROM `main`.`TaxPayment` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   349→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`ReceiptEntry`.`amount` FROM `main`.`ReceiptEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   350→prisma:query SELECT SUM(`purchaseCost`) AS `_sum$purchaseCost` FROM (SELECT `main`.`AssetEntry`.`purchaseCost` FROM `main`.`AssetEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   351→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`PaymentEntry`.`amount` FROM `main`.`PaymentEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   352→prisma:query SELECT SUM(`currentValue`) AS `_sum$currentValue` FROM (SELECT `main`.`AssetEntry`.`currentValue` FROM `main`.`AssetEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   353→prisma:query SELECT SUM(`totalValue`) AS `_sum$totalValue` FROM (SELECT `main`.`StockEntry`.`totalValue` FROM `main`.`StockEntry` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   354→prisma:query SELECT SUM(`balance`) AS `_sum$balance` FROM (SELECT `main`.`BankAccount`.`balance` FROM `main`.`BankAccount` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   355→ GET /api/dashboard 200 in 13ms (compile: 1857µs, render: 12ms)
+   356→

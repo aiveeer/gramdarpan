@@ -1,0 +1,1187 @@
+     1→'use client';
+     2→
+     3→import React, { useState, useEffect, useCallback } from 'react';
+     4→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+     5→import { Badge } from '@/components/ui/badge';
+     6→import { Button } from '@/components/ui/button';
+     7→import { Input } from '@/components/ui/input';
+     8→import { Label } from '@/components/ui/label';
+     9→import { Textarea } from '@/components/ui/textarea';
+    10→import {
+    11→  Select,
+    12→  SelectContent,
+    13→  SelectItem,
+    14→  SelectTrigger,
+    15→  SelectValue,
+    16→} from '@/components/ui/select';
+    17→import {
+    18→  Table,
+    19→  TableBody,
+    20→  TableCell,
+    21→  TableHead,
+    22→  TableHeader,
+    23→  TableRow,
+    24→} from '@/components/ui/table';
+    25→import {
+    26→  Dialog,
+    27→  DialogContent,
+    28→  DialogHeader,
+    29→  DialogTitle,
+    30→  DialogFooter,
+    31→} from '@/components/ui/dialog';
+    32→import {
+    33→  Tabs,
+    34→  TabsContent,
+    35→  TabsList,
+    36→  TabsTrigger,
+    37→} from '@/components/ui/tabs';
+    38→import { Skeleton } from '@/components/ui/skeleton';
+    39→import {
+    40→  Receipt,
+    41→  CreditCard,
+    42→  NotebookPen,
+    43→  Plus,
+    44→  Search,
+    45→  Trash2,
+    46→  Edit3,
+    47→  IndianRupee,
+    48→  AlertCircle,
+    49→} from 'lucide-react';
+    50→
+    51→// ─── Types ──────────────────────────────────────────────────────────────────
+    52→
+    53→interface ReceiptRecord {
+    54→  id: string;
+    55→  receiptNo: string;
+    56→  receiptDate: string;
+    57→  financialYear: string;
+    58→  payerName: string;
+    59→  payerNameMr?: string;
+    60→  amount: number;
+    61→  taxType: string;
+    62→  paymentMode: string;
+    63→  chequeNo?: string;
+    64→  bankName?: string;
+    65→  description?: string;
+    66→  headOfAccount?: string;
+    67→  headOfAccountMr?: string;
+    68→  voucherNumber?: string;
+    69→  receivedFrom?: string;
+    70→  createdAt: string;
+    71→}
+    72→
+    73→interface PaymentRecord {
+    74→  id: string;
+    75→  voucherNo: string;
+    76→  voucherDate: string;
+    77→  financialYear: string;
+    78→  payeeName: string;
+    79→  payeeNameMr?: string;
+    80→  amount: number;
+    81→  headOfAccount: string;
+    82→  headOfAccountMr?: string;
+    83→  paymentMode: string;
+    84→  chequeNo?: string;
+    85→  bankName?: string;
+    86→  description?: string;
+    87→  paidTo?: string;
+    88→  createdAt: string;
+    89→}
+    90→
+    91→interface VoucherRecord {
+    92→  id: string;
+    93→  voucherNo: string;
+    94→  voucherDate: string;
+    95→  financialYear: string;
+    96→  voucherType: string;
+    97→  amount: number;
+    98→  debitAccount: string;
+    99→  creditAccount: string;
+   100→  narration?: string;
+   101→  createdAt: string;
+   102→}
+   103→
+   104→// ─── Component Props ────────────────────────────────────────────────────────
+   105→
+   106→interface FinancialProps {
+   107→  financialYear: string;
+   108→}
+   109→
+   110→// ─── Helper ─────────────────────────────────────────────────────────────────
+   111→
+   112→function formatDate(dateStr: string | undefined | null): string {
+   113→  if (!dateStr) return '—';
+   114→  try {
+   115→    const d = new Date(dateStr);
+   116→    if (isNaN(d.getTime())) return dateStr;
+   117→    return d.toLocaleDateString('mr-IN', {
+   118→      year: 'numeric',
+   119→      month: '2-digit',
+   120→      day: '2-digit',
+   121→    });
+   122→  } catch {
+   123→    return dateStr;
+   124→  }
+   125→}
+   126→
+   127→function formatCurrency(amount: number | undefined | null): string {
+   128→  if (amount == null) return '₹0';
+   129→  return new Intl.NumberFormat('mr-IN', {
+   130→    style: 'currency',
+   131→    currency: 'INR',
+   132→    minimumFractionDigits: 0,
+   133→    maximumFractionDigits: 2,
+   134→  }).format(amount);
+   135→}
+   136→
+   137→// ─── Main Component ─────────────────────────────────────────────────────────
+   138→
+   139→export default function Financial({ financialYear }: FinancialProps) {
+   140→  // ── State ───────────────────────────────────────────────────────────────
+   141→  const [activeTab, setActiveTab] = useState('receipt');
+   142→
+   143→  // Receipts
+   144→  const [receipts, setReceipts] = useState<ReceiptRecord[]>([]);
+   145→  const [receiptsLoading, setReceiptsLoading] = useState(false);
+   146→  const [receiptsError, setReceiptsError] = useState<string | null>(null);
+   147→
+   148→  // Payments
+   149→  const [payments, setPayments] = useState<PaymentRecord[]>([]);
+   150→  const [paymentsLoading, setPaymentsLoading] = useState(false);
+   151→  const [paymentsError, setPaymentsError] = useState<string | null>(null);
+   152→
+   153→  // Vouchers
+   154→  const [vouchers, setVouchers] = useState<VoucherRecord[]>([]);
+   155→  const [vouchersLoading, setVouchersLoading] = useState(false);
+   156→  const [vouchersError, setVouchersError] = useState<string | null>(null);
+   157→
+   158→  // Dialog / Form
+   159→  const [dialogOpen, setDialogOpen] = useState(false);
+   160→  const [editingId, setEditingId] = useState<string | null>(null);
+   161→  const [formData, setFormData] = useState<Record<string, unknown>>({});
+   162→  const [saving, setSaving] = useState(false);
+   163→
+   164→  // Delete confirmation
+   165→  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+   166→  const [deletingId, setDeletingId] = useState<string | null>(null);
+   167→  const [deleting, setDeleting] = useState(false);
+   168→
+   169→  // Search
+   170→  const [searchTerm, setSearchTerm] = useState('');
+   171→
+   172→  // ── Fetch functions ─────────────────────────────────────────────────────
+   173→
+   174→  const fetchReceipts = useCallback(async () => {
+   175→    setReceiptsLoading(true);
+   176→    setReceiptsError(null);
+   177→    try {
+   178→      const res = await fetch(`/api/transactions?type=receipt&financialYear=${encodeURIComponent(financialYear)}`);
+   179→      if (!res.ok) throw new Error('API त्रुटी');
+   180→      const data = await res.json();
+   181→      const records = Array.isArray(data) ? data : (data?.data || []);
+   182→      setReceipts(records as ReceiptRecord[]);
+   183→    } catch {
+   184→      setReceiptsError('प्राप्ती माहिती लोड करताना त्रुटी आली');
+   185→    } finally {
+   186→      setReceiptsLoading(false);
+   187→    }
+   188→  }, [financialYear]);
+   189→
+   190→  const fetchPayments = useCallback(async () => {
+   191→    setPaymentsLoading(true);
+   192→    setPaymentsError(null);
+   193→    try {
+   194→      const res = await fetch(`/api/transactions?type=payment&financialYear=${encodeURIComponent(financialYear)}`);
+   195→      if (!res.ok) throw new Error('API त्रुटी');
+   196→      const data = await res.json();
+   197→      const records = Array.isArray(data) ? data : (data?.data || []);
+   198→      setPayments(records as PaymentRecord[]);
+   199→    } catch {
+   200→      setPaymentsError('पावती माहिती लोड करताना त्रुटी आली');
+   201→    } finally {
+   202→      setPaymentsLoading(false);
+   203→    }
+   204→  }, [financialYear]);
+   205→
+   206→  const fetchVouchers = useCallback(async () => {
+   207→    setVouchersLoading(true);
+   208→    setVouchersError(null);
+   209→    try {
+   210→      const res = await fetch(`/api/transactions?type=voucher&financialYear=${encodeURIComponent(financialYear)}`);
+   211→      if (!res.ok) throw new Error('API त्रुटी');
+   212→      const data = await res.json();
+   213→      const records = Array.isArray(data) ? data : (data?.data || []);
+   214→      setVouchers(records as VoucherRecord[]);
+   215→    } catch {
+   216→      setVouchersError('जर्नल वाउचर माहिती लोड करताना त्रुटी आली');
+   217→    } finally {
+   218→      setVouchersLoading(false);
+   219→    }
+   220→  }, [financialYear]);
+   221→
+   222→  // ── Load data on mount & tab change ─────────────────────────────────────
+   223→
+   224→  useEffect(() => {
+   225→    if (activeTab === 'receipt') fetchReceipts();
+   226→    else if (activeTab === 'payment') fetchPayments();
+   227→    else if (activeTab === 'voucher') fetchVouchers();
+   228→  }, [activeTab, fetchReceipts, fetchPayments, fetchVouchers]);
+   229→
+   230→  // ── CRUD Handlers ───────────────────────────────────────────────────────
+   231→
+   232→  const openAddDialog = () => {
+   233→    setEditingId(null);
+   234→    setFormData({ financialYear });
+   235→    setDialogOpen(true);
+   236→  };
+   237→
+   238→  const openEditDialog = (record: Record<string, unknown>) => {
+   239→    setEditingId(record.id as string);
+   240→    setFormData({ ...record });
+   241→    setDialogOpen(true);
+   242→  };
+   243→
+   244→  const openDeleteDialog = (id: string) => {
+   245→    setDeletingId(id);
+   246→    setDeleteDialogOpen(true);
+   247→  };
+   248→
+   249→  const getApiType = (): string => {
+   250→    if (activeTab === 'receipt') return 'receipt';
+   251→    if (activeTab === 'payment') return 'payment';
+   252→    return 'voucher';
+   253→  };
+   254→
+   255→  const handleSave = async () => {
+   256→    setSaving(true);
+   257→    try {
+   258→      const type = getApiType();
+   259→      const payload: Record<string, unknown> = {
+   260→        action: editingId ? 'update' : 'create',
+   261→        ...formData,
+   262→        financialYear,
+   263→      };
+   264→
+   265→      if (editingId) {
+   266→        payload.id = editingId;
+   267→      }
+   268→
+   269→      const res = await fetch('/api/transactions', {
+   270→        method: 'POST',
+   271→        headers: { 'Content-Type': 'application/json' },
+   272→        body: JSON.stringify({ _type: type, ...payload }),
+   273→      });
+   274→
+   275→      if (!res.ok) {
+   276→        const errData = await res.json().catch(() => ({}));
+   277→        throw new Error(errData.error || 'जतन करताना त्रुटी आली');
+   278→      }
+   279→
+   280→      setDialogOpen(false);
+   281→      setEditingId(null);
+   282→      setFormData({});
+   283→
+   284→      // Refresh the active tab
+   285→      if (activeTab === 'receipt') fetchReceipts();
+   286→      else if (activeTab === 'payment') fetchPayments();
+   287→      else fetchVouchers();
+   288→    } catch (err: unknown) {
+   289→      const message = err instanceof Error ? err.message : 'जतन करताना त्रुटी आली';
+   290→      alert(message);
+   291→    } finally {
+   292→      setSaving(false);
+   293→    }
+   294→  };
+   295→
+   296→  const handleDelete = async () => {
+   297→    if (!deletingId) return;
+   298→    setDeleting(true);
+   299→    try {
+   300→      const type = getApiType();
+   301→      const res = await fetch(`/api/transactions?type=${type}&id=${deletingId}`, {
+   302→        method: 'DELETE',
+   303→      });
+   304→      if (!res.ok) throw new Error('हटवताना त्रुटी आली');
+   305→
+   306→      setDeleteDialogOpen(false);
+   307→      setDeletingId(null);
+   308→
+   309→      // Refresh the active tab
+   310→      if (activeTab === 'receipt') fetchReceipts();
+   311→      else if (activeTab === 'payment') fetchPayments();
+   312→      else fetchVouchers();
+   313→    } catch {
+   314→      alert('हटवताना त्रुटी आली');
+   315→    } finally {
+   316→      setDeleting(false);
+   317→    }
+   318→  };
+   319→
+   320→  // ── Form field change handler ───────────────────────────────────────────
+   321→
+   322→  const handleFieldChange = (name: string, value: unknown) => {
+   323→    setFormData((prev) => ({ ...prev, [name]: value }));
+   324→  };
+   325→
+   326→  // ── Search filter ───────────────────────────────────────────────────────
+   327→
+   328→  const filterRecords = <T extends Record<string, unknown>>(records: T[]): T[] => {
+   329→    if (!searchTerm.trim()) return records;
+   330→    const term = searchTerm.toLowerCase();
+   331→    return records.filter((r) =>
+   332→      Object.values(r).some((v) =>
+   333→        v != null && String(v).toLowerCase().includes(term)
+   334→      )
+   335→    );
+   336→  };
+   337→
+   338→  // ── Summary stats ───────────────────────────────────────────────────────
+   339→
+   340→  const receiptTotal = receipts.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+   341→  const paymentTotal = payments.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+   342→  const voucherTotal = vouchers.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+   343→
+   344→  // ── Render Receipts Form ────────────────────────────────────────────────
+   345→
+   346→  const renderReceiptForm = () => (
+   347→    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   348→      <div className="space-y-2">
+   349→        <Label htmlFor="receiptNo">पावती क्र. *</Label>
+   350→        <Input
+   351→          id="receiptNo"
+   352→          value={(formData.receiptNo as string) || ''}
+   353→          onChange={(e) => handleFieldChange('receiptNo', e.target.value)}
+   354→          placeholder="पावती क्रमांक"
+   355→        />
+   356→      </div>
+   357→      <div className="space-y-2">
+   358→        <Label htmlFor="receiptDate">दिनांक *</Label>
+   359→        <Input
+   360→          id="receiptDate"
+   361→          type="date"
+   362→          value={(formData.receiptDate as string) || ''}
+   363→          onChange={(e) => handleFieldChange('receiptDate', e.target.value)}
+   364→        />
+   365→      </div>
+   366→      <div className="space-y-2">
+   367→        <Label htmlFor="payerName">देणाऱ्याचे नाव *</Label>
+   368→        <Input
+   369→          id="payerName"
+   370→          value={(formData.payerName as string) || ''}
+   371→          onChange={(e) => handleFieldChange('payerName', e.target.value)}
+   372→          placeholder="देणाऱ्याचे नाव"
+   373→        />
+   374→      </div>
+   375→      <div className="space-y-2">
+   376→        <Label htmlFor="payerNameMr">मराठीत नाव</Label>
+   377→        <Input
+   378→          id="payerNameMr"
+   379→          value={(formData.payerNameMr as string) || ''}
+   380→          onChange={(e) => handleFieldChange('payerNameMr', e.target.value)}
+   381→          placeholder="मराठीत नाव"
+   382→        />
+   383→      </div>
+   384→      <div className="space-y-2">
+   385→        <Label htmlFor="amount">रक्कम (₹) *</Label>
+   386→        <Input
+   387→          id="amount"
+   388→          type="number"
+   389→          value={(formData.amount as string | number) || ''}
+   390→          onChange={(e) => handleFieldChange('amount', e.target.value)}
+   391→          placeholder="0"
+   392→        />
+   393→      </div>
+   394→      <div className="space-y-2">
+   395→        <Label htmlFor="taxType">कर प्रकार</Label>
+   396→        <Select
+   397→          value={(formData.taxType as string) || ''}
+   398→          onValueChange={(v) => handleFieldChange('taxType', v)}
+   399→        >
+   400→          <SelectTrigger id="taxType">
+   401→            <SelectValue placeholder="कर प्रकार निवडा" />
+   402→          </SelectTrigger>
+   403→          <SelectContent>
+   404→            <SelectItem value="House Tax">गृहकर</SelectItem>
+   405→            <SelectItem value="Water Tax">पाणीकर</SelectItem>
+   406→            <SelectItem value="Light Tax">दिवाकर</SelectItem>
+   407→            <SelectItem value="Health Tax">आरोग्यकर</SelectItem>
+   408→            <SelectItem value="Profession Tax">व्यवसायकर</SelectItem>
+   409→            <SelectItem value="Other">इतर</SelectItem>
+   410→          </SelectContent>
+   411→        </Select>
+   412→      </div>
+   413→      <div className="space-y-2">
+   414→        <Label htmlFor="paymentMode">पद्धत</Label>
+   415→        <Select
+   416→          value={(formData.paymentMode as string) || ''}
+   417→          onValueChange={(v) => handleFieldChange('paymentMode', v)}
+   418→        >
+   419→          <SelectTrigger id="paymentMode">
+   420→            <SelectValue placeholder="पद्धत निवडा" />
+   421→          </SelectTrigger>
+   422→          <SelectContent>
+   423→            <SelectItem value="cash">रोख</SelectItem>
+   424→            <SelectItem value="cheque">चेक</SelectItem>
+   425→            <SelectItem value="online">ऑनलाइन</SelectItem>
+   426→          </SelectContent>
+   427→        </Select>
+   428→      </div>
+   429→      <div className="space-y-2">
+   430→        <Label htmlFor="headOfAccount">लेखाशीर्षक</Label>
+   431→        <Input
+   432→          id="headOfAccount"
+   433→          value={(formData.headOfAccount as string) || ''}
+   434→          onChange={(e) => handleFieldChange('headOfAccount', e.target.value)}
+   435→          placeholder="लेखाशीर्षक"
+   436→        />
+   437→      </div>
+   438→      {(formData.paymentMode === 'cheque' || formData.paymentMode === 'Cheque') && (
+   439→        <>
+   440→          <div className="space-y-2">
+   441→            <Label htmlFor="chequeNo">चेक क्र.</Label>
+   442→            <Input
+   443→              id="chequeNo"
+   444→              value={(formData.chequeNo as string) || ''}
+   445→              onChange={(e) => handleFieldChange('chequeNo', e.target.value)}
+   446→              placeholder="चेक क्रमांक"
+   447→            />
+   448→          </div>
+   449→          <div className="space-y-2">
+   450→            <Label htmlFor="bankName">बँक</Label>
+   451→            <Input
+   452→              id="bankName"
+   453→              value={(formData.bankName as string) || ''}
+   454→              onChange={(e) => handleFieldChange('bankName', e.target.value)}
+   455→              placeholder="बँकेचे नाव"
+   456→            />
+   457→          </div>
+   458→        </>
+   459→      )}
+   460→      <div className="space-y-2 sm:col-span-2">
+   461→        <Label htmlFor="description">वर्णन</Label>
+   462→        <Textarea
+   463→          id="description"
+   464→          value={(formData.description as string) || ''}
+   465→          onChange={(e) => handleFieldChange('description', e.target.value)}
+   466→          placeholder="वर्णन"
+   467→          rows={2}
+   468→        />
+   469→      </div>
+   470→    </div>
+   471→  );
+   472→
+   473→  // ── Render Payments Form ────────────────────────────────────────────────
+   474→
+   475→  const renderPaymentForm = () => (
+   476→    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   477→      <div className="space-y-2">
+   478→        <Label htmlFor="voucherNo">वाउचर क्र. *</Label>
+   479→        <Input
+   480→          id="voucherNo"
+   481→          value={(formData.voucherNo as string) || ''}
+   482→          onChange={(e) => handleFieldChange('voucherNo', e.target.value)}
+   483→          placeholder="वाउचर क्रमांक"
+   484→        />
+   485→      </div>
+   486→      <div className="space-y-2">
+   487→        <Label htmlFor="voucherDate">दिनांक *</Label>
+   488→        <Input
+   489→          id="voucherDate"
+   490→          type="date"
+   491→          value={(formData.voucherDate as string) || ''}
+   492→          onChange={(e) => handleFieldChange('voucherDate', e.target.value)}
+   493→        />
+   494→      </div>
+   495→      <div className="space-y-2">
+   496→        <Label htmlFor="payeeName">प्राप्तकर्ता *</Label>
+   497→        <Input
+   498→          id="payeeName"
+   499→          value={(formData.payeeName as string) || ''}
+   500→          onChange={(e) => handleFieldChange('payeeName', e.target.value)}
+   501→          placeholder="प्राप्तकर्त्याचे नाव"
+   502→        />
+   503→      </div>
+   504→      <div className="space-y-2">
+   505→        <Label htmlFor="payeeNameMr">मराठीत नाव</Label>
+   506→        <Input
+   507→          id="payeeNameMr"
+   508→          value={(formData.payeeNameMr as string) || ''}
+   509→          onChange={(e) => handleFieldChange('payeeNameMr', e.target.value)}
+   510→          placeholder="मराठीत नाव"
+   511→        />
+   512→      </div>
+   513→      <div className="space-y-2">
+   514→        <Label htmlFor="amount">रक्कम (₹) *</Label>
+   515→        <Input
+   516→          id="amount"
+   517→          type="number"
+   518→          value={(formData.amount as string | number) || ''}
+   519→          onChange={(e) => handleFieldChange('amount', e.target.value)}
+   520→          placeholder="0"
+   521→        />
+   522→      </div>
+   523→      <div className="space-y-2">
+   524→        <Label htmlFor="headOfAccount">लेखाशीर्षक *</Label>
+   525→        <Input
+   526→          id="headOfAccount"
+   527→          value={(formData.headOfAccount as string) || ''}
+   528→          onChange={(e) => handleFieldChange('headOfAccount', e.target.value)}
+   529→          placeholder="लेखाशीर्षक"
+   530→        />
+   531→      </div>
+   532→      <div className="space-y-2">
+   533→        <Label htmlFor="paymentMode">पद्धत</Label>
+   534→        <Select
+   535→          value={(formData.paymentMode as string) || ''}
+   536→          onValueChange={(v) => handleFieldChange('paymentMode', v)}
+   537→        >
+   538→          <SelectTrigger id="paymentMode">
+   539→            <SelectValue placeholder="पद्धत निवडा" />
+   540→          </SelectTrigger>
+   541→          <SelectContent>
+   542→            <SelectItem value="cash">रोख</SelectItem>
+   543→            <SelectItem value="cheque">चेक</SelectItem>
+   544→            <SelectItem value="online">ऑनलाइन</SelectItem>
+   545→          </SelectContent>
+   546→        </Select>
+   547→      </div>
+   548→      {(formData.paymentMode === 'cheque' || formData.paymentMode === 'Cheque') && (
+   549→        <>
+   550→          <div className="space-y-2">
+   551→            <Label htmlFor="chequeNo">चेक क्र.</Label>
+   552→            <Input
+   553→              id="chequeNo"
+   554→              value={(formData.chequeNo as string) || ''}
+   555→              onChange={(e) => handleFieldChange('chequeNo', e.target.value)}
+   556→              placeholder="चेक क्रमांक"
+   557→            />
+   558→          </div>
+   559→          <div className="space-y-2">
+   560→            <Label htmlFor="bankName">बँक</Label>
+   561→            <Input
+   562→              id="bankName"
+   563→              value={(formData.bankName as string) || ''}
+   564→              onChange={(e) => handleFieldChange('bankName', e.target.value)}
+   565→              placeholder="बँकेचे नाव"
+   566→            />
+   567→          </div>
+   568→        </>
+   569→      )}
+   570→      <div className="space-y-2 sm:col-span-2">
+   571→        <Label htmlFor="description">वर्णन</Label>
+   572→        <Textarea
+   573→          id="description"
+   574→          value={(formData.description as string) || ''}
+   575→          onChange={(e) => handleFieldChange('description', e.target.value)}
+   576→          placeholder="वर्णन"
+   577→          rows={2}
+   578→        />
+   579→      </div>
+   580→    </div>
+   581→  );
+   582→
+   583→  // ── Render Voucher Form ─────────────────────────────────────────────────
+   584→
+   585→  const renderVoucherForm = () => (
+   586→    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   587→      <div className="space-y-2">
+   588→        <Label htmlFor="voucherNo">वाउचर क्र. *</Label>
+   589→        <Input
+   590→          id="voucherNo"
+   591→          value={(formData.voucherNo as string) || ''}
+   592→          onChange={(e) => handleFieldChange('voucherNo', e.target.value)}
+   593→          placeholder="वाउचर क्रमांक"
+   594→        />
+   595→      </div>
+   596→      <div className="space-y-2">
+   597→        <Label htmlFor="voucherDate">दिनांक *</Label>
+   598→        <Input
+   599→          id="voucherDate"
+   600→          type="date"
+   601→          value={(formData.voucherDate as string) || ''}
+   602→          onChange={(e) => handleFieldChange('voucherDate', e.target.value)}
+   603→        />
+   604→      </div>
+   605→      <div className="space-y-2">
+   606→        <Label htmlFor="voucherType">प्रकार *</Label>
+   607→        <Select
+   608→          value={(formData.voucherType as string) || ''}
+   609→          onValueChange={(v) => handleFieldChange('voucherType', v)}
+   610→        >
+   611→          <SelectTrigger id="voucherType">
+   612→            <SelectValue placeholder="प्रकार निवडा" />
+   613→          </SelectTrigger>
+   614→          <SelectContent>
+   615→            <SelectItem value="Journal">जर्नल</SelectItem>
+   616→            <SelectItem value="Contra">कॉन्ट्रा</SelectItem>
+   617→          </SelectContent>
+   618→        </Select>
+   619→      </div>
+   620→      <div className="space-y-2">
+   621→        <Label htmlFor="amount">रक्कम (₹) *</Label>
+   622→        <Input
+   623→          id="amount"
+   624→          type="number"
+   625→          value={(formData.amount as string | number) || ''}
+   626→          onChange={(e) => handleFieldChange('amount', e.target.value)}
+   627→          placeholder="0"
+   628→        />
+   629→      </div>
+   630→      <div className="space-y-2">
+   631→        <Label htmlFor="debitAccount">डेबिट खाते *</Label>
+   632→        <Input
+   633→          id="debitAccount"
+   634→          value={(formData.debitAccount as string) || ''}
+   635→          onChange={(e) => handleFieldChange('debitAccount', e.target.value)}
+   636→          placeholder="डेबिट खाते"
+   637→        />
+   638→      </div>
+   639→      <div className="space-y-2">
+   640→        <Label htmlFor="creditAccount">क्रेडिट खाते *</Label>
+   641→        <Input
+   642→          id="creditAccount"
+   643→          value={(formData.creditAccount as string) || ''}
+   644→          onChange={(e) => handleFieldChange('creditAccount', e.target.value)}
+   645→          placeholder="क्रेडिट खाते"
+   646→        />
+   647→      </div>
+   648→      <div className="space-y-2 sm:col-span-2">
+   649→        <Label htmlFor="narration">निवेदन</Label>
+   650→        <Textarea
+   651→          id="narration"
+   652→          value={(formData.narration as string) || ''}
+   653→          onChange={(e) => handleFieldChange('narration', e.target.value)}
+   654→          placeholder="निवेदन / तपशील"
+   655→          rows={2}
+   656→        />
+   657→      </div>
+   658→    </div>
+   659→  );
+   660→
+   661→  // ── Render Dialog ───────────────────────────────────────────────────────
+   662→
+   663→  const getDialogTitle = () => {
+   664→    if (editingId) {
+   665→      if (activeTab === 'receipt') return 'प्राप्ती सुधारणा';
+   666→      if (activeTab === 'payment') return 'पावती सुधारणा';
+   667→      return 'जर्नल वाउचर सुधारणा';
+   668→    }
+   669→    if (activeTab === 'receipt') return 'नवीन प्राप्ती';
+   670→    if (activeTab === 'payment') return 'नवीन पावती';
+   671→    return 'नवीन जर्नल वाउचर';
+   672→  };
+   673→
+   674→  const renderForm = () => {
+   675→    if (activeTab === 'receipt') return renderReceiptForm();
+   676→    if (activeTab === 'payment') return renderPaymentForm();
+   677→    return renderVoucherForm();
+   678→  };
+   679→
+   680→  // ── Loading skeleton ────────────────────────────────────────────────────
+   681→
+   682→  const renderSkeleton = () => (
+   683→    <div className="space-y-3 p-4">
+   684→      {[1, 2, 3, 4].map((i) => (
+   685→        <div key={i} className="flex gap-4">
+   686→          <Skeleton className="h-8 w-24" />
+   687→          <Skeleton className="h-8 w-32" />
+   688→          <Skeleton className="h-8 w-40" />
+   689→          <Skeleton className="h-8 w-28" />
+   690→          <Skeleton className="h-8 w-20" />
+   691→        </div>
+   692→      ))}
+   693→    </div>
+   694→  );
+   695→
+   696→  // ── Render Receipts Table ───────────────────────────────────────────────
+   697→
+   698→  const renderReceiptsTab = () => {
+   699→    const filtered = filterRecords(receipts);
+   700→
+   701→    return (
+   702→      <Card>
+   703→        <CardHeader className="pb-3">
+   704→          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+   705→            <div className="flex items-center gap-2">
+   706→              <Receipt className="h-5 w-5 text-green-600" />
+   707→              <CardTitle className="text-lg">प्राप्ती नोंदी</CardTitle>
+   708→              <Badge variant="secondary" className="bg-green-100 text-green-800">
+   709→                {filtered.length} नोंदी
+   710→              </Badge>
+   711→            </div>
+   712→            <div className="flex items-center gap-2">
+   713→              <div className="relative">
+   714→                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+   715→                <Input
+   716→                  placeholder="शोधा..."
+   717→                  value={searchTerm}
+   718→                  onChange={(e) => setSearchTerm(e.target.value)}
+   719→                  className="pl-8 w-48"
+   720→                />
+   721→              </div>
+   722→              <Button onClick={openAddDialog} size="sm" className="bg-green-600 hover:bg-green-700">
+   723→                <Plus className="h-4 w-4 mr-1" />
+   724→                नवीन प्राप्ती
+   725→              </Button>
+   726→            </div>
+   727→          </div>
+   728→          {/* Summary row */}
+   729→          <div className="flex items-center gap-4 text-sm mt-2 p-2 bg-green-50 rounded-md border border-green-200">
+   730→            <IndianRupee className="h-4 w-4 text-green-700" />
+   731→            <span className="font-semibold text-green-800">एकूण प्राप्ती: {formatCurrency(receiptTotal)}</span>
+   732→            <span className="text-green-600">|</span>
+   733→            <span className="text-green-700">वित्तीय वर्ष: {financialYear}</span>
+   734→          </div>
+   735→        </CardHeader>
+   736→        <CardContent>
+   737→          {receiptsLoading ? (
+   738→            renderSkeleton()
+   739→          ) : receiptsError ? (
+   740→            <div className="flex items-center gap-2 p-4 text-red-600">
+   741→              <AlertCircle className="h-5 w-5" />
+   742→              <span>{receiptsError}</span>
+   743→              <Button variant="outline" size="sm" onClick={fetchReceipts}>पुन्हा प्रयत्न करा</Button>
+   744→            </div>
+   745→          ) : filtered.length === 0 ? (
+   746→            <div className="text-center py-8 text-muted-foreground">
+   747→              <Receipt className="h-12 w-12 mx-auto mb-2 opacity-30" />
+   748→              <p>प्राप्तीच्या नोंदी आढळल्या नाहीत</p>
+   749→              <Button variant="outline" size="sm" className="mt-2" onClick={openAddDialog}>
+   750→                नवीन प्राप्ती जोडा
+   751→              </Button>
+   752→            </div>
+   753→          ) : (
+   754→            <div className="max-h-96 overflow-y-auto border rounded-md">
+   755→              <Table>
+   756→                <TableHeader>
+   757→                  <TableRow>
+   758→                    <TableHead className="w-12">क्र.</TableHead>
+   759→                    <TableHead>पावती क्र.</TableHead>
+   760→                    <TableHead>दिनांक</TableHead>
+   761→                    <TableHead>देणाऱ्याचे नाव</TableHead>
+   762→                    <TableHead>रक्कम</TableHead>
+   763→                    <TableHead>कर प्रकार</TableHead>
+   764→                    <TableHead>पद्धत</TableHead>
+   765→                    <TableHead>लेखाशीर्षक</TableHead>
+   766→                    <TableHead className="text-right">कृती</TableHead>
+   767→                  </TableRow>
+   768→                </TableHeader>
+   769→                <TableBody>
+   770→                  {filtered.map((r, idx) => (
+   771→                    <TableRow key={r.id}>
+   772→                      <TableCell className="text-muted-foreground text-xs">{idx + 1}</TableCell>
+   773→                      <TableCell className="font-medium">{r.receiptNo || r.voucherNumber || '—'}</TableCell>
+   774→                      <TableCell>{formatDate(r.receiptDate)}</TableCell>
+   775→                      <TableCell>{r.payerName || r.receivedFrom || '—'}</TableCell>
+   776→                      <TableCell className="font-semibold text-green-700">{formatCurrency(r.amount)}</TableCell>
+   777→                      <TableCell>
+   778→                        <Badge variant="outline" className="text-xs">{r.taxType || '—'}</Badge>
+   779→                      </TableCell>
+   780→                      <TableCell>
+   781→                        <Badge
+   782→                          variant="secondary"
+   783→                          className={
+   784→                            r.paymentMode === 'cash'
+   785→                              ? 'bg-amber-100 text-amber-800'
+   786→                              : r.paymentMode === 'online'
+   787→                              ? 'bg-blue-100 text-blue-800'
+   788→                              : 'bg-gray-100 text-gray-800'
+   789→                          }
+   790→                        >
+   791→                          {r.paymentMode === 'cash' ? 'रोख' : r.paymentMode === 'cheque' ? 'चेक' : r.paymentMode === 'online' ? 'ऑनलाइन' : r.paymentMode || '—'}
+   792→                        </Badge>
+   793→                      </TableCell>
+   794→                      <TableCell className="text-sm">{r.headOfAccount || '—'}</TableCell>
+   795→                      <TableCell className="text-right">
+   796→                        <div className="flex justify-end gap-1">
+   797→                          <Button
+   798→                            variant="ghost"
+   799→                            size="sm"
+   800→                            onClick={() => openEditDialog(r as unknown as Record<string, unknown>)}
+   801→                            title="सुधारणा"
+   802→                          >
+   803→                            <Edit3 className="h-4 w-4 text-amber-600" />
+   804→                          </Button>
+   805→                          <Button
+   806→                            variant="ghost"
+   807→                            size="sm"
+   808→                            onClick={() => openDeleteDialog(r.id)}
+   809→                            title="हटवा"
+   810→                          >
+   811→                            <Trash2 className="h-4 w-4 text-red-500" />
+   812→                          </Button>
+   813→                        </div>
+   814→                      </TableCell>
+   815→                    </TableRow>
+   816→                  ))}
+   817→                </TableBody>
+   818→              </Table>
+   819→            </div>
+   820→          )}
+   821→        </CardContent>
+   822→      </Card>
+   823→    );
+   824→  };
+   825→
+   826→  // ── Render Payments Table ───────────────────────────────────────────────
+   827→
+   828→  const renderPaymentsTab = () => {
+   829→    const filtered = filterRecords(payments);
+   830→
+   831→    return (
+   832→      <Card>
+   833→        <CardHeader className="pb-3">
+   834→          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+   835→            <div className="flex items-center gap-2">
+   836→              <CreditCard className="h-5 w-5 text-red-600" />
+   837→              <CardTitle className="text-lg">पावती नोंदी</CardTitle>
+   838→              <Badge variant="secondary" className="bg-red-100 text-red-800">
+   839→                {filtered.length} नोंदी
+   840→              </Badge>
+   841→            </div>
+   842→            <div className="flex items-center gap-2">
+   843→              <div className="relative">
+   844→                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+   845→                <Input
+   846→                  placeholder="शोधा..."
+   847→                  value={searchTerm}
+   848→                  onChange={(e) => setSearchTerm(e.target.value)}
+   849→                  className="pl-8 w-48"
+   850→                />
+   851→              </div>
+   852→              <Button onClick={openAddDialog} size="sm" className="bg-red-600 hover:bg-red-700">
+   853→                <Plus className="h-4 w-4 mr-1" />
+   854→                नवीन पावती
+   855→              </Button>
+   856→            </div>
+   857→          </div>
+   858→          {/* Summary row */}
+   859→          <div className="flex items-center gap-4 text-sm mt-2 p-2 bg-red-50 rounded-md border border-red-200">
+   860→            <IndianRupee className="h-4 w-4 text-red-700" />
+   861→            <span className="font-semibold text-red-800">एकूण पेमेंट: {formatCurrency(paymentTotal)}</span>
+   862→            <span className="text-red-600">|</span>
+   863→            <span className="text-red-700">वित्तीय वर्ष: {financialYear}</span>
+   864→          </div>
+   865→        </CardHeader>
+   866→        <CardContent>
+   867→          {paymentsLoading ? (
+   868→            renderSkeleton()
+   869→          ) : paymentsError ? (
+   870→            <div className="flex items-center gap-2 p-4 text-red-600">
+   871→              <AlertCircle className="h-5 w-5" />
+   872→              <span>{paymentsError}</span>
+   873→              <Button variant="outline" size="sm" onClick={fetchPayments}>पुन्हा प्रयत्न करा</Button>
+   874→            </div>
+   875→          ) : filtered.length === 0 ? (
+   876→            <div className="text-center py-8 text-muted-foreground">
+   877→              <CreditCard className="h-12 w-12 mx-auto mb-2 opacity-30" />
+   878→              <p>पावतीच्या नोंदी आढळल्या नाहीत</p>
+   879→              <Button variant="outline" size="sm" className="mt-2" onClick={openAddDialog}>
+   880→                नवीन पावती जोडा
+   881→              </Button>
+   882→            </div>
+   883→          ) : (
+   884→            <div className="max-h-96 overflow-y-auto border rounded-md">
+   885→              <Table>
+   886→                <TableHeader>
+   887→                  <TableRow>
+   888→                    <TableHead className="w-12">क्र.</TableHead>
+   889→                    <TableHead>वाउचर क्र.</TableHead>
+   890→                    <TableHead>दिनांक</TableHead>
+   891→                    <TableHead>प्राप्तकर्ता</TableHead>
+   892→                    <TableHead>रक्कम</TableHead>
+   893→                    <TableHead>लेखाशीर्षक</TableHead>
+   894→                    <TableHead>पद्धत</TableHead>
+   895→                    <TableHead className="text-right">कृती</TableHead>
+   896→                  </TableRow>
+   897→                </TableHeader>
+   898→                <TableBody>
+   899→                  {filtered.map((r, idx) => (
+   900→                    <TableRow key={r.id}>
+   901→                      <TableCell className="text-muted-foreground text-xs">{idx + 1}</TableCell>
+   902→                      <TableCell className="font-medium">{r.voucherNo || '—'}</TableCell>
+   903→                      <TableCell>{formatDate(r.voucherDate)}</TableCell>
+   904→                      <TableCell>{r.payeeName || r.paidTo || '—'}</TableCell>
+   905→                      <TableCell className="font-semibold text-red-700">{formatCurrency(r.amount)}</TableCell>
+   906→                      <TableCell>
+   907→                        <Badge variant="outline" className="text-xs">{r.headOfAccount || '—'}</Badge>
+   908→                      </TableCell>
+   909→                      <TableCell>
+   910→                        <Badge
+   911→                          variant="secondary"
+   912→                          className={
+   913→                            r.paymentMode === 'cash'
+   914→                              ? 'bg-amber-100 text-amber-800'
+   915→                              : r.paymentMode === 'online'
+   916→                              ? 'bg-blue-100 text-blue-800'
+   917→                              : 'bg-gray-100 text-gray-800'
+   918→                          }
+   919→                        >
+   920→                          {r.paymentMode === 'cash' ? 'रोख' : r.paymentMode === 'cheque' ? 'चेक' : r.paymentMode === 'online' ? 'ऑनलाइन' : r.paymentMode || '—'}
+   921→                        </Badge>
+   922→                      </TableCell>
+   923→                      <TableCell className="text-right">
+   924→                        <div className="flex justify-end gap-1">
+   925→                          <Button
+   926→                            variant="ghost"
+   927→                            size="sm"
+   928→                            onClick={() => openEditDialog(r as unknown as Record<string, unknown>)}
+   929→                            title="सुधारणा"
+   930→                          >
+   931→                            <Edit3 className="h-4 w-4 text-amber-600" />
+   932→                          </Button>
+   933→                          <Button
+   934→                            variant="ghost"
+   935→                            size="sm"
+   936→                            onClick={() => openDeleteDialog(r.id)}
+   937→                            title="हटवा"
+   938→                          >
+   939→                            <Trash2 className="h-4 w-4 text-red-500" />
+   940→                          </Button>
+   941→                        </div>
+   942→                      </TableCell>
+   943→                    </TableRow>
+   944→                  ))}
+   945→                </TableBody>
+   946→              </Table>
+   947→            </div>
+   948→          )}
+   949→        </CardContent>
+   950→      </Card>
+   951→    );
+   952→  };
+   953→
+   954→  // ── Render Vouchers Table ───────────────────────────────────────────────
+   955→
+   956→  const renderVouchersTab = () => {
+   957→    const filtered = filterRecords(vouchers);
+   958→
+   959→    return (
+   960→      <Card>
+   961→        <CardHeader className="pb-3">
+   962→          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+   963→            <div className="flex items-center gap-2">
+   964→              <NotebookPen className="h-5 w-5 text-purple-600" />
+   965→              <CardTitle className="text-lg">जर्नल वाउचर नोंदी</CardTitle>
+   966→              <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+   967→                {filtered.length} नोंदी
+   968→              </Badge>
+   969→            </div>
+   970→            <div className="flex items-center gap-2">
+   971→              <div className="relative">
+   972→                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+   973→                <Input
+   974→                  placeholder="शोधा..."
+   975→                  value={searchTerm}
+   976→                  onChange={(e) => setSearchTerm(e.target.value)}
+   977→                  className="pl-8 w-48"
+   978→                />
+   979→              </div>
+   980→              <Button onClick={openAddDialog} size="sm" className="bg-purple-600 hover:bg-purple-700">
+   981→                <Plus className="h-4 w-4 mr-1" />
+   982→                नवीन वाउचर
+   983→              </Button>
+   984→            </div>
+   985→          </div>
+   986→          {/* Summary row */}
+   987→          <div className="flex items-center gap-4 text-sm mt-2 p-2 bg-purple-50 rounded-md border border-purple-200">
+   988→            <IndianRupee className="h-4 w-4 text-purple-700" />
+   989→            <span className="font-semibold text-purple-800">एकूण रक्कम: {formatCurrency(voucherTotal)}</span>
+   990→            <span className="text-purple-600">|</span>
+   991→            <span className="text-purple-700">वित्तीय वर्ष: {financialYear}</span>
+   992→          </div>
+   993→        </CardHeader>
+   994→        <CardContent>
+   995→          {vouchersLoading ? (
+   996→            renderSkeleton()
+   997→          ) : vouchersError ? (
+   998→            <div className="flex items-center gap-2 p-4 text-red-600">
+   999→              <AlertCircle className="h-5 w-5" />
+  1000→              <span>{vouchersError}</span>
+  1001→              <Button variant="outline" size="sm" onClick={fetchVouchers}>पुन्हा प्रयत्न करा</Button>
+  1002→            </div>
+  1003→          ) : filtered.length === 0 ? (
+  1004→            <div className="text-center py-8 text-muted-foreground">
+  1005→              <NotebookPen className="h-12 w-12 mx-auto mb-2 opacity-30" />
+  1006→              <p>जर्नल वाउचर नोंदी आढळल्या नाहीत</p>
+  1007→              <Button variant="outline" size="sm" className="mt-2" onClick={openAddDialog}>
+  1008→                नवीन वाउचर जोडा
+  1009→              </Button>
+  1010→            </div>
+  1011→          ) : (
+  1012→            <div className="max-h-96 overflow-y-auto border rounded-md">
+  1013→              <Table>
+  1014→                <TableHeader>
+  1015→                  <TableRow>
+  1016→                    <TableHead className="w-12">क्र.</TableHead>
+  1017→                    <TableHead>वाउचर क्र.</TableHead>
+  1018→                    <TableHead>दिनांक</TableHead>
+  1019→                    <TableHead>प्रकार</TableHead>
+  1020→                    <TableHead>रक्कम</TableHead>
+  1021→                    <TableHead>डेबिट खाते</TableHead>
+  1022→                    <TableHead>क्रेडिट खाते</TableHead>
+  1023→                    <TableHead>निवेदन</TableHead>
+  1024→                    <TableHead className="text-right">कृती</TableHead>
+  1025→                  </TableRow>
+  1026→                </TableHeader>
+  1027→                <TableBody>
+  1028→                  {filtered.map((r, idx) => (
+  1029→                    <TableRow key={r.id}>
+  1030→                      <TableCell className="text-muted-foreground text-xs">{idx + 1}</TableCell>
+  1031→                      <TableCell className="font-medium">{r.voucherNo || '—'}</TableCell>
+  1032→                      <TableCell>{formatDate(r.voucherDate)}</TableCell>
+  1033→                      <TableCell>
+  1034→                        <Badge
+  1035→                          variant="secondary"
+  1036→                          className={
+  1037→                            r.voucherType === 'Journal'
+  1038→                              ? 'bg-purple-100 text-purple-800'
+  1039→                              : 'bg-teal-100 text-teal-800'
+  1040→                          }
+  1041→                        >
+  1042→                          {r.voucherType === 'Journal' ? 'जर्नल' : 'कॉन्ट्रा'}
+  1043→                        </Badge>
+  1044→                      </TableCell>
+  1045→                      <TableCell className="font-semibold text-purple-700">{formatCurrency(r.amount)}</TableCell>
+  1046→                      <TableCell>{r.debitAccount || '—'}</TableCell>
+  1047→                      <TableCell>{r.creditAccount || '—'}</TableCell>
+  1048→                      <TableCell className="text-sm max-w-32 truncate">{r.narration || '—'}</TableCell>
+  1049→                      <TableCell className="text-right">
+  1050→                        <div className="flex justify-end gap-1">
+  1051→                          <Button
+  1052→                            variant="ghost"
+  1053→                            size="sm"
+  1054→                            onClick={() => openEditDialog(r as unknown as Record<string, unknown>)}
+  1055→                            title="सुधारणा"
+  1056→                          >
+  1057→                            <Edit3 className="h-4 w-4 text-amber-600" />
+  1058→                          </Button>
+  1059→                          <Button
+  1060→                            variant="ghost"
+  1061→                            size="sm"
+  1062→                            onClick={() => openDeleteDialog(r.id)}
+  1063→                            title="हटवा"
+  1064→                          >
+  1065→                            <Trash2 className="h-4 w-4 text-red-500" />
+  1066→                          </Button>
+  1067→                        </div>
+  1068→                      </TableCell>
+  1069→                    </TableRow>
+  1070→                  ))}
+  1071→                </TableBody>
+  1072→              </Table>
+  1073→            </div>
+  1074→          )}
+  1075→        </CardContent>
+  1076→      </Card>
+  1077→    );
+  1078→  };
+  1079→
+  1080→  // ── Main Render ─────────────────────────────────────────────────────────
+  1081→
+  1082→  return (
+  1083→    <div className="space-y-4">
+  1084→      {/* Header */}
+  1085→      <div className="flex items-center gap-3 mb-2">
+  1086→        <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-emerald-100">
+  1087→          <IndianRupee className="h-5 w-5 text-emerald-700" />
+  1088→        </div>
+  1089→        <div>
+  1090→          <h2 className="text-xl font-bold">आर्थिक व्यवहार</h2>
+  1091→          <p className="text-sm text-muted-foreground">वित्तीय वर्ष: {financialYear}</p>
+  1092→        </div>
+  1093→      </div>
+  1094→
+  1095→      {/* Tabs */}
+  1096→      <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setSearchTerm(''); }}>
+  1097→        <TabsList className="grid w-full grid-cols-3">
+  1098→          <TabsTrigger value="receipt" className="flex items-center gap-1.5">
+  1099→            <Receipt className="h-4 w-4" />
+  1100→            <span>प्राप्ती</span>
+  1101→          </TabsTrigger>
+  1102→          <TabsTrigger value="payment" className="flex items-center gap-1.5">
+  1103→            <CreditCard className="h-4 w-4" />
+  1104→            <span>पावती</span>
+  1105→          </TabsTrigger>
+  1106→          <TabsTrigger value="voucher" className="flex items-center gap-1.5">
+  1107→            <NotebookPen className="h-4 w-4" />
+  1108→            <span>जर्नल वाउचर</span>
+  1109→          </TabsTrigger>
+  1110→        </TabsList>
+  1111→
+  1112→        <TabsContent value="receipt" className="mt-4">
+  1113→          {renderReceiptsTab()}
+  1114→        </TabsContent>
+  1115→
+  1116→        <TabsContent value="payment" className="mt-4">
+  1117→          {renderPaymentsTab()}
+  1118→        </TabsContent>
+  1119→
+  1120→        <TabsContent value="voucher" className="mt-4">
+  1121→          {renderVouchersTab()}
+  1122→        </TabsContent>
+  1123→      </Tabs>
+  1124→
+  1125→      {/* Add / Edit Dialog */}
+  1126→      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+  1127→        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+  1128→          <DialogHeader>
+  1129→            <DialogTitle>{getDialogTitle()}</DialogTitle>
+  1130→          </DialogHeader>
+  1131→          <div className="py-4">{renderForm()}</div>
+  1132→          <DialogFooter className="gap-2">
+  1133→            <Button
+  1134→              variant="outline"
+  1135→              onClick={() => setDialogOpen(false)}
+  1136→              disabled={saving}
+  1137→            >
+  1138→              रद्द करा
+  1139→            </Button>
+  1140→            <Button
+  1141→              onClick={handleSave}
+  1142→              disabled={saving}
+  1143→              className={
+  1144→                activeTab === 'receipt'
+  1145→                  ? 'bg-green-600 hover:bg-green-700'
+  1146→                  : activeTab === 'payment'
+  1147→                  ? 'bg-red-600 hover:bg-red-700'
+  1148→                  : 'bg-purple-600 hover:bg-purple-700'
+  1149→              }
+  1150→            >
+  1151→              {saving ? 'जतन होत आहे...' : editingId ? 'सुधारणा जतन करा' : 'जतन करा'}
+  1152→            </Button>
+  1153→          </DialogFooter>
+  1154→        </DialogContent>
+  1155→      </Dialog>
+  1156→
+  1157→      {/* Delete Confirmation Dialog */}
+  1158→      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+  1159→        <DialogContent className="max-w-md">
+  1160→          <DialogHeader>
+  1161→            <DialogTitle>हटवण्याची पुष्टी</DialogTitle>
+  1162→          </DialogHeader>
+  1163→          <p className="text-muted-foreground">
+  1164→            ही नोंद हटवायची आहे याची खात्री आहे का? ही कृती पूर्ववत करता येणार नाही.
+  1165→          </p>
+  1166→          <DialogFooter className="gap-2">
+  1167→            <Button
+  1168→              variant="outline"
+  1169→              onClick={() => setDeleteDialogOpen(false)}
+  1170→              disabled={deleting}
+  1171→            >
+  1172→              रद्द करा
+  1173→            </Button>
+  1174→            <Button
+  1175→              variant="destructive"
+  1176→              onClick={handleDelete}
+  1177→              disabled={deleting}
+  1178→            >
+  1179→              {deleting ? 'हटवत आहे...' : 'हटवा'}
+  1180→            </Button>
+  1181→          </DialogFooter>
+  1182→        </DialogContent>
+  1183→      </Dialog>
+  1184→    </div>
+  1185→  );
+  1186→}
+  1187→
