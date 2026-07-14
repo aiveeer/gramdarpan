@@ -54,3 +54,20 @@ prompt
 server.log
 # Skills directory
 /skills/
+
+# Temporary files
+tool-results/
+*.png
+namuna_search*.json
+llm_namuna_list*.json
+scribd_namune.json
+scribd2_namune.json
+gp_namuna12.json
+namune_reference.json
+namuna_data.json
+gramvikas_namune.json
+fb_namune.json
+fb_namuna_post.json
+lekha_sanhita_pdf.json
+gramdarpan-lite.tar.gz
+--timeout
