@@ -3,6 +3,14 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // Map short table names to Prisma model access names
 const tableAlias: Record<string, string> = {
+  'village': 'villageInfo',
+  'ward': 'wardMaster',
+  'owner': 'ownerMaster',
+  'property': 'propertyMaster',
+  'road': 'roadMaster',
+  'employee': 'employeeMaster',
+  'tax': 'taxMaster',
+  'floor': 'floorInfo',
   'fy': 'financialYear',
   'bank': 'bankAccount',
   'budget-head': 'budgetHead',

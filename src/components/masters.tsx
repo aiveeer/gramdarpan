@@ -35,10 +35,12 @@ async function apiGet(table: string, search?: string): Promise<MasterRecord[]> {
   if (search) params.set('search', search);
   const res = await fetch(`/api/master?${params}`);
   if (!res.ok) throw new Error('Fetch failed');
-  const data = await res.json();
+  const json = await res.json();
+  // API returns { success: true, data: ... } format
+  const data = json.data !== undefined ? json.data : json;
   // Handle both array and single object responses
   if (Array.isArray(data)) return data;
-  if (data && typeof data === 'object' && !data.error) {
+  if (data && typeof data === 'object') {
     // Single record (village) - wrap in array
     return [data];
   }
@@ -52,8 +54,8 @@ async function apiCreate(table: string, data: Record<string, unknown>) {
     body: JSON.stringify({ action: 'create', table, data }),
   });
   const json = await res.json();
-  if (!res.ok) throw new Error(json.error || 'निर्मिणी अयशस्वी');
-  return json;
+  if (!res.ok || !json.success) throw new Error(json.error || 'निर्मिणी अयशस्वी');
+  return json.data || json;
 }
 
 async function apiUpdate(table: string, id: string, data: Record<string, unknown>) {
@@ -63,8 +65,8 @@ async function apiUpdate(table: string, id: string, data: Record<string, unknown
     body: JSON.stringify({ action: 'update', table, id, data: { id, ...data } }),
   });
   const json = await res.json();
-  if (!res.ok) throw new Error(json.error || 'अपडेट अयशस्वी');
-  return json;
+  if (!res.ok || !json.success) throw new Error(json.error || 'अपडेट अयशस्वी');
+  return json.data || json;
 }
 
 async function apiDelete(table: string, id: string) {
