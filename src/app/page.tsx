@@ -181,14 +181,14 @@ export default function Home() {
     <SidebarProvider>
       <TooltipProvider>
         <Sidebar>
-          <SidebarHeader className="border-b border-sidebar-border bg-gradient-to-b from-gp-teal-dark to-sidebar">
-            <div className="flex items-center gap-3 px-2 py-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gp-saffron text-white font-bold text-lg shadow-md">
+          <SidebarHeader className="border-b border-sidebar-border bg-gradient-to-b from-[#042729] to-sidebar">
+            <div className="flex items-center gap-3 px-2 py-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-gp-saffron to-orange-600 text-white font-bold text-lg shadow-lg">
                 ग्रा
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-bold text-sidebar-foreground">ग्रामदर्पण</span>
-                <span className="text-xs text-sidebar-foreground/70">ग्रामपंचायत ERP</span>
+                <span className="text-sm font-black text-white">ग्रामदर्पण</span>
+                <span className="text-[10px] text-gp-saffron font-semibold tracking-wider">ग्रामपंचायत ERP</span>
               </div>
             </div>
           </SidebarHeader>
@@ -196,7 +196,7 @@ export default function Home() {
           <SidebarContent>
             {Object.entries(groups).map(([groupName, items]) => (
               <SidebarGroup key={groupName}>
-                <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider">
+                <SidebarGroupLabel className="text-xs font-bold text-gp-saffron/80 uppercase tracking-widest">
                   {groupName}
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
@@ -219,10 +219,12 @@ export default function Home() {
             ))}
           </SidebarContent>
 
-          <SidebarFooter className="border-t border-sidebar-border bg-gradient-to-t from-gp-teal-dark to-sidebar">
+          <SidebarFooter className="border-t border-sidebar-border bg-gradient-to-t from-[#042729] to-sidebar">
             <div className="px-2 py-2 space-y-2">
-              <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-sidebar-accent/80">
-                <UserCog className="h-4 w-4 text-gp-saffron" />
+              <div className="flex items-center gap-2 px-2 py-2 rounded-lg bg-white/10 backdrop-blur-sm">
+                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-gp-saffron to-orange-600 flex items-center justify-center shadow">
+                  <UserCog className="h-4 w-4 text-white" />
+                </div>
                 <div className="flex flex-col min-w-0">
                   <span className="text-xs font-medium text-sidebar-foreground truncate">
                     {session.nameMarathi || session.name}
@@ -246,15 +248,15 @@ export default function Home() {
         </Sidebar>
 
         <SidebarInset>
-          <header className="flex h-14 items-center gap-4 border-b bg-gradient-to-r from-gp-teal-light via-background to-gp-teal-light px-4 lg:px-6 sticky top-0 z-10">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="h-6" />
+          <header className="flex h-14 items-center gap-4 border-b bg-gradient-to-r from-gp-teal via-gp-teal-dark to-gp-teal px-4 lg:px-6 sticky top-0 z-10 shadow-md">
+            <SidebarTrigger className="-ml-1 text-white hover:bg-white/10" />
+            <Separator orientation="vertical" className="h-6 bg-white/30" />
             <div className="flex items-center gap-2">
-              <IndianRupee className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">आर्थिक वर्ष:</span>
+              <IndianRupee className="h-4 w-4 text-gp-saffron" />
+              <span className="text-sm text-white/80 font-medium">आर्थिक वर्ष:</span>
             </div>
             <Select value={financialYear} onValueChange={setFinancialYear}>
-              <SelectTrigger className="w-[130px] h-8 text-sm">
+              <SelectTrigger className="w-[130px] h-8 text-sm bg-white/15 border-white/20 text-white">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -264,7 +266,7 @@ export default function Home() {
               </SelectContent>
             </Select>
             <div className="ml-auto flex items-center gap-2">
-              <span className="text-sm font-medium text-foreground">
+              <span className="text-sm font-bold text-white">
                 {menuItems.find(m => m.id === activeTab)?.label || 'डॅशबोर्ड'}
               </span>
             </div>
