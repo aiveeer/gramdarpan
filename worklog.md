@@ -107,3 +107,25 @@ Stage Summary:
 - Header is full gradient teal with white text
 - Login has rich dark background with glow effects
 - Lint clean, no errors, browser verified
+
+---
+Task ID: 4
+Agent: Main Agent
+Task: Add Namuna 1-33 page to sidebar - user asked "1 te 33 namun kuthe gele"
+
+Work Log:
+- Created new component: /src/components/namuna.tsx with full Namuna 1-33 list view
+- Each Namuna card uses unique gradient color, icon, and Marathi name per Lekha Sanhita 2011
+- Click on any Namuna card navigates to detail view with API call to /api/namuna-reports?namuna=X
+- Detail view shows: Namuna name/number badge, summary cards, data table with up to 8 columns
+- Empty state shows friendly message: "या नमुन्यात अद्याप डेटा नाही"
+- Added "नमुने (१-३३)" menu item in sidebar under "मुख्य" group (with BookOpen icon)
+- Added lazy import for Namuna component in page.tsx
+- Added 'namuna' case in renderContent switch
+- Lint clean, browser verified: login → sidebar → नमुने (१-३३) → 33 colorful cards → click Namuna 3 → detail with data
+
+Stage Summary:
+- Namuna 1-33 fully accessible from sidebar menu
+- API integration working with /api/namuna-reports endpoint
+- All 33 Namuna register cards with unique colors and Marathi labels
+- Detail view with summary cards and data table

@@ -47,6 +47,7 @@ import {
   Wallet,
   UserCog,
   Loader2,
+  BookOpen,
 } from 'lucide-react';
 
 // Direct import for login (always needed first)
@@ -63,6 +64,7 @@ const Assets = lazy(() => import('@/components/assets'));
 const BankAccounts = lazy(() => import('@/components/bank-accounts'));
 const Schemes = lazy(() => import('@/components/schemes'));
 const Reports = lazy(() => import('@/components/reports'));
+const Namuna = lazy(() => import('@/components/namuna'));
 
 function LoadingFallback() {
   return (
@@ -85,6 +87,7 @@ interface SessionData {
 
 const menuItems = [
   { id: 'dashboard', label: 'डॅशबोर्ड', icon: LayoutDashboard, group: 'मुख्य' },
+  { id: 'namuna', label: 'नमुने (१-३३)', icon: BookOpen, group: 'मुख्य' },
   { id: 'masters', label: 'मास्टर डेटा', icon: Database, group: 'मास्टर' },
   { id: 'tax', label: 'कर व्यवस्थापन', icon: Calculator, group: 'व्यवहार' },
   { id: 'financial', label: 'आर्थिक व्यवहार', icon: Receipt, group: 'व्यवहार' },
@@ -166,6 +169,7 @@ export default function Home() {
       case 'bank': return <BankAccounts {...props} />;
       case 'schemes': return <Schemes {...props} />;
       case 'reports': return <Reports {...props} />;
+      case 'namuna': return <Namuna {...props} />;
       default: return <Dashboard {...props} />;
     }
   };
