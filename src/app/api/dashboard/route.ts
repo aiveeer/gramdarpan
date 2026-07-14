@@ -4,16 +4,16 @@ import { NextResponse } from 'next/server';
 export async function GET() {
   try {
     const [
-      totalProperties, totalTaxMasters, enabledTaxMasters, totalNamuna8, totalNamuna9, totalPayments,
+      totalProperties, totalTaxMasters, enabledTaxMasters, totalTaxAssessments, totalDemandRegisters, totalTaxPayments,
       totalWards, totalOwners, totalRoads, totalEmployees,
-      totalReceipts, totalPaymentsEntries, totalAssets, totalStock, totalBanks, totalSchemes, totalBudgetHeads, totalFY, totalFloorInfo,
+      totalReceipts, totalPaymentEntries, totalAssets, totalStock, totalBanks, totalSchemes, totalBudgetHeads, totalFY, totalFloorInfo,
     ] = await Promise.all([
       db.propertyMaster.count(),
       db.taxMaster.count(),
       db.taxMaster.count({ where: { isEnabled: true } }),
-      db.namuna8.count(),
-      db.namuna9.count(),
-      db.payment.count(),
+      db.taxAssessment.count(),
+      db.demandRegister.count(),
+      db.taxPayment.count(),
       db.wardMaster.count(),
       db.ownerMaster.count(),
       db.roadMaster.count(),
@@ -39,8 +39,8 @@ export async function GET() {
       { _sum: stockValueSum },
       { _sum: bankBalanceSum },
     ] = await Promise.all([
-      db.namuna9.aggregate({ _sum: { totalDemand: true } }),
-      db.payment.aggregate({ _sum: { amountPaid: true } }),
+      db.demandRegister.aggregate({ _sum: { totalDemand: true } }),
+      db.taxPayment.aggregate({ _sum: { amountPaid: true } }),
       db.receiptEntry.aggregate({ _sum: { amount: true } }),
       db.paymentEntry.aggregate({ _sum: { amount: true } }),
       db.assetEntry.aggregate({ _sum: { purchaseCost: true } }),
@@ -53,35 +53,39 @@ export async function GET() {
     const totalPaid = paidSum.amountPaid || 0;
 
     return NextResponse.json({
-      // Original stats
-      totalProperties, totalTaxMasters, enabledTaxMasters, totalNamuna8, totalNamuna9, totalPayments,
-      totalWards, totalOwners, totalRoads, totalEmployees,
-      totalDemand: Math.round(totalDemand * 100) / 100,
-      totalPaid: Math.round(totalPaid * 100) / 100,
-      outstandingBalance: Math.round((totalDemand - totalPaid) * 100) / 100,
+      success: true,
+      data: {
+        // Core stats
+        totalProperties, totalTaxMasters, enabledTaxMasters,
+        totalTaxAssessments, totalDemandRegisters, totalTaxPayments,
+        totalWards, totalOwners, totalRoads, totalEmployees,
+        totalDemand: Math.round(totalDemand * 100) / 100,
+        totalPaid: Math.round(totalPaid * 100) / 100,
+        outstandingBalance: Math.round((totalDemand - totalPaid) * 100) / 100,
 
-      // New transaction stats
-      totalReceipts,
-      totalPayments: totalPaymentsEntries,
-      totalAssets,
-      totalStock,
-      totalBanks,
-      totalSchemes,
-      totalBudgetHeads,
-      totalFY,
-      totalFloorInfo,
+        // Transaction stats
+        totalReceipts,
+        totalPayments: totalPaymentEntries,
+        totalAssets,
+        totalStock,
+        totalBanks,
+        totalSchemes,
+        totalBudgetHeads,
+        totalFY,
+        totalFloorInfo,
 
-      // Financial summaries
-      totalReceiptAmount: Math.round((receiptSum.amount || 0) * 100) / 100,
-      totalPaymentAmount: Math.round((paymentEntrySum.amount || 0) * 100) / 100,
-      totalAssetPurchaseValue: Math.round((assetPurchaseSum.purchaseCost || 0) * 100) / 100,
-      totalAssetCurrentValue: Math.round((assetCurrentSum.currentValue || 0) * 100) / 100,
-      totalStockValue: Math.round((stockValueSum.totalValue || 0) * 100) / 100,
-      totalBankBalance: Math.round((bankBalanceSum.balance || 0) * 100) / 100,
-      totalDepreciation: Math.round(((assetPurchaseSum.purchaseCost || 0) - (assetCurrentSum.currentValue || 0)) * 100) / 100,
+        // Financial summaries
+        totalReceiptAmount: Math.round((receiptSum.amount || 0) * 100) / 100,
+        totalPaymentAmount: Math.round((paymentEntrySum.amount || 0) * 100) / 100,
+        totalAssetPurchaseValue: Math.round((assetPurchaseSum.purchaseCost || 0) * 100) / 100,
+        totalAssetCurrentValue: Math.round((assetCurrentSum.currentValue || 0) * 100) / 100,
+        totalStockValue: Math.round((stockValueSum.totalValue || 0) * 100) / 100,
+        totalBankBalance: Math.round((bankBalanceSum.balance || 0) * 100) / 100,
+        totalDepreciation: Math.round(((assetPurchaseSum.purchaseCost || 0) - (assetCurrentSum.currentValue || 0)) * 100) / 100,
+      },
     });
   } catch (error) {
     console.error('Dashboard error:', error);
-    return NextResponse.json({ error: 'Failed' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Failed to fetch dashboard data' }, { status: 500 });
   }
 }

@@ -1,0 +1,771 @@
+     1→'use client';
+     2→
+     3→import React, { useState, useEffect, useCallback, useRef } from 'react';
+     4→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+     5→import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+     6→import { Button } from '@/components/ui/button';
+     7→import { Input } from '@/components/ui/input';
+     8→import { Badge } from '@/components/ui/badge';
+     9→import { Separator } from '@/components/ui/separator';
+    10→import { Skeleton } from '@/components/ui/skeleton';
+    11→import { toast } from '@/hooks/use-toast';
+    12→import {
+    13→  Search,
+    14→  Building2,
+    15→  User,
+    16→  MapPin,
+    17→  X,
+    18→  Eye,
+    19→  Pencil,
+    20→  Phone,
+    21→  CreditCard,
+    22→  Accessibility,
+    23→  Home,
+    24→  Layers,
+    25→  Ruler,
+    26→  Calendar,
+    27→  Users,
+    28→  ArrowRight,
+    29→  SearchX,
+    30→  Loader2,
+    31→} from 'lucide-react';
+    32→
+    33→// ===== TYPE DEFINITIONS =====
+    34→
+    35→interface WardInfo {
+    36→  wardNumber: string;
+    37→  wardName: string;
+    38→  wardNameMr: string;
+    39→}
+    40→
+    41→interface RoadInfo {
+    42→  roadNumber: string;
+    43→  roadName: string;
+    44→  roadNameMr: string;
+    45→}
+    46→
+    47→interface OwnerInfo {
+    48→  id: string;
+    49→  ownerNumber: string;
+    50→  firstName: string;
+    51→  middleName: string | null;
+    52→  lastName: string;
+    53→  firstNameMr: string;
+    54→  middleNameMr: string | null;
+    55→  lastNameMr: string | null;
+    56→  ownershipType: string;
+    57→}
+    58→
+    59→interface TaxDetail {
+    60→  name: string;
+    61→  nameMarathi: string;
+    62→  rate: number;
+    63→}
+    64→
+    65→interface PropertyResult {
+    66→  id: string;
+    67→  propertyNumber: string;
+    68→  citySurveyNo: string | null;
+    69→  area: number | null;
+    70→  builtUpArea: number | null;
+    71→  usageType: string | null;
+    72→  constructionType: string | null;
+    73→  floorInfo: string | null;
+    74→  yearBuilt: string | null;
+    75→  propertyStatus: string;
+    76→  ward: WardInfo | null;
+    77→  road: RoadInfo | null;
+    78→  owner: OwnerInfo | null;
+    79→  totalTaxRate: number;
+    80→  taxDetails: TaxDetail[];
+    81→  ownersCount: number;
+    82→}
+    83→
+    84→interface LinkedProperty {
+    85→  propertyNumber: string;
+    86→  ownershipType: string;
+    87→  usageType: string | null;
+    88→  area: number | null;
+    89→  ward: { wardNumber: string; wardNameMr: string } | null;
+    90→}
+    91→
+    92→interface OwnerResult {
+    93→  id: string;
+    94→  ownerNumber: string;
+    95→  firstName: string;
+    96→  middleName: string | null;
+    97→  lastName: string;
+    98→  firstNameMr: string;
+    99→  middleNameMr: string | null;
+   100→  lastNameMr: string | null;
+   101→  fullName: string;
+   102→  fullNameMr: string;
+   103→  mobileNumber: string | null;
+   104→  aadhaarNumber: string | null;
+   105→  isDisabled: boolean;
+   106→  disabilityType: string | null;
+   107→  disabilityPercentage: number | null;
+   108→  linkedProperties: LinkedProperty[];
+   109→  linkedPropertiesCount: number;
+   110→}
+   111→
+   112→interface WardProperty {
+   113→  propertyNumber: string;
+   114→  usageType: string | null;
+   115→  area: number | null;
+   116→  propertyStatus: string;
+   117→}
+   118→
+   119→interface WardResult {
+   120→  id: string;
+   121→  wardNumber: string;
+   122→  wardName: string;
+   123→  wardNameMr: string;
+   124→  population: number | null;
+   125→  area: number | null;
+   126→  description: string | null;
+   127→  propertiesCount: number;
+   128→  properties: WardProperty[];
+   129→}
+   130→
+   131→interface SearchResults {
+   132→  properties: PropertyResult[];
+   133→  owners: OwnerResult[];
+   134→  wards: WardResult[];
+   135→  totalResults: number;
+   136→}
+   137→
+   138→// ===== SKELETON COMPONENTS =====
+   139→
+   140→function PropertySkeleton() {
+   141→  return (
+   142→    <Card>
+   143→      <CardContent className="p-4">
+   144→        <div className="flex items-start gap-3">
+   145→          <Skeleton className="h-10 w-10 rounded-lg shrink-0" />
+   146→          <div className="flex-1 space-y-2">
+   147→            <Skeleton className="h-5 w-40" />
+   148→            <Skeleton className="h-4 w-60" />
+   149→            <div className="flex gap-2">
+   150→              <Skeleton className="h-5 w-16 rounded-full" />
+   151→              <Skeleton className="h-5 w-20 rounded-full" />
+   152→              <Skeleton className="h-5 w-24 rounded-full" />
+   153→            </div>
+   154→          </div>
+   155→        </div>
+   156→      </CardContent>
+   157→    </Card>
+   158→  );
+   159→}
+   160→
+   161→function OwnerSkeleton() {
+   162→  return (
+   163→    <Card>
+   164→      <CardContent className="p-4">
+   165→        <div className="flex items-start gap-3">
+   166→          <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+   167→          <div className="flex-1 space-y-2">
+   168→            <Skeleton className="h-5 w-48" />
+   169→            <Skeleton className="h-4 w-32" />
+   170→            <div className="flex gap-2">
+   171→              <Skeleton className="h-5 w-20 rounded-full" />
+   172→              <Skeleton className="h-5 w-16 rounded-full" />
+   173→            </div>
+   174→          </div>
+   175→        </div>
+   176→      </CardContent>
+   177→    </Card>
+   178→  );
+   179→}
+   180→
+   181→function WardSkeleton() {
+   182→  return (
+   183→    <Card>
+   184→      <CardContent className="p-4">
+   185→        <div className="flex items-start gap-3">
+   186→          <Skeleton className="h-10 w-10 rounded-lg shrink-0" />
+   187→          <div className="flex-1 space-y-2">
+   188→            <Skeleton className="h-5 w-36" />
+   189→            <Skeleton className="h-4 w-52" />
+   190→            <div className="flex gap-2">
+   191→              <Skeleton className="h-5 w-20 rounded-full" />
+   192→              <Skeleton className="h-5 w-24 rounded-full" />
+   193→            </div>
+   194→          </div>
+   195→        </div>
+   196→      </CardContent>
+   197→    </Card>
+   198→  );
+   199→}
+   200→
+   201→// ===== PROPERTY RESULT CARD =====
+   202→
+   203→function PropertyResultCard({ property }: { property: PropertyResult }) {
+   204→  const ownerName = property.owner
+   205→    ? `${property.owner.firstNameMr || property.owner.firstName} ${property.owner.middleNameMr || property.owner.middleName || ''} ${property.owner.lastNameMr || property.owner.lastName}`.replace(/\s+/g, ' ').trim()
+   206→    : '-';
+   207→
+   208→  return (
+   209→    <Card className="hover:shadow-md transition-shadow">
+   210→      <CardContent className="p-4">
+   211→        <div className="flex items-start gap-3">
+   212→          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+   213→            <Building2 className="h-5 w-5 text-primary" />
+   214→          </div>
+   215→          <div className="flex-1 min-w-0">
+   216→            <div className="flex items-center gap-2 flex-wrap">
+   217→              <h3 className="font-semibold text-base">{property.propertyNumber}</h3>
+   218→              <Badge variant={property.propertyStatus === 'Active' ? 'default' : 'secondary'}>
+   219→                {property.propertyStatus === 'Active' ? 'सक्रिय' : property.propertyStatus}
+   220→              </Badge>
+   221→              {property.ownersCount > 1 && (
+   222→                <Badge variant="outline" className="text-xs">
+   223→                  <Users className="h-3 w-3 mr-1" />
+   224→                  {property.ownersCount} मालक
+   225→                </Badge>
+   226→              )}
+   227→            </div>
+   228→
+   229→            <div className="mt-2 space-y-1 text-sm text-muted-foreground">
+   230→              {property.owner && (
+   231→                <div className="flex items-center gap-1.5">
+   232→                  <User className="h-3.5 w-3.5 shrink-0" />
+   233→                  <span>{ownerName}</span>
+   234→                  {property.owner.ownershipType && (
+   235→                    <Badge variant="outline" className="text-xs ml-1">{property.owner.ownershipType}</Badge>
+   236→                  )}
+   237→                </div>
+   238→              )}
+   239→              {property.ward && (
+   240→                <div className="flex items-center gap-1.5">
+   241→                  <MapPin className="h-3.5 w-3.5 shrink-0" />
+   242→                  <span>वार्ड {property.ward.wardNumber} - {property.ward.wardNameMr || property.ward.wardName}</span>
+   243→                </div>
+   244→              )}
+   245→              {property.road && (
+   246→                <div className="flex items-center gap-1.5">
+   247→                  <ArrowRight className="h-3.5 w-3.5 shrink-0" />
+   248→                  <span>रस्ता: {property.road.roadNameMr || property.road.roadName}</span>
+   249→                </div>
+   250→              )}
+   251→            </div>
+   252→
+   253→            <div className="mt-2 flex flex-wrap gap-2">
+   254→              {property.usageType && (
+   255→                <Badge variant="outline" className="text-xs">
+   256→                  <Layers className="h-3 w-3 mr-1" />
+   257→                  {property.usageType}
+   258→                </Badge>
+   259→              )}
+   260→              {property.constructionType && (
+   261→                <Badge variant="outline" className="text-xs">
+   262→                  <Home className="h-3 w-3 mr-1" />
+   263→                  {property.constructionType}
+   264→                </Badge>
+   265→              )}
+   266→              {property.area && (
+   267→                <Badge variant="outline" className="text-xs">
+   268→                  <Ruler className="h-3 w-3 mr-1" />
+   269→                  {property.area} चौ.फूट
+   270→                </Badge>
+   271→              )}
+   272→              {property.builtUpArea && (
+   273→                <Badge variant="outline" className="text-xs">
+   274→                  बांधलेले: {property.builtUpArea} चौ.फूट
+   275→                </Badge>
+   276→              )}
+   277→              {property.citySurveyNo && (
+   278→                <Badge variant="outline" className="text-xs">
+   279→                  सर्वे क्र. {property.citySurveyNo}
+   280→                </Badge>
+   281→              )}
+   282→            </div>
+   283→
+   284→            {property.taxDetails.length > 0 && (
+   285→              <div className="mt-2">
+   286→                <Separator className="my-2" />
+   287→                <div className="flex items-center justify-between">
+   288→                  <span className="text-xs text-muted-foreground">एकूण कर दर</span>
+   289→                  <span className="font-semibold text-sm text-primary">₹{property.totalTaxRate.toFixed(2)}</span>
+   290→                </div>
+   291→                <div className="flex flex-wrap gap-1 mt-1">
+   292→                  {property.taxDetails.map((tax, i) => (
+   293→                    <span key={i} className="text-xs bg-muted px-1.5 py-0.5 rounded">
+   294→                      {tax.nameMarathi}: ₹{tax.rate}
+   295→                    </span>
+   296→                  ))}
+   297→                </div>
+   298→              </div>
+   299→            )}
+   300→
+   301→            <div className="mt-3 flex gap-2">
+   302→              <Button variant="outline" size="sm" className="text-xs h-7">
+   303→                <Eye className="h-3 w-3 mr-1" /> सविस्तर
+   304→              </Button>
+   305→              <Button variant="outline" size="sm" className="text-xs h-7">
+   306→                <Pencil className="h-3 w-3 mr-1" /> संपादा
+   307→              </Button>
+   308→            </div>
+   309→          </div>
+   310→        </div>
+   311→      </CardContent>
+   312→    </Card>
+   313→  );
+   314→}
+   315→
+   316→// ===== OWNER RESULT CARD =====
+   317→
+   318→function OwnerResultCard({ owner }: { owner: OwnerResult }) {
+   319→  return (
+   320→    <Card className="hover:shadow-md transition-shadow">
+   321→      <CardContent className="p-4">
+   322→        <div className="flex items-start gap-3">
+   323→          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+   324→            <User className="h-5 w-5 text-primary" />
+   325→          </div>
+   326→          <div className="flex-1 min-w-0">
+   327→            <div className="flex items-center gap-2 flex-wrap">
+   328→              <h3 className="font-semibold text-base">{owner.fullNameMr || owner.fullName}</h3>
+   329→              {owner.fullNameMr && owner.fullName && owner.fullNameMr !== owner.fullName && (
+   330→                <span className="text-sm text-muted-foreground">({owner.fullName})</span>
+   331→              )}
+   332→            </div>
+   333→
+   334→            <div className="mt-2 space-y-1 text-sm text-muted-foreground">
+   335→              <div className="flex items-center gap-1.5">
+   336→                <span className="text-xs font-medium text-foreground">मालक क्र.</span>
+   337→                <Badge variant="outline" className="text-xs">{owner.ownerNumber}</Badge>
+   338→              </div>
+   339→              {owner.mobileNumber && (
+   340→                <div className="flex items-center gap-1.5">
+   341→                  <Phone className="h-3.5 w-3.5 shrink-0" />
+   342→                  <span>{owner.mobileNumber}</span>
+   343→                </div>
+   344→              )}
+   345→              {owner.aadhaarNumber && (
+   346→                <div className="flex items-center gap-1.5">
+   347→                  <CreditCard className="h-3.5 w-3.5 shrink-0" />
+   348→                  <span>आधार: ****{owner.aadhaarNumber.slice(-4)}</span>
+   349→                </div>
+   350→              )}
+   351→            </div>
+   352→
+   353→            <div className="mt-2 flex flex-wrap gap-2">
+   354→              <Badge variant="outline" className="text-xs">
+   355→                <Building2 className="h-3 w-3 mr-1" />
+   356→                {owner.linkedPropertiesCount} मालमत्ता
+   357→              </Badge>
+   358→              {owner.isDisabled && (
+   359→                <Badge variant="destructive" className="text-xs">
+   360→                  <Accessibility className="h-3 w-3 mr-1" />
+   361→                  अपंग{owner.disabilityType ? ` - ${owner.disabilityType}` : ''}
+   362→                  {owner.disabilityPercentage ? ` (${owner.disabilityPercentage}%)` : ''}
+   363→                </Badge>
+   364→              )}
+   365→            </div>
+   366→
+   367→            {owner.linkedProperties.length > 0 && (
+   368→              <div className="mt-2">
+   369→                <Separator className="my-2" />
+   370→                <p className="text-xs font-medium mb-1">जोडलेल्या मालमत्ता:</p>
+   371→                <div className="space-y-1 max-h-32 overflow-y-auto">
+   372→                  {owner.linkedProperties.map((lp, i) => (
+   373→                    <div key={i} className="flex items-center gap-2 text-xs">
+   374→                      <Building2 className="h-3 w-3 text-muted-foreground shrink-0" />
+   375→                      <span>{lp.propertyNumber}</span>
+   376→                      {lp.usageType && <Badge variant="outline" className="text-xs h-4">{lp.usageType}</Badge>}
+   377→                      {lp.ownershipType && <Badge variant="outline" className="text-xs h-4">{lp.ownershipType}</Badge>}
+   378→                      {lp.ward && <span className="text-muted-foreground">वार्ड {lp.ward.wardNumber}</span>}
+   379→                    </div>
+   380→                  ))}
+   381→                </div>
+   382→              </div>
+   383→            )}
+   384→
+   385→            <div className="mt-3 flex gap-2">
+   386→              <Button variant="outline" size="sm" className="text-xs h-7">
+   387→                <Eye className="h-3 w-3 mr-1" /> सविस्तर
+   388→              </Button>
+   389→              <Button variant="outline" size="sm" className="text-xs h-7">
+   390→                <Pencil className="h-3 w-3 mr-1" /> संपादा
+   391→              </Button>
+   392→            </div>
+   393→          </div>
+   394→        </div>
+   395→      </CardContent>
+   396→    </Card>
+   397→  );
+   398→}
+   399→
+   400→// ===== WARD RESULT CARD =====
+   401→
+   402→function WardResultCard({ ward }: { ward: WardResult }) {
+   403→  return (
+   404→    <Card className="hover:shadow-md transition-shadow">
+   405→      <CardContent className="p-4">
+   406→        <div className="flex items-start gap-3">
+   407→          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+   408→            <MapPin className="h-5 w-5 text-primary" />
+   409→          </div>
+   410→          <div className="flex-1 min-w-0">
+   411→            <div className="flex items-center gap-2 flex-wrap">
+   412→              <h3 className="font-semibold text-base">वार्ड {ward.wardNumber}</h3>
+   413→              <span className="text-sm text-muted-foreground">{ward.wardNameMr || ward.wardName}</span>
+   414→            </div>
+   415→
+   416→            <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm">
+   417→              {ward.population !== null && (
+   418→                <div className="flex items-center gap-1.5 text-muted-foreground">
+   419→                  <Users className="h-3.5 w-3.5 shrink-0" />
+   420→                  <span>लोकसंख्या: {ward.population}</span>
+   421→                </div>
+   422→              )}
+   423→              {ward.area !== null && (
+   424→                <div className="flex items-center gap-1.5 text-muted-foreground">
+   425→                  <Ruler className="h-3.5 w-3.5 shrink-0" />
+   426→                  <span>क्षेत्रफळ: {ward.area} चौ.मी.</span>
+   427→                </div>
+   428→              )}
+   429→              <div className="flex items-center gap-1.5 text-muted-foreground">
+   430→                <Building2 className="h-3.5 w-3.5 shrink-0" />
+   431→                <span>मालमत्ता: {ward.propertiesCount}</span>
+   432→              </div>
+   433→            </div>
+   434→
+   435→            {ward.description && (
+   436→              <p className="mt-1 text-xs text-muted-foreground">{ward.description}</p>
+   437→            )}
+   438→
+   439→            {ward.properties.length > 0 && (
+   440→              <div className="mt-2">
+   441→                <Separator className="my-2" />
+   442→                <p className="text-xs font-medium mb-1">या वार्डातील मालमत्ता ({ward.propertiesCount} पैकी):</p>
+   443→                <div className="space-y-1 max-h-32 overflow-y-auto">
+   444→                  {ward.properties.map((p, i) => (
+   445→                    <div key={i} className="flex items-center gap-2 text-xs">
+   446→                      <Building2 className="h-3 w-3 text-muted-foreground shrink-0" />
+   447→                      <span>{p.propertyNumber}</span>
+   448→                      {p.usageType && <Badge variant="outline" className="text-xs h-4">{p.usageType}</Badge>}
+   449→                      {p.area && <span className="text-muted-foreground">{p.area} चौ.फूट</span>}
+   450→                    </div>
+   451→                  ))}
+   452→                  {ward.propertiesCount > ward.properties.length && (
+   453→                    <p className="text-xs text-muted-foreground italic">
+   454→                      + {ward.propertiesCount - ward.properties.length} आणखी मालमत्ता...
+   455→                    </p>
+   456→                  )}
+   457→                </div>
+   458→              </div>
+   459→            )}
+   460→
+   461→            <div className="mt-3 flex gap-2">
+   462→              <Button variant="outline" size="sm" className="text-xs h-7">
+   463→                <Eye className="h-3 w-3 mr-1" /> सविस्तर
+   464→              </Button>
+   465→              <Button variant="outline" size="sm" className="text-xs h-7">
+   466→                <Pencil className="h-3 w-3 mr-1" /> संपादा
+   467→              </Button>
+   468→            </div>
+   469→          </div>
+   470→        </div>
+   471→      </CardContent>
+   472→    </Card>
+   473→  );
+   474→}
+   475→
+   476→// ===== EMPTY STATE =====
+   477→
+   478→function EmptyState({ hasQuery }: { hasQuery: boolean }) {
+   479→  return (
+   480→    <div className="flex flex-col items-center justify-center py-16 text-center">
+   481→      <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
+   482→        {hasQuery ? (
+   483→          <SearchX className="h-8 w-8 text-muted-foreground" />
+   484→        ) : (
+   485→          <Search className="h-8 w-8 text-muted-foreground" />
+   486→        )}
+   487→      </div>
+   488→      <h3 className="text-lg font-semibold mb-1">
+   489→        {hasQuery ? 'कोणतेही परिणाम सापडले नाहीत' : 'शोधा'}
+   490→      </h3>
+   491→      <p className="text-sm text-muted-foreground max-w-sm">
+   492→        {hasQuery
+   493→          ? 'कृपया वेगळ्या शब्दांसह शोधा किंवा श्रेणी बदला'
+   494→          : 'मालमत्ता क्रमांक, मालकाचे नाव किंवा वार्ड क्रमांक शोधण्यासाठी वरील शोध बॉक्स वापरा'}
+   495→      </p>
+   496→    </div>
+   497→  );
+   498→}
+   499→
+   500→// ===== MAIN COMPONENT =====
+   501→
+   502→export default function GlobalSearch() {
+   503→  const [query, setQuery] = useState('');
+   504→  const [category, setCategory] = useState('all');
+   505→  const [results, setResults] = useState<SearchResults | null>(null);
+   506→  const [loading, setLoading] = useState(false);
+   507→  const [hasSearched, setHasSearched] = useState(false);
+   508→  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+   509→  const abortRef = useRef<AbortController | null>(null);
+   510→
+   511→  const performSearch = useCallback(async (q: string, cat: string) => {
+   512→    if (!q.trim()) {
+   513→      setResults(null);
+   514→      setHasSearched(false);
+   515→      return;
+   516→    }
+   517→
+   518→    // Cancel any in-flight request
+   519→    if (abortRef.current) {
+   520→      abortRef.current.abort();
+   521→    }
+   522→    const controller = new AbortController();
+   523→    abortRef.current = controller;
+   524→
+   525→    setLoading(true);
+   526→    setHasSearched(true);
+   527→
+   528→    try {
+   529→      const params = new URLSearchParams({ q: q.trim(), category: cat });
+   530→      const res = await fetch(`/api/search?${params}`, { signal: controller.signal });
+   531→      if (!res.ok) throw new Error('Search failed');
+   532→      const data = await res.json();
+   533→      setResults(data);
+   534→    } catch (err: unknown) {
+   535→      if (err instanceof DOMException && err.name === 'AbortError') return;
+   536→      toast({
+   537→        title: 'शोध त्रुटी',
+   538→        description: 'शोधण्यात अयशस्वी. कृपया पुन्हा प्रयत्न करा.',
+   539→        variant: 'destructive',
+   540→      });
+   541→    } finally {
+   542→      setLoading(false);
+   543→    }
+   544→  }, []);
+   545→
+   546→  const handleQueryChange = useCallback(
+   547→    (value: string) => {
+   548→      setQuery(value);
+   549→      if (debounceRef.current) clearTimeout(debounceRef.current);
+   550→      debounceRef.current = setTimeout(() => {
+   551→        performSearch(value, category);
+   552→      }, 300);
+   553→    },
+   554→    [category, performSearch]
+   555→  );
+   556→
+   557→  const handleCategoryChange = useCallback(
+   558→    (value: string) => {
+   559→      setCategory(value);
+   560→      if (query.trim()) {
+   561→        performSearch(query, value);
+   562→      }
+   563→    },
+   564→    [query, performSearch]
+   565→  );
+   566→
+   567→  const handleClear = useCallback(() => {
+   568→    setQuery('');
+   569→    setResults(null);
+   570→    setHasSearched(false);
+   571→    if (debounceRef.current) clearTimeout(debounceRef.current);
+   572→  }, []);
+   573→
+   574→  // Cleanup on unmount
+   575→  useEffect(() => {
+   576→    return () => {
+   577→      if (debounceRef.current) clearTimeout(debounceRef.current);
+   578→      if (abortRef.current) abortRef.current.abort();
+   579→    };
+   580→  }, []);
+   581→
+   582→  // Quick stats
+   583→  const propertyCount = results?.properties.length ?? 0;
+   584→  const ownerCount = results?.owners.length ?? 0;
+   585→  const wardCount = results?.wards.length ?? 0;
+   586→  const totalResults = results?.totalResults ?? 0;
+   587→
+   588→  return (
+   589→    <div className="space-y-4">
+   590→      {/* Search Bar */}
+   591→      <Card>
+   592→        <CardContent className="p-4">
+   593→          <div className="relative">
+   594→            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+   595→            <Input
+   596→              className="pl-10 pr-10 h-12 text-base"
+   597→              placeholder="मालमत्ता क्रमांक, मालकाचे नाव, वार्ड क्रमांक शोधा..."
+   598→              value={query}
+   599→              onChange={(e) => handleQueryChange(e.target.value)}
+   600→            />
+   601→            {query && (
+   602→              <button
+   603→                onClick={handleClear}
+   604→                className="absolute right-3 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
+   605→              >
+   606→                <X className="h-3.5 w-3.5 text-muted-foreground" />
+   607→              </button>
+   608→            )}
+   609→          </div>
+   610→
+   611→          {/* Category Filter Tabs */}
+   612→          <div className="mt-3">
+   613→            <Tabs value={category} onValueChange={handleCategoryChange}>
+   614→              <TabsList className="w-full grid grid-cols-4 h-auto">
+   615→                <TabsTrigger value="all" className="flex items-center gap-1.5 py-2 text-xs sm:text-sm">
+   616→                  <Search className="h-3.5 w-3.5" />
+   617→                  <span>सर्व</span>
+   618→                </TabsTrigger>
+   619→                <TabsTrigger value="property" className="flex items-center gap-1.5 py-2 text-xs sm:text-sm">
+   620→                  <Building2 className="h-3.5 w-3.5" />
+   621→                  <span>मालमत्ता</span>
+   622→                </TabsTrigger>
+   623→                <TabsTrigger value="owner" className="flex items-center gap-1.5 py-2 text-xs sm:text-sm">
+   624→                  <User className="h-3.5 w-3.5" />
+   625→                  <span>मालक</span>
+   626→                </TabsTrigger>
+   627→                <TabsTrigger value="ward" className="flex items-center gap-1.5 py-2 text-xs sm:text-sm">
+   628→                  <MapPin className="h-3.5 w-3.5" />
+   629→                  <span>वार्ड</span>
+   630→                </TabsTrigger>
+   631→              </TabsList>
+   632→            </Tabs>
+   633→          </div>
+   634→        </CardContent>
+   635→      </Card>
+   636→
+   637→      {/* Quick Stats */}
+   638→      {hasSearched && !loading && results && (
+   639→        <div className="flex items-center gap-3 flex-wrap">
+   640→          <span className="text-sm font-medium">
+   641→            एकूण परिणाम: <span className="text-primary">{totalResults}</span>
+   642→          </span>
+   643→          <Separator orientation="vertical" className="h-4" />
+   644→          {category === 'all' && (
+   645→            <div className="flex items-center gap-2 text-sm">
+   646→              <Badge variant="outline" className="text-xs">
+   647→                <Building2 className="h-3 w-3 mr-1" /> {propertyCount} मालमत्ता
+   648→              </Badge>
+   649→              <Badge variant="outline" className="text-xs">
+   650→                <User className="h-3 w-3 mr-1" /> {ownerCount} मालक
+   651→              </Badge>
+   652→              <Badge variant="outline" className="text-xs">
+   653→                <MapPin className="h-3 w-3 mr-1" /> {wardCount} वार्ड
+   654→              </Badge>
+   655→            </div>
+   656→          )}
+   657→          {category === 'property' && (
+   658→            <Badge variant="outline" className="text-xs">
+   659→              <Building2 className="h-3 w-3 mr-1" /> {propertyCount} मालमत्ता सापडल्या
+   660→            </Badge>
+   661→          )}
+   662→          {category === 'owner' && (
+   663→            <Badge variant="outline" className="text-xs">
+   664→              <User className="h-3 w-3 mr-1" /> {ownerCount} मालक सापडले
+   665→            </Badge>
+   666→          )}
+   667→          {category === 'ward' && (
+   668→            <Badge variant="outline" className="text-xs">
+   669→              <MapPin className="h-3 w-3 mr-1" /> {wardCount} वार्ड सापडले
+   670→            </Badge>
+   671→          )}
+   672→        </div>
+   673→      )}
+   674→
+   675→      {/* Loading State */}
+   676→      {loading && (
+   677→        <div className="space-y-3">
+   678→          {(category === 'all' || category === 'property') && (
+   679→            <div>
+   680→              {category === 'all' && <h3 className="text-sm font-semibold text-muted-foreground mb-2">मालमत्ता</h3>}
+   681→              <PropertySkeleton />
+   682→              <PropertySkeleton />
+   683→            </div>
+   684→          )}
+   685→          {(category === 'all' || category === 'owner') && (
+   686→            <div>
+   687→              {category === 'all' && <h3 className="text-sm font-semibold text-muted-foreground mb-2">मालक</h3>}
+   688→              <OwnerSkeleton />
+   689→              <OwnerSkeleton />
+   690→            </div>
+   691→          )}
+   692→          {(category === 'all' || category === 'ward') && (
+   693→            <div>
+   694→              {category === 'all' && <h3 className="text-sm font-semibold text-muted-foreground mb-2">वार्ड</h3>}
+   695→              <WardSkeleton />
+   696→              <WardSkeleton />
+   697→            </div>
+   698→          )}
+   699→        </div>
+   700→      )}
+   701→
+   702→      {/* Search Results */}
+   703→      {!loading && hasSearched && results && (
+   704→        <div className="space-y-4">
+   705→          {totalResults === 0 ? (
+   706→            <EmptyState hasQuery />
+   707→          ) : (
+   708→            <>
+   709→              {/* Properties Section */}
+   710→              {(category === 'all' || category === 'property') && propertyCount > 0 && (
+   711→                <div>
+   712→                  {category === 'all' && (
+   713→                    <div className="flex items-center gap-2 mb-3">
+   714→                      <Building2 className="h-4 w-4 text-primary" />
+   715→                      <h3 className="text-sm font-semibold">मालमत्ता ({propertyCount})</h3>
+   716→                    </div>
+   717→                  )}
+   718→                  <div className="space-y-3">
+   719→                    {results.properties.map((p) => (
+   720→                      <PropertyResultCard key={p.id} property={p} />
+   721→                    ))}
+   722→                  </div>
+   723→                </div>
+   724→              )}
+   725→
+   726→              {/* Owners Section */}
+   727→              {(category === 'all' || category === 'owner') && ownerCount > 0 && (
+   728→                <div>
+   729→                  {category === 'all' && (
+   730→                    <div className="flex items-center gap-2 mb-3">
+   731→                      <User className="h-4 w-4 text-primary" />
+   732→                      <h3 className="text-sm font-semibold">मालक ({ownerCount})</h3>
+   733→                    </div>
+   734→                  )}
+   735→                  <div className="space-y-3">
+   736→                    {results.owners.map((o) => (
+   737→                      <OwnerResultCard key={o.id} owner={o} />
+   738→                    ))}
+   739→                  </div>
+   740→                </div>
+   741→              )}
+   742→
+   743→              {/* Wards Section */}
+   744→              {(category === 'all' || category === 'ward') && wardCount > 0 && (
+   745→                <div>
+   746→                  {category === 'all' && (
+   747→                    <div className="flex items-center gap-2 mb-3">
+   748→                      <MapPin className="h-4 w-4 text-primary" />
+   749→                      <h3 className="text-sm font-semibold">वार्ड ({wardCount})</h3>
+   750→                    </div>
+   751→                  )}
+   752→                  <div className="space-y-3">
+   753→                    {results.wards.map((w) => (
+   754→                      <WardResultCard key={w.id} ward={w} />
+   755→                    ))}
+   756→                  </div>
+   757→                </div>
+   758→              )}
+   759→            </>
+   760→          )}
+   761→        </div>
+   762→      )}
+   763→
+   764→      {/* Initial State (no search yet) */}
+   765→      {!hasSearched && (
+   766→        <EmptyState hasQuery={false} />
+   767→      )}
+   768→    </div>
+   769→  );
+   770→}
+   771→

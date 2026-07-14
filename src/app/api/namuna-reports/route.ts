@@ -321,8 +321,8 @@ async function generateNamuna4(fy: string, village: VillageInfoType | null) {
     safeQuery(() => db.bankAccount.findMany()),
     safeQuery(() => db.receiptEntry.findMany({ where: { financialYear: fy } })),
     safeQuery(() => db.paymentEntry.findMany({ where: { financialYear: fy } })),
-    safeQuery(() => db.namuna8.findMany({ where: { financialYear: fy } })),
-    safeQuery(() => db.namuna9.findMany({ where: { financialYear: fy }, include: { payments: true } })),
+    safeQuery(() => db.taxAssessment.findMany({ where: { financialYear: fy } })),
+    safeQuery(() => db.demandRegister.findMany({ where: { financialYear: fy }, include: { payments: true } })),
   ]);
 
   const totalAssets = assets.reduce((s, a) => s + a.currentValue, 0);
@@ -561,7 +561,7 @@ async function generateNamuna7(fy: string, village: VillageInfoType | null) {
 // ============================================================
 async function generateNamuna8(fy: string, village: VillageInfoType | null) {
   const namuna8s = await safeQuery(() =>
-    db.namuna8.findMany({
+    db.taxAssessment.findMany({
       where: { financialYear: fy },
       include: { property: { include: { ward: true, owners: { include: { owner: true } } } } },
       orderBy: { createdAt: 'desc' },
@@ -608,7 +608,7 @@ async function generateNamuna8(fy: string, village: VillageInfoType | null) {
 // ============================================================
 async function generateNamuna9(fy: string, village: VillageInfoType | null) {
   const namuna9s = await safeQuery(() =>
-    db.namuna9.findMany({
+    db.demandRegister.findMany({
       where: { financialYear: fy },
       include: { property: { include: { ward: true, owners: { include: { owner: true } } } }, payments: true },
       orderBy: { createdAt: 'desc' },
@@ -652,7 +652,7 @@ async function generateNamuna9(fy: string, village: VillageInfoType | null) {
 // ============================================================
 async function generateNamuna9ka(fy: string, village: VillageInfoType | null) {
   const namuna9s = await safeQuery(() =>
-    db.namuna9.findMany({
+    db.demandRegister.findMany({
       where: { financialYear: fy },
       include: { property: { include: { ward: true, owners: { include: { owner: true } } } }, payments: true },
       orderBy: { createdAt: 'desc' },
@@ -698,7 +698,7 @@ async function generateNamuna9ka(fy: string, village: VillageInfoType | null) {
 async function generateNamuna10(fy: string, village: VillageInfoType | null) {
   const [payments, collectionEntries] = await Promise.all([
     safeQuery(() =>
-      db.payment.findMany({
+      db.taxPayment.findMany({
         where: { financialYear: fy },
         include: { property: { include: { ward: true, owners: { include: { owner: true } } } } },
         orderBy: { paymentDate: 'desc' },
@@ -1267,7 +1267,7 @@ async function generateNamuna21(fy: string, village: VillageInfoType | null) {
 // ============================================================
 async function generateNamuna22(fy: string, village: VillageInfoType | null) {
   const entries = await safeQuery(() =>
-    db.namuna22.findMany({ where: { financialYear: fy }, orderBy: { propertyName: 'asc' } })
+    db.immovableProperty.findMany({ where: { financialYear: fy }, orderBy: { propertyName: 'asc' } })
   );
 
   const rows = entries.map((e, i) => ({
@@ -1306,7 +1306,7 @@ async function generateNamuna22(fy: string, village: VillageInfoType | null) {
 // ============================================================
 async function generateNamuna23(fy: string, village: VillageInfoType | null) {
   const entries = await safeQuery(() =>
-    db.namuna23.findMany({ where: { financialYear: fy }, orderBy: { roadName: 'asc' } })
+    db.roadAsset.findMany({ where: { financialYear: fy }, orderBy: { roadName: 'asc' } })
   );
 
   const rows = entries.map((e, i) => ({
@@ -1343,7 +1343,7 @@ async function generateNamuna23(fy: string, village: VillageInfoType | null) {
 // ============================================================
 async function generateNamuna24(fy: string, village: VillageInfoType | null) {
   const entries = await safeQuery(() =>
-    db.namuna24.findMany({ where: { financialYear: fy }, orderBy: { landName: 'asc' } })
+    db.landAsset.findMany({ where: { financialYear: fy }, orderBy: { landName: 'asc' } })
   );
 
   const rows = entries.map((e, i) => ({
@@ -1684,7 +1684,7 @@ async function generateNamuna31(fy: string, village: VillageInfoType | null) {
 // ============================================================
 async function generateNamuna32(fy: string, village: VillageInfoType | null) {
   const payments = await safeQuery(() =>
-    db.payment.findMany({
+    db.taxPayment.findMany({
       where: { financialYear: fy },
       include: { property: { include: { ward: true, owners: { include: { owner: true } } } } },
       orderBy: { paymentDate: 'desc' },
@@ -1723,7 +1723,7 @@ async function generateNamuna32(fy: string, village: VillageInfoType | null) {
 // ============================================================
 async function generateNamuna33(fy: string, village: VillageInfoType | null) {
   const entries = await safeQuery(() =>
-    db.namuna33.findMany({ where: { financialYear: fy }, orderBy: { treeType: 'asc' } })
+    db.treeAsset.findMany({ where: { financialYear: fy }, orderBy: { treeType: 'asc' } })
   );
 
   const rows = entries.map((e, i) => ({

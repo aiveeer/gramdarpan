@@ -459,7 +459,7 @@ async function generateNamuna7(fy: string) {
 // ============================================================
 async function generateNamuna8(fy: string) {
   const [namuna8s, village] = await Promise.all([
-    db.namuna8.findMany({
+    db.taxAssessment.findMany({
       where: { financialYear: fy },
       include: { property: { include: { ward: true, owners: { include: { owner: true } } } } },
       orderBy: { createdAt: 'desc' },
@@ -507,7 +507,7 @@ async function generateNamuna8(fy: string) {
 // ============================================================
 async function generateNamuna9(fy: string) {
   const [namuna9s, village] = await Promise.all([
-    db.namuna9.findMany({
+    db.demandRegister.findMany({
       where: { financialYear: fy },
       include: { property: { include: { ward: true, owners: { include: { owner: true } } } }, payments: true },
       orderBy: { createdAt: 'desc' },
@@ -552,7 +552,7 @@ async function generateNamuna9(fy: string) {
 // ============================================================
 async function generateNamuna10(fy: string) {
   const [demands, village] = await Promise.all([
-    db.namuna9.findMany({
+    db.demandRegister.findMany({
       where: { financialYear: fy },
       include: { property: { include: { owners: { include: { owner: true } }, ward: true } }, payments: true },
     }),
@@ -746,7 +746,7 @@ async function generateNamuna14(fy: string) {
     db.ledgerEntry.findMany({ where: { financialYear: fy }, orderBy: [{ accountCode: 'asc' }, { entryDate: 'asc' }] }),
     db.receiptEntry.findMany({ where: { financialYear: fy }, orderBy: { receiptDate: 'asc' } }),
     db.paymentEntry.findMany({ where: { financialYear: fy }, orderBy: { paymentDate: 'asc' } }),
-    db.journalEntry.findMany({ where: { financialYear: fy }, orderBy: { entryDate: 'asc' } }),
+    db.voucherEntry.findMany({ where: { financialYear: fy }, orderBy: { entryDate: 'asc' } }),
     db.villageInfo.findFirst(),
   ]);
 
@@ -819,7 +819,7 @@ async function generateNamuna15(fy: string) {
     db.ledgerEntry.findMany({ where: { financialYear: fy } }),
     db.receiptEntry.findMany({ where: { financialYear: fy } }),
     db.paymentEntry.findMany({ where: { financialYear: fy } }),
-    db.journalEntry.findMany({ where: { financialYear: fy } }),
+    db.voucherEntry.findMany({ where: { financialYear: fy } }),
     db.villageInfo.findFirst(),
   ]);
 
@@ -1049,13 +1049,13 @@ async function generateNamuna19(fy: string) {
 // ============================================================
 async function generateNamuna20(fy: string) {
   const [waterBills, village] = await Promise.all([
-    db.waterBillEntry.findMany({ where: { financialYear: fy }, orderBy: { billDate: 'asc' } }),
+    db.collectionEntry.findMany({ where: { financialYear: fy }, orderBy: { createdAt: 'asc' } }),
     db.villageInfo.findFirst(),
   ]);
 
   const rows = waterBills.map(w => ({
     billNumber: w.billNumber,
-    billDate: w.billDate,
+    createdAt: w.createdAt,
     amount: w.amount,
     penalty: w.penalty,
     totalAmount: w.totalAmount,
@@ -1087,7 +1087,7 @@ async function generateNamuna20(fy: string) {
 async function generateNamuna21(fy: string) {
   const [collections, namuna9s, village] = await Promise.all([
     db.collectionEntry.findMany({ where: { financialYear: fy } }),
-    db.namuna9.findMany({ where: { financialYear: fy }, include: { payments: true } }),
+    db.demandRegister.findMany({ where: { financialYear: fy }, include: { payments: true } }),
     db.villageInfo.findFirst(),
   ]);
 
@@ -1120,7 +1120,7 @@ async function generateNamuna21(fy: string) {
 // ============================================================
 async function generateNamuna22(fy: string) {
   const [namuna9s, village] = await Promise.all([
-    db.namuna9.findMany({
+    db.demandRegister.findMany({
       where: { financialYear: fy },
       include: { property: { include: { owners: { include: { owner: true } }, ward: true } }, payments: true },
     }),
@@ -1203,9 +1203,9 @@ async function generateNamuna23(fy: string) {
 async function generateNamuna24(fy: string) {
   const [collections, namuna9s, namuna8s, waterBills, village] = await Promise.all([
     db.collectionEntry.findMany({ where: { financialYear: fy } }),
-    db.namuna9.findMany({ where: { financialYear: fy }, include: { payments: true } }),
-    db.namuna8.findMany({ where: { financialYear: fy } }),
-    db.waterBillEntry.findMany({ where: { financialYear: fy } }),
+    db.demandRegister.findMany({ where: { financialYear: fy }, include: { payments: true } }),
+    db.taxAssessment.findMany({ where: { financialYear: fy } }),
+    db.collectionEntry.findMany({ where: { financialYear: fy } }),
     db.villageInfo.findFirst(),
   ]);
 
@@ -1245,11 +1245,11 @@ async function generateNamuna25(fy: string) {
   const [receipts, payments, journals, assets, stocks, namuna8s, namuna9s, collections, village] = await Promise.all([
     db.receiptEntry.findMany({ where: { financialYear: fy } }),
     db.paymentEntry.findMany({ where: { financialYear: fy } }),
-    db.journalEntry.findMany({ where: { financialYear: fy } }),
+    db.voucherEntry.findMany({ where: { financialYear: fy } }),
     db.assetEntry.findMany(),
     db.stockEntry.findMany(),
-    db.namuna8.findMany({ where: { financialYear: fy } }),
-    db.namuna9.findMany({ where: { financialYear: fy }, include: { payments: true } }),
+    db.taxAssessment.findMany({ where: { financialYear: fy } }),
+    db.demandRegister.findMany({ where: { financialYear: fy }, include: { payments: true } }),
     db.collectionEntry.findMany({ where: { financialYear: fy } }),
     db.villageInfo.findFirst(),
   ]);
@@ -1297,8 +1297,8 @@ async function generateNamuna26(fy: string) {
   const [receipts, payments, namuna8s, namuna9s, village] = await Promise.all([
     db.receiptEntry.findMany({ where: { financialYear: fy } }),
     db.paymentEntry.findMany({ where: { financialYear: fy } }),
-    db.namuna8.findMany({ where: { financialYear: fy } }),
-    db.namuna9.findMany({ where: { financialYear: fy }, include: { payments: true, property: { include: { owners: { include: { owner: true } } } } } }),
+    db.taxAssessment.findMany({ where: { financialYear: fy } }),
+    db.demandRegister.findMany({ where: { financialYear: fy }, include: { payments: true, property: { include: { owners: { include: { owner: true } } } } } }),
     db.villageInfo.findFirst(),
   ]);
 
@@ -1335,8 +1335,8 @@ async function generateNamuna27(fy: string) {
   const [receipts, payments, namuna8s, namuna9s, village] = await Promise.all([
     db.receiptEntry.findMany({ where: { financialYear: fy } }),
     db.paymentEntry.findMany({ where: { financialYear: fy } }),
-    db.namuna8.findMany({ where: { financialYear: fy } }),
-    db.namuna9.findMany({ where: { financialYear: fy }, include: { payments: true } }),
+    db.taxAssessment.findMany({ where: { financialYear: fy } }),
+    db.demandRegister.findMany({ where: { financialYear: fy }, include: { payments: true } }),
     db.villageInfo.findFirst(),
   ]);
 
@@ -1534,7 +1534,7 @@ async function generateNamuna31(fy: string) {
   const [receipts, payments, journals, ledgerEntries, village] = await Promise.all([
     db.receiptEntry.findMany({ where: { financialYear: fy } }),
     db.paymentEntry.findMany({ where: { financialYear: fy } }),
-    db.journalEntry.findMany({ where: { financialYear: fy } }),
+    db.voucherEntry.findMany({ where: { financialYear: fy } }),
     db.ledgerEntry.findMany({ where: { financialYear: fy } }),
     db.villageInfo.findFirst(),
   ]);
@@ -1632,15 +1632,15 @@ async function generateNamuna33(fy: string) {
   const [receipts, payments, journals, assets, stocks, bankAccounts, schemeFunds, namuna8s, namuna9s, collections, waterBills, works, village] = await Promise.all([
     db.receiptEntry.findMany({ where: { financialYear: fy } }),
     db.paymentEntry.findMany({ where: { financialYear: fy } }),
-    db.journalEntry.findMany({ where: { financialYear: fy } }),
+    db.voucherEntry.findMany({ where: { financialYear: fy } }),
     db.assetEntry.findMany(),
     db.stockEntry.findMany(),
     db.bankAccount.findMany({ where: { isActive: true } }),
     db.schemeFundEntry.findMany({ where: { financialYear: fy } }),
-    db.namuna8.findMany({ where: { financialYear: fy } }),
-    db.namuna9.findMany({ where: { financialYear: fy }, include: { payments: true } }),
+    db.taxAssessment.findMany({ where: { financialYear: fy } }),
+    db.demandRegister.findMany({ where: { financialYear: fy }, include: { payments: true } }),
     db.collectionEntry.findMany({ where: { financialYear: fy } }),
-    db.waterBillEntry.findMany({ where: { financialYear: fy } }),
+    db.collectionEntry.findMany({ where: { financialYear: fy } }),
     db.workEntry.findMany({ where: { financialYear: fy } }),
     db.villageInfo.findFirst(),
   ]);
@@ -1705,15 +1705,15 @@ async function generateSummary(fy: string) {
   const budgetCount = await db.budgetEntry.count({ where: { financialYear: fy } });
   const receiptCount = await db.receiptEntry.count({ where: { financialYear: fy } });
   const paymentCount = await db.paymentEntry.count({ where: { financialYear: fy } });
-  const journalCount = await db.journalEntry.count({ where: { financialYear: fy } });
+  const journalCount = await db.voucherEntry.count({ where: { financialYear: fy } });
   const assetCount = await db.assetEntry.count();
   const stockCount = await db.stockEntry.count();
   const schemeFundCount = await db.schemeFundEntry.count({ where: { financialYear: fy } });
-  const namuna8Count = await db.namuna8.count({ where: { financialYear: fy } });
-  const namuna9Count = await db.namuna9.count({ where: { financialYear: fy } });
-  const paymentCount2 = await db.payment.count();
+  const namuna8Count = await db.taxAssessment.count({ where: { financialYear: fy } });
+  const namuna9Count = await db.demandRegister.count({ where: { financialYear: fy } });
+  const paymentCount2 = await db.taxPayment.count();
   const collectionCount = await db.collectionEntry.count({ where: { financialYear: fy } });
-  const waterBillCount = await db.waterBillEntry.count({ where: { financialYear: fy } });
+  const waterBillCount = await db.collectionEntry.count({ where: { financialYear: fy } });
   const workCount = await db.workEntry.count({ where: { financialYear: fy } });
   const ledgerCount = await db.ledgerEntry.count({ where: { financialYear: fy } });
   const bankCount = await db.bankAccount.count({ where: { isActive: true } });

@@ -10,28 +10,28 @@ datasource db {
 // ===== AUTH & USERS =====
 
 model User {
-  id        String   @id @default(cuid())
-  username  String   @unique
-  password  String
-  name      String
+  id          String   @id @default(cuid())
+  username    String   @unique
+  password    String
+  name        String
   nameMarathi String
-  role      String   @default("operator")
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  role        String   @default("operator")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   sessions   UserSession[]
   auditLogs  AuditLog[]
 }
 
 model UserSession {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  loginAt   DateTime @default(now())
+  loginAt   DateTime  @default(now())
   logoutAt  DateTime?
   ipAddress String?
   userAgent String?
-  action    String   @default("login")
+  action    String    @default("login")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -51,31 +51,30 @@ model AuditLog {
 // ===== MASTER TABLES =====
 
 model VillageInfo {
-  id              String   @id @default(cuid())
+  id                String   @id @default(cuid())
   gramPanchayatName String
   gramPanchayatNameMr String
-  taluka          String
-  district        String
-  state           String   @default("महाराष्ट्र")
-  pinCode         String?
-  population      Int?
-  totalArea       Float?
-  gramSabhaDate   String?
-  sarpanchName    String?
-  sarpanchNameMr  String?
-  secretaryName   String?
-  secretaryNameMr String?
-  financialYear   String   @default("2024-25")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  taluka            String
+  district          String
+  state             String   @default("महाराष्ट्र")
+  pinCode           String?
+  population        Int?
+  totalArea         Float?
+  gramSabhaDate     String?
+  sarpanchName      String?
+  sarpanchNameMr    String?
+  secretaryName     String?
+  secretaryNameMr   String?
+  financialYear     String   @default("2024-25")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
 
 model WardMaster {
-  id        String   @id @default(cuid())
-  wardNo    Int      @unique
-  wardName  String
+  id         String   @id @default(cuid())
+  wardNo     Int      @unique
+  wardName   String
   wardNameMr String
-  wardNumber String  @default("")
   population Int?
   households Int?
   area       Float?
@@ -89,118 +88,105 @@ model OwnerMaster {
   id          String   @id @default(cuid())
   ownerName   String
   ownerNameMr String?
-  firstName   String   @default("")
-  lastName    String   @default("")
-  firstNameMr String   @default("")
-  lastNameMr  String   @default("")
   aadhaarNo   String?
   mobileNo    String?
-  mobileNumber String?
   address     String?
   addressMr   String?
   wardNo      Int?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  properties PropertyOwnerMaster[]
-  ownedProperties PropertyMaster[]
+  properties       PropertyOwnerMaster[]
+  ownedProperties  PropertyMaster[]
 }
 
 model RoadMaster {
-  id          String   @id @default(cuid())
-  roadNo      String   @unique
-  roadName    String
-  roadNameMr  String?
-  roadType    String?
-  lengthM     Float?
-  widthM      Float?
-  wardNo      Int?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  roadNo     String   @unique
+  roadName   String
+  roadNameMr String?
+  roadType   String?
+  lengthM    Float?
+  widthM     Float?
+  wardNo     Int?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   properties PropertyMaster[]
 }
 
 model FloorInfo {
-  id            String   @id @default(cuid())
-  floorNo       Int
-  floorName     String
-  floorNameMr   String?
-  factor        Float    @default(1.0)
-  createdAt     DateTime @default(now())
+  id          String   @id @default(cuid())
+  floorNo     Int
+  floorName   String
+  floorNameMr String?
+  factor      Float    @default(1.0)
+  createdAt   DateTime @default(now())
 }
 
 model TaxMaster {
-  id          String   @id @default(cuid())
-  taxName     String
-  taxNameMr   String
-  name        String   @default("")
-  nameMarathi String   @default("")
-  taxType     String
-  taxRate     Float
-  order       Int      @default(0)
-  unit        String   @default("INR")
-  financialYear String @default("2024-25")
-  isEnabled   Boolean  @default(true)
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  taxName       String
+  taxNameMr     String
+  taxType       String
+  taxRate       Float
+  order         Int      @default(0)
+  financialYear String   @default("2024-25")
+  isEnabled     Boolean  @default(true)
+  description   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   propertyTaxRates PropertyTaxRate[]
 }
 
 model PropertyMaster {
-  id            String   @id @default(cuid())
-  propertyNo    String   @unique
-  ownerName     String
-  ownerNameMr   String?
-  propertyType  String
-  propertyUse   String?
-  usageType     String?
-  constructionType String?
-  propertyStatus String  @default("active")
-  wardId        String?
-  ownerId       String?
-  roadId        String?
-  areaSqFt      Float?
-  area          Float?
-  builtUpArea   Float?
-  constructionYear Int?
-  constructionType2 String?
-  citySurveyNo  String?
-  yearBuilt     String?
-  boundaries    String?
-  floorInfo     String?
-  isTaxExempt   Boolean  @default(false)
-  waterConnection Boolean @default(false)
+  id                   String   @id @default(cuid())
+  propertyNo           String   @unique
+  ownerName            String
+  ownerNameMr          String?
+  propertyType         String
+  propertyUse          String?
+  constructionType     String?
+  propertyStatus       String   @default("active")
+  wardId               String?
+  ownerId              String?
+  roadId               String?
+  areaSqFt             Float?
+  builtUpArea          Float?
+  constructionYear     Int?
+  citySurveyNo         String?
+  boundaries           String?
+  floorInfo            String?
+  isTaxExempt          Boolean  @default(false)
+  waterConnection      Boolean  @default(false)
   electricityConnection Boolean @default(false)
-  houseTax      Float    @default(0)
-  lightTax      Float    @default(0)
-  healthTax     Float    @default(0)
-  waterTax      Float    @default(0)
-  taxRate       Float    @default(0)
-  depreciationRate Float  @default(0)
-  usageFactor   Float    @default(1)
-  constructionDetails String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  houseTax             Float    @default(0)
+  lightTax             Float    @default(0)
+  healthTax            Float    @default(0)
+  waterTax             Float    @default(0)
+  taxRate              Float    @default(0)
+  depreciationRate     Float    @default(0)
+  usageFactor          Float    @default(1)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
-  ward         WardMaster?    @relation(fields: [wardId], references: [id])
-  owner        OwnerMaster?   @relation(fields: [ownerId], references: [id])
-  road         RoadMaster?    @relation(fields: [roadId], references: [id])
-  owners       PropertyOwnerMaster[]
-  taxRates     PropertyTaxRate[]
-  taxAssessments Namuna8[]
-  demands      Namuna9[]
-  payments     Payment[]
+  ward           WardMaster?         @relation(fields: [wardId], references: [id])
+  owner          OwnerMaster?        @relation(fields: [ownerId], references: [id])
+  road           RoadMaster?         @relation(fields: [roadId], references: [id])
+  owners         PropertyOwnerMaster[]
+  taxRates       PropertyTaxRate[]
+  taxAssessments TaxAssessment[]
+  demands        DemandRegister[]
+  payments       TaxPayment[]
 }
 
 model PropertyOwnerMaster {
-  id             String   @id @default(cuid())
-  propertyId     String
-  ownerId        String
-  ownershipType  String   @default("मालक")
-  createdAt      DateTime @default(now())
+  id            String   @id @default(cuid())
+  propertyId    String
+  ownerId       String
+  ownershipType String   @default("मालक")
+  createdAt     DateTime @default(now())
 
   property PropertyMaster @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   owner    OwnerMaster    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
@@ -209,11 +195,11 @@ model PropertyOwnerMaster {
 }
 
 model PropertyTaxRate {
-  id             String   @id @default(cuid())
-  propertyId     String
-  taxMasterId    String
-  rate           Float    @default(0)
-  createdAt      DateTime @default(now())
+  id          String   @id @default(cuid())
+  propertyId  String
+  taxMasterId String
+  rate        Float    @default(0)
+  createdAt   DateTime @default(now())
 
   property  PropertyMaster @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   taxMaster TaxMaster      @relation(fields: [taxMasterId], references: [id], onDelete: Cascade)
@@ -221,47 +207,41 @@ model PropertyTaxRate {
   @@unique([propertyId, taxMasterId])
 }
 
-model Namuna8 {
-  id             String   @id @default(cuid())
-  propertyId     String
-  financialYear  String   @default("2024-25")
-  propertyTax    Float    @default(0)
-  waterTax       Float    @default(0)
-  lightTax       Float    @default(0)
-  professionTax  Float    @default(0)
-  miscTax        Float    @default(0)
-  totalTax       Float    @default(0)
-  concession     Float    @default(0)
-  netDemand      Float    @default(0)
-  remarks        String?
-  // Extended fields for detailed calculation
-  totalArea      Float    @default(0)
-  landRate       Float    @default(0)
-  buildingRate   Float    @default(0)
-  constructionRate Float  @default(0)
-  depreciationRate Float  @default(0)
-  usageFactor    Float    @default(1)
-  capitalValue   Float    @default(0)
-  taxRatePercent Float    @default(0)
-  houseTaxAmt    Float    @default(0)
-  lightTaxAmt    Float    @default(0)
-  healthTaxAmt   Float    @default(0)
-  waterTaxAmt    Float    @default(0)
-  totalTaxAmt    Float    @default(0)
-  taxDetails     String?
-  constructionDetailsStr String?
-  appealHouseTax Float    @default(0)
-  appealLightTax Float    @default(0)
-  appealHealthTax Float   @default(0)
-  appealWaterTax Float    @default(0)
-  appealTotalTax Float    @default(0)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+// ===== TAX & DEMAND =====
+
+model TaxAssessment {
+  id                  String   @id @default(cuid())
+  propertyId          String
+  financialYear       String   @default("2024-25")
+  propertyTax         Float    @default(0)
+  waterTax            Float    @default(0)
+  lightTax            Float    @default(0)
+  professionTax       Float    @default(0)
+  miscTax             Float    @default(0)
+  totalTax            Float    @default(0)
+  concession          Float    @default(0)
+  netDemand           Float    @default(0)
+  remarks             String?
+  totalArea           Float    @default(0)
+  landRate            Float    @default(0)
+  buildingRate        Float    @default(0)
+  constructionRate    Float    @default(0)
+  depreciationRate    Float    @default(0)
+  usageFactor         Float    @default(1)
+  capitalValue        Float    @default(0)
+  taxRatePercent      Float    @default(0)
+  houseTaxAmt         Float    @default(0)
+  lightTaxAmt         Float    @default(0)
+  healthTaxAmt        Float    @default(0)
+  waterTaxAmt         Float    @default(0)
+  totalTaxAmt         Float    @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   property PropertyMaster @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 }
 
-model Namuna9 {
+model DemandRegister {
   id             String   @id @default(cuid())
   propertyId     String
   financialYear  String   @default("2024-25")
@@ -279,79 +259,101 @@ model Namuna9 {
   updatedAt      DateTime @updatedAt
 
   property PropertyMaster @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  payments Payment[]
+  payments TaxPayment[]
 }
 
-model Payment {
-  id            String   @id @default(cuid())
+model TaxPayment {
+  id            String    @id @default(cuid())
   propertyId    String
-  receiptNo     String   @unique
-  financialYear String   @default("2024-25")
+  receiptNo     String    @unique
+  financialYear String    @default("2024-25")
   amount        Float
-  amountPaid    Float    @default(0)
+  amountPaid    Float     @default(0)
   totalDemand   Float
-  balance       Float    @default(0)
-  paymentDate   DateTime @default(now())
-  paymentMode   String   @default("cash")
+  balance       Float     @default(0)
+  paymentDate   DateTime  @default(now())
+  paymentMode   String    @default("cash")
   chequeNo      String?
   bankName      String?
   collectedBy   String?
   remarks       String?
-  namuna9Id     String?
-  createdAt     DateTime @default(now())
+  demandId      String?
+  createdAt     DateTime  @default(now())
 
-  property PropertyMaster @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  namuna9  Namuna9?       @relation(fields: [namuna9Id], references: [id])
+  property PropertyMaster  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  demand   DemandRegister? @relation(fields: [demandId], references: [id])
 }
+
+// ===== EMPLOYEE & SALARY =====
 
 model EmployeeMaster {
-  id              String   @id @default(cuid())
-  employeeName    String
-  employeeNameMr  String?
-  designation     String
-  designationMr   String?
-  department      String?
-  payScale        String?
-  basicPay        Float?
-  da              Float?
-  hra             Float?
-  grossSalary     Float?
-  qualification   String?
-  dateOfJoining   String?
+  id               String   @id @default(cuid())
+  employeeName     String
+  employeeNameMr   String?
+  designation      String
+  designationMr    String?
+  department       String?
+  payScale         String?
+  basicPay         Float?
+  da               Float?
+  hra              Float?
+  grossSalary      Float?
+  qualification    String?
+  dateOfJoining    String?
   dateOfRetirement String?
-  bankAccountNo   String?
-  pfNo            String?
-  isActive        Boolean  @default(true)
+  bankAccountNo    String?
+  pfNo             String?
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  salaries SalaryEntry[]
+}
+
+model SalaryEntry {
+  id            String   @id @default(cuid())
+  employeeId    String
+  month         String
+  year          Int
+  basicPay      Float
+  da            Float    @default(0)
+  hra           Float    @default(0)
+  ma            Float    @default(0)
+  deductions    Float    @default(0)
+  netPay        Float
+  paymentDate   DateTime @default(now())
+  paymentMode   String   @default("bank_transfer")
+  financialYear String   @default("2024-25")
+  createdAt     DateTime @default(now())
+
+  employee EmployeeMaster @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+// ===== ASSETS & PROPERTY =====
+
+model ImmovableProperty {
+  id              String   @id @default(cuid())
+  propertyName    String
+  propertyNameMr  String?
+  propertyDesc    String?
+  acquisitionDate String?
+  acquisitionMode String?
+  originalValue   Float?
+  constructionCost Float?
+  currentValue    Float?
+  location        String?
+  areaSqFt        Float?
+  mapNo           String?
+  plotNo          String?
+  usageType       String?
+  condition       String?
+  remarks         String?
+  financialYear   String   @default("2024-25")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-
-  salaries        SalaryEntry[]
 }
 
-model Namuna22 {
-  id                String   @id @default(cuid())
-  propertyName      String
-  propertyNameMr    String?
-  propertyDesc      String?
-  propertyDescMr    String?
-  acquisitionDate   String?
-  acquisitionMode   String?
-  originalValue     Float?
-  constructionCost  Float?
-  currentValue      Float?
-  location          String?
-  areaSqFt          Float?
-  mapNo             String?
-  plotNo            String?
-  usageType         String?
-  condition         String?
-  remarks           String?
-  financialYear     String   @default("2024-25")
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-}
-
-model Namuna23 {
+model RoadAsset {
   id              String   @id @default(cuid())
   roadName        String
   roadNameMr      String?
@@ -372,48 +374,50 @@ model Namuna23 {
   updatedAt       DateTime @updatedAt
 }
 
-model Namuna24 {
-  id              String   @id @default(cuid())
-  landName        String
-  landNameMr      String?
-  surveyNo        String?
-  areaAcres       Float?
-  areaHectares    Float?
-  areaGunthe      Float?
-  landType        String?
-  ownershipType   String?
-  eastBoundary    String?
-  westBoundary    String?
-  northBoundary   String?
-  southBoundary   String?
-  usageType       String?
-  mapNo           String?
-  gatNo           String?
-  remarks         String?
-  financialYear   String   @default("2024-25")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+model LandAsset {
+  id           String   @id @default(cuid())
+  landName     String
+  landNameMr   String?
+  surveyNo     String?
+  areaAcres    Float?
+  areaHectares Float?
+  areaGunthe   Float?
+  landType     String?
+  ownershipType String?
+  eastBoundary  String?
+  westBoundary  String?
+  northBoundary String?
+  southBoundary String?
+  usageType    String?
+  mapNo        String?
+  gatNo        String?
+  remarks      String?
+  financialYear String  @default("2024-25")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
-model Namuna33 {
-  id              String   @id @default(cuid())
-  treeType        String
-  treeTypeMr      String?
-  location        String?
-  plantDate       String?
-  height          Float?
-  girth           Float?
-  canopyDiameter  Float?
-  condition       String?
-  estimatedValue  Float?
-  ownershipType   String?
-  caretaker       String?
-  isProtected     Boolean  @default(false)
-  remarks         String?
-  financialYear   String   @default("2024-25")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+model TreeAsset {
+  id             String   @id @default(cuid())
+  treeType       String
+  treeTypeMr     String?
+  location       String?
+  plantDate      String?
+  height         Float?
+  girth          Float?
+  canopyDiameter Float?
+  condition      String?
+  estimatedValue Float?
+  ownershipType  String?
+  caretaker      String?
+  isProtected    Boolean  @default(false)
+  remarks        String?
+  financialYear  String   @default("2024-25")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
+
+// ===== FINANCIAL =====
 
 model ReceiptEntry {
   id              String   @id @default(cuid())
@@ -425,12 +429,9 @@ model ReceiptEntry {
   amount          Float
   taxType         String
   paymentMode     String   @default("cash")
-  paymentMethod   String   @default("cash")
   chequeNo        String?
-  chequeNumber    String?
   bankName        String?
   description     String?
-  // Extended fields
   voucherNumber   String?
   receivedFrom    String?
   headOfAccount   String?
@@ -442,9 +443,7 @@ model ReceiptEntry {
 model PaymentEntry {
   id              String   @id @default(cuid())
   voucherNo       String   @unique
-  voucherNumber   String?
   voucherDate     DateTime @default(now())
-  paymentDate     DateTime @default(now())
   financialYear   String   @default("2024-25")
   payeeName       String
   payeeNameMr     String?
@@ -452,9 +451,7 @@ model PaymentEntry {
   headOfAccount   String
   headOfAccountMr String?
   paymentMode     String   @default("cash")
-  paymentMethod   String   @default("cash")
   chequeNo        String?
-  chequeNumber    String?
   bankName        String?
   bankAccountId   String?
   description     String?
@@ -494,24 +491,18 @@ model BudgetHead {
 }
 
 model BudgetEntry {
-  id                String   @id @default(cuid())
-  financialYear     String   @default("2024-25")
-  headId            String
-  budgetType        String
-  amount            Float
-  description       String?
-  approvedDate      String?
-  // Extended fields for detailed budget tracking
-  budgetHeadCode    String?
-  budgetHeadName    String?
-  budgetHeadNameMr  String?
-  category          String?  // income / expenditure
-  type              String?  // plan / non-plan
-  originalBudget    Float    @default(0)
-  revisedBudget     Float    @default(0)
-  actualAmount      Float    @default(0)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id               String   @id @default(cuid())
+  financialYear    String   @default("2024-25")
+  headId           String
+  budgetType       String
+  amount           Float
+  description      String?
+  approvedDate     String?
+  originalBudget   Float    @default(0)
+  revisedBudget    Float    @default(0)
+  actualAmount     Float    @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   head BudgetHead @relation(fields: [headId], references: [id], onDelete: Cascade)
 }
@@ -526,7 +517,6 @@ model WorkEntry {
   approvedCost    Float?
   tenderAmount    Float?
   contractorName  String?
-  contractorMr    String?
   startDate       String?
   endDate         String?
   completionDate  String?
@@ -540,150 +530,133 @@ model WorkEntry {
   head BudgetHead? @relation(fields: [headId], references: [id])
 }
 
-model SalaryEntry {
-  id            String   @id @default(cuid())
-  employeeId    String
-  month         String
-  year          Int
-  basicPay      Float
-  da            Float    @default(0)
-  hra           Float    @default(0)
-  ma            Float    @default(0)
-  deductions    Float    @default(0)
-  netPay        Float
-  paymentDate   DateTime @default(now())
-  paymentMode   String   @default("bank_transfer")
-  financialYear String   @default("2024-25")
-  createdAt     DateTime @default(now())
-
-  employee EmployeeMaster @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-}
+// ===== OTHER MASTERS =====
 
 model ContractorMaster {
-  id              String   @id @default(cuid())
-  contractorName  String
+  id               String   @id @default(cuid())
+  contractorName   String
   contractorNameMr String?
-  aadhaarNo       String?
-  bankAccountNo   String?
-  bankName        String?
-  ifscCode        String?
-  mobileNo        String?
-  address         String?
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  aadhaarNo        String?
+  bankAccountNo    String?
+  bankName         String?
+  ifscCode         String?
+  mobileNo         String?
+  address          String?
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 model AssetEntry {
-  id              String   @id @default(cuid())
-  assetName       String
-  assetNameMr     String?
-  assetType       String?
-  assetNumber     String?
-  category        String?
-  purchaseDate    String?
-  purchaseCost    Float    @default(0)
-  currentValue    Float    @default(0)
-  depreciation    Float    @default(0)
-  location        String?
-  condition       String?
-  status          String   @default("active")
-  serialNo        String?
-  description     String?
-  financialYear   String   @default("2024-25")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-}
-
-model StockEntry {
   id            String   @id @default(cuid())
-  itemName      String
-  itemNameMr    String?
-  stockNumber   String?
+  assetName     String
+  assetNameMr   String?
+  assetType     String?
+  assetNumber   String?
   category      String?
-  unit          String?
-  quantity      Int      @default(0)
-  ratePerUnit   Float?
-  totalValue    Float    @default(0)
-  minStock      Int?
-  maxStock      Int?
-  lastPurchaseDate String?
-  supplier      String?
-  status        String   @default("In Stock")
+  purchaseDate  String?
+  purchaseCost  Float    @default(0)
+  currentValue  Float    @default(0)
+  depreciation  Float    @default(0)
+  location      String?
+  condition     String?
+  status        String   @default("active")
+  serialNo      String?
+  description   String?
   financialYear String   @default("2024-25")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
 
+model StockEntry {
+  id               String   @id @default(cuid())
+  itemName         String
+  itemNameMr       String?
+  stockNumber      String?
+  category         String?
+  unit             String?
+  quantity         Int      @default(0)
+  ratePerUnit      Float?
+  totalValue       Float    @default(0)
+  minStock         Int?
+  maxStock         Int?
+  lastPurchaseDate String?
+  supplier         String?
+  status           String   @default("In Stock")
+  financialYear    String   @default("2024-25")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
 model BankAccount {
-  id          String   @id @default(cuid())
-  bankName    String
-  branchName  String?
-  accountNo   String   @unique
-  ifscCode    String?
-  accountType String?
-  balance     Float    @default(0)
-  openingBalance Float @default(0)
-  financialYear String   @default("2024-25")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(cuid())
+  bankName       String
+  branchName     String?
+  accountNo      String   @unique
+  ifscCode       String?
+  accountType    String?
+  balance        Float    @default(0)
+  openingBalance Float    @default(0)
+  financialYear  String   @default("2024-25")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model SchemeInfo {
-  id          String   @id @default(cuid())
-  schemeName  String
-  schemeNameMr String?
-  schemeCode  String?
-  schemeType  String?
-  department  String?
-  grantAmount Float?
-  receivedAmount Float @default(0)
-  expenditure Float  @default(0)
-  balance     Float  @default(0)
-  financialYear String @default("2024-25")
-  startDate   String?
-  endDate     String?
-  status      String @default("active")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(cuid())
+  schemeName     String
+  schemeNameMr   String?
+  schemeCode     String?
+  schemeType     String?
+  department     String?
+  grantAmount    Float?
+  receivedAmount Float    @default(0)
+  expenditure    Float    @default(0)
+  balance        Float    @default(0)
+  financialYear  String   @default("2024-25")
+  startDate      String?
+  endDate        String?
+  status         String   @default("active")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   fundEntries SchemeFundEntry[]
 }
 
 model SchemeFundEntry {
-  id          String   @id @default(cuid())
-  schemeId    String?
-  entryType   String   @default("Receipt")
-  entryDate   String?
-  amount      Float    @default(0)
-  description String?
-  financialYear String @default("2024-25")
-  voucherNo   String?
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  schemeId      String?
+  entryType     String   @default("Receipt")
+  entryDate     String?
+  amount        Float    @default(0)
+  description   String?
+  financialYear String   @default("2024-25")
+  voucherNo     String?
+  createdAt     DateTime @default(now())
 
   scheme SchemeInfo? @relation(fields: [schemeId], references: [id])
 }
 
 model CollectionEntry {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   collectionNumber String?
   propertyId      String?
-  collectionDate  DateTime @default(now())
-  amount          Float    @default(0)
+  collectionDate  DateTime  @default(now())
+  amount          Float     @default(0)
   collectionType  String?
   receiptNumber   String?
-  paymentMethod   String   @default("cash")
+  paymentMethod   String    @default("cash")
   description     String?
-  financialYear   String   @default("2024-25")
-  createdAt       DateTime @default(now())
+  financialYear   String    @default("2024-25")
+  createdAt       DateTime  @default(now())
 }
 
 model FinancialYear {
-  id            String   @id @default(cuid())
-  yearLabel     String   @unique
-  startDate     DateTime
-  endDate       DateTime
-  isActive      Boolean  @default(false)
-  isCurrent     Boolean  @default(false)
-  createdAt     DateTime @default(now())
+  id        String   @id @default(cuid())
+  yearLabel String   @unique
+  startDate DateTime
+  endDate   DateTime
+  isActive  Boolean  @default(false)
+  isCurrent Boolean  @default(false)
+  createdAt DateTime @default(now())
 }

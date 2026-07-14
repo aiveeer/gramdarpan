@@ -9,10 +9,8 @@ export async function GET(request: NextRequest) {
 
     if (!q) {
       return NextResponse.json({
-        properties: [],
-        owners: [],
-        wards: [],
-        totalResults: 0,
+        success: true,
+        data: { properties: [], owners: [], wards: [], totalResults: 0 },
       });
     }
 
@@ -33,26 +31,19 @@ export async function GET(request: NextRequest) {
       const properties = await db.propertyMaster.findMany({
         where: {
           OR: [
-            { propertyNumber: { contains: q } },
+            { propertyNo: { contains: q } },
+            { ownerName: { contains: q } },
             { citySurveyNo: { contains: q } },
-            { usageType: { contains: q } },
-            { constructionType: { contains: q } },
-            { propertyStatus: { contains: q } },
+            { propertyType: { contains: q } },
+            { propertyUse: { contains: q } },
           ],
         },
         include: {
           ward: true,
           road: true,
-          owners: {
-            include: {
-              owner: true,
-            },
-          },
-          taxRates: {
-            include: {
-              taxMaster: true,
-            },
-          },
+          owner: true,
+          owners: { include: { owner: true } },
+          taxRates: { include: { taxMaster: true } },
         },
         take: 20,
       });
@@ -63,46 +54,21 @@ export async function GET(request: NextRequest) {
 
         return {
           id: p.id,
-          propertyNumber: p.propertyNumber,
+          propertyNo: p.propertyNo,
+          ownerName: p.ownerName,
           citySurveyNo: p.citySurveyNo,
-          area: p.area,
+          areaSqFt: p.areaSqFt,
           builtUpArea: p.builtUpArea,
-          usageType: p.usageType,
+          propertyUse: p.propertyUse,
           constructionType: p.constructionType,
-          floorInfo: p.floorInfo,
-          yearBuilt: p.yearBuilt,
           propertyStatus: p.propertyStatus,
-          ward: p.ward
-            ? {
-                wardNumber: p.ward.wardNumber,
-                wardName: p.ward.wardName,
-                wardNameMr: p.ward.wardNameMr,
-              }
-            : null,
-          road: p.road
-            ? {
-                roadNumber: p.road.roadNumber,
-                roadName: p.road.roadName,
-                roadNameMr: p.road.roadNameMr,
-              }
-            : null,
-          owner: primaryOwner?.owner
-            ? {
-                id: primaryOwner.owner.id,
-                ownerNumber: primaryOwner.owner.ownerNumber,
-                firstName: primaryOwner.owner.firstName,
-                middleName: primaryOwner.owner.middleName,
-                lastName: primaryOwner.owner.lastName,
-                firstNameMr: primaryOwner.owner.firstNameMr,
-                middleNameMr: primaryOwner.owner.middleNameMr,
-                lastNameMr: primaryOwner.owner.lastNameMr,
-                ownershipType: primaryOwner.ownershipType,
-              }
-            : null,
+          ward: p.ward ? { wardNo: p.ward.wardNo, wardName: p.ward.wardName, wardNameMr: p.ward.wardNameMr } : null,
+          road: p.road ? { roadNo: p.road.roadNo, roadName: p.road.roadName, roadNameMr: p.road.roadNameMr } : null,
+          owner: primaryOwner?.owner ? { id: primaryOwner.owner.id, ownerName: primaryOwner.owner.ownerName, ownershipType: primaryOwner.ownershipType } : null,
           totalTaxRate,
           taxDetails: p.taxRates.map((tr) => ({
-            name: tr.taxMaster.name,
-            nameMarathi: tr.taxMaster.nameMarathi,
+            taxName: tr.taxMaster.taxName,
+            taxNameMr: tr.taxMaster.taxNameMr,
             rate: tr.rate,
           })),
           ownersCount: p.owners.length,
@@ -115,60 +81,26 @@ export async function GET(request: NextRequest) {
       const owners = await db.ownerMaster.findMany({
         where: {
           OR: [
-            { firstName: { contains: q } },
-            { middleName: { contains: q } },
-            { lastName: { contains: q } },
-            { firstNameMr: { contains: q } },
-            { middleNameMr: { contains: q } },
-            { lastNameMr: { contains: q } },
-            { mobileNumber: { contains: q } },
-            { aadhaarNumber: { contains: q } },
-            { ownerNumber: { contains: q } },
+            { ownerName: { contains: q } },
+            { ownerNameMr: { contains: q } },
+            { mobileNo: { contains: q } },
+            { aadhaarNo: { contains: q } },
           ],
         },
         include: {
-          properties: {
-            include: {
-              property: {
-                include: {
-                  ward: true,
-                },
-              },
-            },
-          },
+          properties: { include: { property: { include: { ward: true } } } },
+          ownedProperties: true,
         },
         take: 20,
       });
 
       results.owners = owners.map((o) => ({
         id: o.id,
-        ownerNumber: o.ownerNumber,
-        firstName: o.firstName,
-        middleName: o.middleName,
-        lastName: o.lastName,
-        firstNameMr: o.firstNameMr,
-        middleNameMr: o.middleNameMr,
-        lastNameMr: o.lastNameMr,
-        fullName: `${o.firstName} ${o.middleName || ''} ${o.lastName}`.replace(/\s+/g, ' ').trim(),
-        fullNameMr: `${o.firstNameMr} ${o.middleNameMr || ''} ${o.lastNameMr || ''}`.replace(/\s+/g, ' ').trim(),
-        mobileNumber: o.mobileNumber,
-        aadhaarNumber: o.aadhaarNumber,
-        isDisabled: o.isDisabled,
-        disabilityType: o.disabilityType,
-        disabilityPercentage: o.disabilityPercentage,
-        linkedProperties: o.properties.map((po) => ({
-          propertyNumber: po.property.propertyNumber,
-          ownershipType: po.ownershipType,
-          usageType: po.property.usageType,
-          area: po.property.area,
-          ward: po.property.ward
-            ? {
-                wardNumber: po.property.ward.wardNumber,
-                wardNameMr: po.property.ward.wardNameMr,
-              }
-            : null,
-        })),
-        linkedPropertiesCount: o.properties.length,
+        ownerName: o.ownerName,
+        ownerNameMr: o.ownerNameMr,
+        mobileNo: o.mobileNo,
+        aadhaarNo: o.aadhaarNo,
+        linkedProperties: o.ownedProperties.length,
       }));
     }
 
@@ -177,52 +109,36 @@ export async function GET(request: NextRequest) {
       const wards = await db.wardMaster.findMany({
         where: {
           OR: [
-            { wardNumber: { contains: q } },
+            { wardNo: { contains: q } },
             { wardName: { contains: q } },
             { wardNameMr: { contains: q } },
-            { description: { contains: q } },
           ],
         },
         include: {
-          properties: {
-            select: {
-              id: true,
-              propertyNumber: true,
-              usageType: true,
-              area: true,
-              propertyStatus: true,
-            },
-          },
+          properties: { select: { id: true, propertyNo: true, propertyUse: true, areaSqFt: true, propertyStatus: true } },
         },
         take: 20,
       });
 
       results.wards = wards.map((w) => ({
         id: w.id,
-        wardNumber: w.wardNumber,
+        wardNo: w.wardNo,
         wardName: w.wardName,
         wardNameMr: w.wardNameMr,
         population: w.population,
         area: w.area,
-        description: w.description,
         propertiesCount: w.properties.length,
-        properties: w.properties.slice(0, 10).map((p) => ({
-          propertyNumber: p.propertyNumber,
-          usageType: p.usageType,
-          area: p.area,
-          propertyStatus: p.propertyStatus,
-        })),
       }));
     }
 
     results.totalResults =
       results.properties.length + results.owners.length + results.wards.length;
 
-    return NextResponse.json(results);
+    return NextResponse.json({ success: true, data: results });
   } catch (error) {
     console.error('Search API error:', error);
     return NextResponse.json(
-      { error: 'शोध विफल झाला', properties: [], owners: [], wards: [], totalResults: 0 },
+      { success: false, error: 'शोध विफल झाला', data: { properties: [], owners: [], wards: [], totalResults: 0 } },
       { status: 500 }
     );
   }

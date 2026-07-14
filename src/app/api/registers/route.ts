@@ -294,7 +294,7 @@ export async function GET(request: NextRequest) {
       case 'demand-register': {
         // Namuna 9 data with property info
         const demands = await safeQuery(
-          () => db.namuna9.findMany({
+          () => db.demandRegister.findMany({
             where: financialYear ? { financialYear } : {},
             include: {
               property: {

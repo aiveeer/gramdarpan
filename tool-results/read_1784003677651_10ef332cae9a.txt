@@ -1,0 +1,844 @@
+     1→'use client';
+     2→
+     3→import React, { useState, useEffect, useCallback } from 'react';
+     4→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+     5→import { Button } from '@/components/ui/button';
+     6→import { Input } from '@/components/ui/input';
+     7→import { Label } from '@/components/ui/label';
+     8→import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+     9→import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+    10→import { Badge } from '@/components/ui/badge';
+    11→import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+    12→import { Separator } from '@/components/ui/separator';
+    13→import { toast } from '@/hooks/use-toast';
+    14→import {
+    15→  Printer, RefreshCw, Search, CreditCard, FileText,
+    16→  IndianRupee, CheckCircle2, AlertCircle, Wallet,
+    17→  ArrowRight, User, Building2, Phone, Hash,
+    18→  ChevronDown, Receipt, CircleDollarSign, Scale,
+    19→  HandCoins, Clock
+    20→} from 'lucide-react';
+    21→
+    22→/* ------------------------------------------------------------------ */
+    23→/*  Types                                                              */
+    24→/* ------------------------------------------------------------------ */
+    25→
+    26→interface OwnerInfo {
+    27→  owner: {
+    28→    firstName: string; lastName: string;
+    29→    firstNameMr: string; lastNameMr: string;
+    30→    mobileNumber: string | null;
+    31→  };
+    32→  ownershipType: string;
+    33→}
+    34→
+    35→interface PropertyInfo {
+    36→  id: string;
+    37→  propertyNumber: string;
+    38→  area: number | null;
+    39→  constructionType: string | null;
+    40→  usageType: string | null;
+    41→  ward?: { wardNameMr: string };
+    42→  road?: { roadNameMr: string };
+    43→  owners: OwnerInfo[];
+    44→}
+    45→
+    46→interface PaymentInfo {
+    47→  id: string;
+    48→  namuna9Id: string;
+    49→  amountPaid: number;
+    50→  balance: number;
+    51→  receiptNumber: string;
+    52→  paymentDate: string;
+    53→  paymentMethod: string;
+    54→  property: PropertyInfo;
+    55→  namuna9: { totalDemand: number };
+    56→}
+    57→
+    58→interface Namuna9Info {
+    59→  id: string;
+    60→  propertyId: string;
+    61→  financialYear: string;
+    62→  totalDemand: number;
+    63→  currentTax: number;
+    64→  previousBalance: number;
+    65→  penalty: number;
+    66→  interest: number;
+    67→  payments: PaymentInfo[];
+    68→}
+    69→
+    70→/* ------------------------------------------------------------------ */
+    71→/*  Helpers                                                            */
+    72→/* ------------------------------------------------------------------ */
+    73→
+    74→const getOwnerName = (prop: PropertyInfo | null | undefined) => {
+    75→  if (!prop?.owners?.length) return '-';
+    76→  const owner = prop.owners.find(o => o.ownershipType === 'मालक') || prop.owners[0];
+    77→  return `${owner.owner.firstNameMr || owner.owner.firstName} ${owner.owner.lastNameMr || owner.owner.lastName}`;
+    78→};
+    79→
+    80→const getOwnerMobile = (prop: PropertyInfo | null | undefined) => {
+    81→  if (!prop?.owners?.length) return '-';
+    82→  const owner = prop.owners.find(o => o.ownershipType === 'मालक') || prop.owners[0];
+    83→  return owner.owner.mobileNumber || '-';
+    84→};
+    85→
+    86→const formatCurrency = (amount: number) =>
+    87→  new Intl.NumberFormat('mr-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(amount);
+    88→
+    89→const formatDate = (dateStr: string) =>
+    90→  new Date(dateStr).toLocaleDateString('mr-IN', { year: 'numeric', month: 'long', day: 'numeric' });
+    91→
+    92→const paymentMethodLabel: Record<string, string> = {
+    93→  Cash: 'रोख',
+    94→  Cheque: 'चेक',
+    95→  Online: 'ऑनलाइन',
+    96→  DD: 'डिमांड ड्राफ्ट',
+    97→};
+    98→
+    99→/* ------------------------------------------------------------------ */
+   100→/*  Component                                                          */
+   101→/* ------------------------------------------------------------------ */
+   102→
+   103→export default function Namuna9KaComponent() {
+   104→  const [namuna9Records, setNamuna9Records] = useState<Namuna9Info[]>([]);
+   105→  const [properties, setProperties] = useState<PropertyInfo[]>([]);
+   106→  const [loading, setLoading] = useState(true);
+   107→  const [searchQuery, setSearchQuery] = useState('');
+   108→  const [searching, setSearching] = useState(false);
+   109→  const [searchResults, setSearchResults] = useState<PropertyInfo[]>([]);
+   110→  const [selectedPropertyId, setSelectedPropertyId] = useState('');
+   111→  const [selectedNamuna9Id, setSelectedNamuna9Id] = useState('');
+   112→  const [paymentAmount, setPaymentAmount] = useState('');
+   113→  const [paymentMethod, setPaymentMethod] = useState('Cash');
+   114→  const [paying, setPaying] = useState(false);
+   115→  const [lastReceipt, setLastReceipt] = useState<PaymentInfo | null>(null);
+   116→  const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
+   117→  const [allPayments, setAllPayments] = useState<PaymentInfo[]>([]);
+   118→
+   119→  /* ---- data fetch ---- */
+   120→  const fetchData = useCallback(async () => {
+   121→    setLoading(true);
+   122→    try {
+   123→      const [n9Res, propRes, payRes] = await Promise.all([
+   124→        fetch('/api/namuna9'),
+   125→        fetch('/api/master?table=property'),
+   126→        fetch('/api/payment'),
+   127→      ]);
+   128→      const n9Data = await n9Res.json();
+   129→      setNamuna9Records(Array.isArray(n9Data) ? n9Data : []);
+   130→      const propData = await propRes.json();
+   131→      setProperties(Array.isArray(propData) ? propData : []);
+   132→      const payData = await payRes.json();
+   133→      setAllPayments(Array.isArray(payData) ? payData : []);
+   134→    } catch {
+   135→      toast({ title: 'त्रुटी', description: 'डेटा लोड करता आला नाही', variant: 'destructive' });
+   136→    } finally {
+   137→      setLoading(false);
+   138→    }
+   139→  }, []);
+   140→
+   141→  useEffect(() => { fetchData(); }, [fetchData]);
+   142→
+   143→  /* ---- search ---- */
+   144→  const handleSearch = async () => {
+   145→    if (!searchQuery.trim()) { toast({ title: 'शोधा', description: 'कृपया शोध शब्द टाका', variant: 'destructive' }); return; }
+   146→    setSearching(true);
+   147→    try {
+   148→      const res = await fetch(`/api/namuna9?search=${encodeURIComponent(searchQuery)}`);
+   149→      const data = await res.json();
+   150→      setSearchResults(data);
+   151→      if (data.length > 0) {
+   152→        setSelectedPropertyId(data[0].id);
+   153→        handlePropertySelect(data[0].id, data);
+   154→      }
+   155→    } catch {
+   156→      toast({ title: 'त्रुटी', variant: 'destructive' });
+   157→    } finally {
+   158→      setSearching(false);
+   159→    }
+   160→  };
+   161→
+   162→  /* ---- property select ---- */
+   163→  const handlePropertySelect = (propId: string, overrideResults?: PropertyInfo[]) => {
+   164→    setSelectedPropertyId(propId);
+   165→    const n9 = namuna9Records.find(n => n.propertyId === propId);
+   166→    if (n9) {
+   167→      setSelectedNamuna9Id(n9.id);
+   168→      const totalPaid = n9.payments.reduce((s, p) => s + p.amountPaid, 0);
+   169→      setPaymentAmount((n9.totalDemand - totalPaid).toFixed(2));
+   170→    }
+   171→  };
+   172→
+   173→  /* ---- outstanding calculation ---- */
+   174→  const getOutstanding = (propertyId: string) => {
+   175→    const recs = namuna9Records.filter(n => n.propertyId === propertyId);
+   176→    const totalDemand = recs.reduce((s, n) => s + n.totalDemand, 0);
+   177→    const totalPaid = recs.reduce((s, n) => s + n.payments.reduce((ps, p) => ps + p.amountPaid, 0), 0);
+   178→    return { totalDemand, totalPaid, balance: totalDemand - totalPaid };
+   179→  };
+   180→
+   181→  const outstandingInfo = selectedPropertyId ? getOutstanding(selectedPropertyId) : null;
+   182→  const selectedProp = properties.find(p => p.id === selectedPropertyId) || searchResults.find(p => p.id === selectedPropertyId);
+   183→
+   184→  /* ---- pay ---- */
+   185→  const handlePay = async () => {
+   186→    if (!selectedPropertyId || !selectedNamuna9Id || !paymentAmount) {
+   187→      toast({ title: 'त्रुटी', description: 'सर्व माहिती भरा', variant: 'destructive' });
+   188→      return;
+   189→    }
+   190→    const amt = parseFloat(paymentAmount);
+   191→    if (isNaN(amt) || amt <= 0) {
+   192→      toast({ title: 'त्रुटी', description: 'वैध रक्कम टाका', variant: 'destructive' });
+   193→      return;
+   194→    }
+   195→    if (outstandingInfo && amt > outstandingInfo.balance) {
+   196→      toast({ title: 'त्रुटी', description: `शिल्लक रक्कम ${formatCurrency(outstandingInfo.balance)} पेक्षा जास्त भरू शकत नाही`, variant: 'destructive' });
+   197→      return;
+   198→    }
+   199→    setPaying(true);
+   200→    try {
+   201→      const res = await fetch('/api/payment', {
+   202→        method: 'POST',
+   203→        headers: { 'Content-Type': 'application/json' },
+   204→        body: JSON.stringify({ propertyId: selectedPropertyId, namuna9Id: selectedNamuna9Id, amountPaid: amt, paymentMethod }),
+   205→      });
+   206→      if (res.ok) {
+   207→        const payment = await res.json();
+   208→        setLastReceipt(payment);
+   209→        setReceiptDialogOpen(true);
+   210→        toast({ title: '✅ यशस्वी!', description: 'पावती तयार झाली' });
+   211→        setPaymentAmount('');
+   212→        fetchData();
+   213→      } else {
+   214→        const err = await res.json();
+   215→        toast({ title: 'त्रुटी', description: err.error || 'पेमेंट अयशस्वी', variant: 'destructive' });
+   216→      }
+   217→    } catch {
+   218→      toast({ title: 'त्रुटी', description: 'सर्व्हर त्रुटी', variant: 'destructive' });
+   219→    } finally {
+   220→      setPaying(false);
+   221→    }
+   222→  };
+   223→
+   224→  /* ---- print receipt ---- */
+   225→  const handlePrintReceipt = (payment: PaymentInfo) => {
+   226→    const prop = payment.property;
+   227→    const ownerName = getOwnerName(prop);
+   228→    const mobile = getOwnerMobile(prop);
+   229→    const wardName = prop?.ward?.wardNameMr || '-';
+   230→
+   231→    const printContent = `<!DOCTYPE html><html lang="mr"><head><meta charset="UTF-8"><title>नमुना ९-क पावती</title>
+   232→<style>
+   233→  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap');
+   234→  *{margin:0;padding:0;box-sizing:border-box}
+   235→  body{font-family:'Noto Sans Devanagari',Arial,sans-serif;margin:0;padding:20px;background:#fff;color:#1a1a1a}
+   236→  .receipt-box{max-width:750px;margin:0 auto;border:3px double #333;padding:0;overflow:hidden}
+   237→  .flag-bar{height:8px;background:linear-gradient(90deg,#FF9933 33%,#fff 33%,#fff 66%,#138808 66%)}
+   238→  .header{background:linear-gradient(135deg,#c0392b,#e74c3c);color:#fff;text-align:center;padding:14px 20px}
+   239→  .header h1{font-size:22px;margin:0;letter-spacing:1px}
+   240→  .header h2{font-size:14px;font-weight:400;margin:3px 0 0;opacity:.9}
+   241→  .body-area{padding:20px 24px}
+   242→  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;margin-bottom:14px}
+   243→  .info-item{font-size:13px;padding:3px 0}
+   244→  .info-item strong{display:inline-block;min-width:140px;color:#555}
+   245→  .divider{border:none;border-top:1px dashed #999;margin:14px 0}
+   246→  table{width:100%;border-collapse:collapse;margin:10px 0}
+   247→  th,td{border:1px solid #333;padding:9px 10px;font-size:13px;text-align:left}
+   248→  th{background:#f5f5f5;font-weight:600}
+   249→  .amt{text-align:right;font-family:monospace}
+   250→  .received-box{background:#e8f5e9;border:2px solid #27ae60;border-radius:6px;padding:12px;text-align:center;margin:14px 0}
+   251→  .received-box .label{font-size:13px;color:#555}
+   252→  .received-box .value{font-size:28px;font-weight:700;color:#1b7a3d;margin-top:2px}
+   253→  .balance-box{background:#fdedec;border:2px solid #e74c3c;border-radius:6px;padding:10px;text-align:center;margin:10px 0}
+   254→  .balance-box .label{font-size:13px;color:#555}
+   255→  .balance-box .value{font-size:22px;font-weight:700;color:#c0392b;margin-top:2px}
+   256→  .footer{display:flex;justify-content:space-between;align-items:flex-end;margin-top:28px;font-size:12px;color:#666}
+   257→  .sig-area{width:140px;text-align:center}
+   258→  .sig-line{border-top:1px solid #333;margin-top:40px;padding-top:4px;font-size:12px;font-weight:600;color:#333}
+   259→  @media print{body{margin:0;padding:0}.receipt-box{border:3px double #333}}
+   260→</style></head><body>
+   261→<div class="receipt-box">
+   262→  <div class="flag-bar"></div>
+   263→  <div class="header">
+   264→    <h1>नमुना ९-क — पावती</h1>
+   265→    <h2>मालमत्ता कर प्राप्ती पावती (Property Tax Receipt)</h2>
+   266→  </div>
+   267→  <div class="body-area">
+   268→    <div class="info-grid">
+   269→      <div class="info-item"><strong>पावती क्रमांक:</strong> ${payment.receiptNumber}</div>
+   270→      <div class="info-item"><strong>दिनांक:</strong> ${formatDate(payment.paymentDate)}</div>
+   271→      <div class="info-item"><strong>मालमत्ता क्र.:</strong> ${prop?.propertyNumber || '-'}</div>
+   272→      <div class="info-item"><strong>मालक:</strong> ${ownerName}</div>
+   273→      <div class="info-item"><strong>मोबाईल:</strong> ${mobile}</div>
+   274→      <div class="info-item"><strong>वार्ड:</strong> ${wardName}</div>
+   275→      <div class="info-item"><strong>पद्धत:</strong> ${paymentMethodLabel[payment.paymentMethod] || payment.paymentMethod}</div>
+   276→      <div class="info-item"><strong>वित्तीय वर्ष:</strong> ${payment.namuna9?.financialYear || '-'}</div>
+   277→    </div>
+   278→    <hr class="divider">
+   279→    <table>
+   280→      <thead><tr><th>वर्णन (Description)</th><th class="amt">रक्कम (₹)</th></tr></thead>
+   281→      <tbody>
+   282→        <tr><td>एकूण मागणी (Total Demand)</td><td class="amt">${formatCurrency(payment.namuna9?.totalDemand || 0)}</td></tr>
+   283→        <tr><td>प्राप्त रक्कम (Received Amount)</td><td class="amt" style="font-weight:700;color:#1b7a3d">${formatCurrency(payment.amountPaid)}</td></tr>
+   284→        <tr><td>शिल्लक रक्कम (Balance)</td><td class="amt" style="font-weight:700;color:#c0392b">${formatCurrency(payment.balance)}</td></tr>
+   285→      </tbody>
+   286→    </table>
+   287→    <div class="received-box">
+   288→      <div class="label">प्राप्त रक्कम (Received Amount)</div>
+   289→      <div class="value">${formatCurrency(payment.amountPaid)}</div>
+   290→    </div>
+   291→    <div class="balance-box">
+   292→      <div class="label">शिल्लक (Balance Outstanding)</div>
+   293→      <div class="value">${formatCurrency(payment.balance)}</div>
+   294→    </div>
+   295→    <div class="footer">
+   296→      <div class="sig-area"><div class="sig-line">मालकाची सही</div></div>
+   297→      <div style="font-size:11px;color:#999;text-align:center">ही पावती संगणकीय तयार केलेली आहे</div>
+   298→      <div class="sig-area"><div class="sig-line">अधिकृत सही व मुद्रा</div></div>
+   299→    </div>
+   300→  </div>
+   301→  <div class="flag-bar"></div>
+   302→</div>
+   303→<script>window.onload=function(){setTimeout(function(){window.print()},400)}</script>
+   304→</body></html>`;
+   305→
+   306→    const w = window.open('', '_blank');
+   307→    if (w) { w.document.write(printContent); w.document.close(); w.focus(); }
+   308→  };
+   309→
+   310→  /* ---- render ---- */
+   311→  return (
+   312→    <div className="space-y-6">
+   313→      {/* ========== HEADER CARD ========== */}
+   314→      <Card className="border-0 shadow-lg overflow-hidden">
+   315→        <div className="relative" style={{ background: 'linear-gradient(135deg, #be123c, #e11d48, #c0392b)' }}>
+   316→          {/* decorative circles */}
+   317→          <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-10 bg-white" />
+   318→          <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full opacity-10 bg-white" />
+   319→          <CardContent className="relative p-6 sm:p-8">
+   320→            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+   321→              <div className="h-16 w-16 rounded-2xl flex items-center justify-center shadow-lg" style={{ background: 'linear-gradient(135deg, #fff, #fecdd3)' }}>
+   322→                <Receipt className="h-9 w-9 text-rose-700" />
+   323→              </div>
+   324→              <div className="flex-1">
+   325→                <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-wide">नमुना ९-क</h1>
+   326→                <h2 className="text-base sm:text-lg text-rose-100 font-medium">पावती / Receipt — मालमत्ता कर प्राप्ती</h2>
+   327→                <p className="text-xs text-rose-200/70 mt-1">Property Tax Payment Receipt Generation</p>
+   328→              </div>
+   329→              <div className="hidden md:flex flex-col items-end gap-1">
+   330→                <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm text-xs">
+   331→                  <Clock className="h-3 w-3 mr-1" />
+   332→                  {new Date().toLocaleDateString('mr-IN', { year: 'numeric', month: 'short', day: 'numeric' })}
+   333→                </Badge>
+   334→                <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm text-xs">
+   335→                  <FileText className="h-3 w-3 mr-1" />
+   336→                  वित्तीय वर्ष 2024-25
+   337→                </Badge>
+   338→              </div>
+   339→            </div>
+   340→          </CardContent>
+   341→        </div>
+   342→      </Card>
+   343→
+   344→      {/* ========== CITIZEN SEARCH ========== */}
+   345→      <Card className="border-0 shadow-md overflow-hidden">
+   346→        <div className="h-1" style={{ background: 'linear-gradient(90deg, #fbbf24, #f59e0b, #d97706)' }} />
+   347→        <CardContent className="p-6">
+   348→          <div className="flex items-center gap-2 mb-4">
+   349→            <div className="h-9 w-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #fbbf24, #f59e0b)' }}>
+   350→              <Search className="h-5 w-5 text-white" />
+   351→            </div>
+   352→            <div>
+   353→              <h3 className="font-bold text-lg">नागरिक शोधा</h3>
+   354→              <p className="text-xs text-muted-foreground">मालमत्ता क्रमांक, मोबाईल नंबर किंवा मालकाचे नाव टाका</p>
+   355→            </div>
+   356→          </div>
+   357→
+   358→          <div className="flex flex-col sm:flex-row gap-3">
+   359→            <div className="relative flex-1">
+   360→              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+   361→              <Input
+   362→                placeholder="मालमत्ता क्रमांक / मोबाईल नंबर / मालकाचे नाव..."
+   363→                value={searchQuery}
+   364→                onChange={e => setSearchQuery(e.target.value)}
+   365→                onKeyDown={e => e.key === 'Enter' && handleSearch()}
+   366→                className="pl-10 h-12 text-base border-2 border-amber-200 focus:border-amber-400 rounded-xl"
+   367→              />
+   368→            </div>
+   369→            <Button
+   370→              onClick={handleSearch}
+   371→              disabled={searching}
+   372→              className="h-12 px-8 rounded-xl text-base font-semibold"
+   373→              style={{ background: 'linear-gradient(135deg, #fbbf24, #f59e0b)' }}
+   374→            >
+   375→              {searching ? (
+   376→                <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />शोधत आहे...</>
+   377→              ) : (
+   378→                <><Search className="h-4 w-4 mr-2" />शोधा</>
+   379→              )}
+   380→            </Button>
+   381→          </div>
+   382→
+   383→          {/* Search type hints */}
+   384→          <div className="flex flex-wrap gap-2 mt-3">
+   385→            {[
+   386→              { icon: Hash, label: 'मालमत्ता क्रमांक', color: 'bg-amber-50 text-amber-700 border-amber-200' },
+   387→              { icon: Phone, label: 'मोबाईल नंबर', color: 'bg-sky-50 text-sky-700 border-sky-200' },
+   388→              { icon: User, label: 'मालकाचे नाव', color: 'bg-purple-50 text-purple-700 border-purple-200' },
+   389→            ].map((hint, i) => (
+   390→              <span key={i} className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border ${hint.color}`}>
+   391→                <hint.icon className="h-3 w-3" />{hint.label}
+   392→              </span>
+   393→            ))}
+   394→          </div>
+   395→
+   396→          {/* Search Results */}
+   397→          {searchResults.length > 0 && (
+   398→            <div className="mt-4 space-y-2">
+   399→              <p className="text-sm font-semibold text-muted-foreground">{searchResults.length} मालमत्ता सापडल्या</p>
+   400→              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto">
+   401→                {searchResults.map(p => (
+   402→                  <button
+   403→                    key={p.id}
+   404→                    onClick={() => handlePropertySelect(p.id, searchResults)}
+   405→                    className={`flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${
+   406→                      selectedPropertyId === p.id
+   407→                        ? 'border-rose-400 bg-rose-50 shadow-sm'
+   408→                        : 'border-gray-100 hover:border-rose-200 hover:bg-rose-50/50'
+   409→                    }`}
+   410→                  >
+   411→                    <div className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0"
+   412→                      style={{ background: selectedPropertyId === p.id ? 'linear-gradient(135deg, #e11d48, #be123c)' : 'linear-gradient(135deg, #fecdd3, #fda4af)' }}>
+   413→                      <Building2 className={`h-5 w-5 ${selectedPropertyId === p.id ? 'text-white' : 'text-rose-600'}`} />
+   414→                    </div>
+   415→                    <div className="min-w-0">
+   416→                      <p className="font-semibold text-sm truncate">{p.propertyNumber}</p>
+   417→                      <p className="text-xs text-muted-foreground truncate">{getOwnerName(p)}</p>
+   418→                    </div>
+   419→                    <ChevronDown className="h-4 w-4 text-muted-foreground ml-auto shrink-0 rotate-[-90deg]" />
+   420→                  </button>
+   421→                ))}
+   422→              </div>
+   423→            </div>
+   424→          )}
+   425→
+   426→          {searching && (
+   427→            <div className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+   428→              <RefreshCw className="h-4 w-4 animate-spin" />शोधत आहे...
+   429→            </div>
+   430→          )}
+   431→        </CardContent>
+   432→      </Card>
+   433→
+   434→      {/* ========== OUTSTANDING TAX DISPLAY ========== */}
+   435→      {outstandingInfo && (
+   436→        <Card className="border-0 shadow-md overflow-hidden">
+   437→          <div className="h-1" style={{ background: 'linear-gradient(90deg, #f59e0b, #27ae60, #e74c3c)' }} />
+   438→          <CardContent className="p-6">
+   439→            <div className="flex items-center gap-2 mb-4">
+   440→              <div className="h-9 w-9 rounded-xl flex items-center justify-center bg-rose-100">
+   441→                <Scale className="h-5 w-5 text-rose-600" />
+   442→              </div>
+   443→              <div>
+   444→                <h3 className="font-bold text-lg">बक्की माहिती</h3>
+   445→                <p className="text-xs text-muted-foreground">
+   446→                  मालमत्ता: <span className="font-semibold">{selectedProp?.propertyNumber}</span> &middot; मालक: <span className="font-semibold">{getOwnerName(selectedProp)}</span>
+   447→                </p>
+   448→              </div>
+   449→            </div>
+   450→
+   451→            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+   452→              {/* Total Demand - Amber */}
+   453→              <div className="relative rounded-2xl p-5 text-center overflow-hidden border-2 border-amber-200"
+   454→                style={{ background: 'linear-gradient(135deg, #fef3c7, #fde68a)' }}>
+   455→                <div className="absolute -top-4 -right-4 w-16 h-16 rounded-full opacity-20 bg-amber-400" />
+   456→                <CircleDollarSign className="h-7 w-7 mx-auto mb-1 text-amber-700" />
+   457→                <div className="text-xs font-semibold text-amber-800/70 mb-1">एकूण मागणी</div>
+   458→                <div className="text-2xl sm:text-3xl font-extrabold text-amber-900">{formatCurrency(outstandingInfo.totalDemand)}</div>
+   459→              </div>
+   460→
+   461→              {/* Total Paid - Green */}
+   462→              <div className="relative rounded-2xl p-5 text-center overflow-hidden border-2 border-green-200"
+   463→                style={{ background: 'linear-gradient(135deg, #d1fae5, #a7f3d0)' }}>
+   464→                <div className="absolute -top-4 -right-4 w-16 h-16 rounded-full opacity-20 bg-green-400" />
+   465→                <CheckCircle2 className="h-7 w-7 mx-auto mb-1 text-green-700" />
+   466→                <div className="text-xs font-semibold text-green-800/70 mb-1">भरलेली रक्कम</div>
+   467→                <div className="text-2xl sm:text-3xl font-extrabold text-green-900">{formatCurrency(outstandingInfo.totalPaid)}</div>
+   468→              </div>
+   469→
+   470→              {/* Balance - Red */}
+   471→              <div className="relative rounded-2xl p-5 text-center overflow-hidden border-2 border-rose-200"
+   472→                style={{ background: 'linear-gradient(135deg, #fecdd3, #fda4af)' }}>
+   473→                <div className="absolute -top-4 -right-4 w-16 h-16 rounded-full opacity-20 bg-rose-400" />
+   474→                <AlertCircle className="h-7 w-7 mx-auto mb-1 text-rose-700" />
+   475→                <div className="text-xs font-semibold text-rose-800/70 mb-1">शिल्लक बक्की</div>
+   476→                <div className="text-2xl sm:text-3xl font-extrabold text-rose-900">{formatCurrency(outstandingInfo.balance)}</div>
+   477→              </div>
+   478→            </div>
+   479→
+   480→            {/* Progress bar */}
+   481→            {outstandingInfo.totalDemand > 0 && (
+   482→              <div className="mt-4">
+   483→                <div className="flex justify-between text-xs font-medium mb-1.5">
+   484→                  <span className="text-muted-foreground">वसूल प्रमाण</span>
+   485→                  <span className="text-green-700 font-bold">
+   486→                    {((outstandingInfo.totalPaid / outstandingInfo.totalDemand) * 100).toFixed(1)}% भरले
+   487→                  </span>
+   488→                </div>
+   489→                <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+   490→                  <div
+   491→                    className="h-3 rounded-full transition-all duration-500"
+   492→                    style={{
+   493→                      width: `${Math.min((outstandingInfo.totalPaid / outstandingInfo.totalDemand) * 100, 100)}%`,
+   494→                      background: 'linear-gradient(90deg, #22c55e, #16a34a)',
+   495→                    }}
+   496→                  />
+   497→                </div>
+   498→              </div>
+   499→            )}
+   500→          </CardContent>
+   501→        </Card>
+   502→      )}
+   503→
+   504→      {/* ========== PAYMENT ENTRY SECTION ========== */}
+   505→      <Card className="border-0 shadow-md overflow-hidden">
+   506→        <div className="h-1" style={{ background: 'linear-gradient(90deg, #be123c, #e11d48, #f43f5e)' }} />
+   507→        <CardContent className="p-6">
+   508→          <div className="flex items-center gap-2 mb-5">
+   509→            <div className="h-9 w-9 rounded-xl flex items-center justify-center"
+   510→              style={{ background: 'linear-gradient(135deg, #e11d48, #be123c)' }}>
+   511→              <Wallet className="h-5 w-5 text-white" />
+   512→            </div>
+   513→            <div>
+   514→              <h3 className="font-bold text-lg">पेमेंट एंट्री</h3>
+   515→              <p className="text-xs text-muted-foreground">रक्कम, पद्धत निवडा आणि पावती तयार करा</p>
+   516→            </div>
+   517→          </div>
+   518→
+   519→          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+   520→            {/* Property Select */}
+   521→            <div className="space-y-1.5">
+   522→              <Label className="text-sm font-semibold flex items-center gap-1">
+   523→                <Building2 className="h-3.5 w-3.5 text-rose-500" />मालमत्ता
+   524→              </Label>
+   525→              <Select value={selectedPropertyId} onValueChange={(v) => handlePropertySelect(v)}>
+   526→                <SelectTrigger className="h-11 rounded-lg border-2 border-rose-100 focus:border-rose-300">
+   527→                  <SelectValue placeholder="मालमत्ता निवडा" />
+   528→                </SelectTrigger>
+   529→                <SelectContent>
+   530→                  {properties.map(p => (
+   531→                    <SelectItem key={p.id} value={p.id}>
+   532→                      {p.propertyNumber} — {getOwnerName(p)}
+   533→                    </SelectItem>
+   534→                  ))}
+   535→                </SelectContent>
+   536→              </Select>
+   537→            </div>
+   538→
+   539→            {/* Namuna9 Select */}
+   540→            <div className="space-y-1.5">
+   541→              <Label className="text-sm font-semibold flex items-center gap-1">
+   542→                <FileText className="h-3.5 w-3.5 text-rose-500" />नमुना ९ (वर्ष)
+   543→              </Label>
+   544→              <Select value={selectedNamuna9Id} onValueChange={setSelectedNamuna9Id}>
+   545→                <SelectTrigger className="h-11 rounded-lg border-2 border-rose-100 focus:border-rose-300">
+   546→                  <SelectValue placeholder="नमुना ९ निवडा" />
+   547→                </SelectTrigger>
+   548→                <SelectContent>
+   549→                  {namuna9Records
+   550→                    .filter(n => n.propertyId === selectedPropertyId)
+   551→                    .map(n => (
+   552→                      <SelectItem key={n.id} value={n.id}>
+   553→                        {n.financialYear} — मागणी: {formatCurrency(n.totalDemand)}
+   554→                      </SelectItem>
+   555→                    ))}
+   556→                </SelectContent>
+   557→              </Select>
+   558→            </div>
+   559→
+   560→            {/* Amount */}
+   561→            <div className="space-y-1.5">
+   562→              <Label className="text-sm font-semibold flex items-center gap-1">
+   563→                <IndianRupee className="h-3.5 w-3.5 text-rose-500" />रक्कम (₹)
+   564→              </Label>
+   565→              <div className="relative">
+   566→                <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+   567→                <Input
+   568→                  type="number"
+   569→                  value={paymentAmount}
+   570→                  onChange={e => setPaymentAmount(e.target.value)}
+   571→                  min={0}
+   572→                  step={0.01}
+   573→                  placeholder="0.00"
+   574→                  className="h-11 pl-9 rounded-lg border-2 border-rose-100 focus:border-rose-300 text-lg font-semibold"
+   575→                />
+   576→              </div>
+   577→              {outstandingInfo && outstandingInfo.balance > 0 && (
+   578→                <button
+   579→                  onClick={() => setPaymentAmount(outstandingInfo.balance.toFixed(2))}
+   580→                  className="text-xs text-rose-600 hover:text-rose-800 font-medium flex items-center gap-1"
+   581→                >
+   582→                  <HandCoins className="h-3 w-3" />
+   583→                  पूर्ण रक्कम भरा: {formatCurrency(outstandingInfo.balance)}
+   584→                </button>
+   585→              )}
+   586→            </div>
+   587→
+   588→            {/* Payment Method */}
+   589→            <div className="space-y-1.5">
+   590→              <Label className="text-sm font-semibold flex items-center gap-1">
+   591→                <CreditCard className="h-3.5 w-3.5 text-rose-500" />पद्धत
+   592→              </Label>
+   593→              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+   594→                <SelectTrigger className="h-11 rounded-lg border-2 border-rose-100 focus:border-rose-300">
+   595→                  <SelectValue />
+   596→                </SelectTrigger>
+   597→                <SelectContent>
+   598→                  <SelectItem value="Cash">💰 रोख (Cash)</SelectItem>
+   599→                  <SelectItem value="Cheque">📝 चेक (Cheque)</SelectItem>
+   600→                  <SelectItem value="Online">📱 ऑनलाइन (Online)</SelectItem>
+   601→                  <SelectItem value="DD">🏦 डिमांड ड्राफ्ट (DD)</SelectItem>
+   602→                </SelectContent>
+   603→              </Select>
+   604→            </div>
+   605→          </div>
+   606→
+   607→          {/* Payment summary preview */}
+   608→          {paymentAmount && outstandingInfo && (
+   609→            <div className="mt-4 p-3 rounded-xl bg-rose-50 border border-rose-100">
+   610→              <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
+   611→                <span className="text-muted-foreground">भरलेली रक्कम: <strong className="text-green-700">{formatCurrency(parseFloat(paymentAmount) || 0)}</strong></span>
+   612→                <ArrowRight className="h-3 w-3 text-muted-foreground" />
+   613→                <span className="text-muted-foreground">शिल्लक होईल: <strong className="text-rose-700">{formatCurrency(outstandingInfo.balance - (parseFloat(paymentAmount) || 0))}</strong></span>
+   614→              </div>
+   615→            </div>
+   616→          )}
+   617→
+   618→          {/* Submit Button */}
+   619→          <div className="mt-5">
+   620→            <Button
+   621→              onClick={handlePay}
+   622→              disabled={paying || !selectedNamuna9Id || !paymentAmount}
+   623→              className="w-full sm:w-auto h-14 px-10 rounded-xl text-lg font-bold shadow-lg hover:shadow-xl transition-all"
+   624→              style={{ background: 'linear-gradient(135deg, #e11d48, #be123c)' }}
+   625→            >
+   626→              {paying ? (
+   627→                <><RefreshCw className="h-5 w-5 mr-2 animate-spin" />प्रक्रिया सुरू...</>
+   628→              ) : (
+   629→                <><Receipt className="h-5 w-5 mr-2" />पावती तयार करा</>
+   630→              )}
+   631→            </Button>
+   632→          </div>
+   633→        </CardContent>
+   634→      </Card>
+   635→
+   636→      {/* ========== PAYMENTS TABLE ========== */}
+   637→      <Card className="border-0 shadow-md overflow-hidden">
+   638→        <div className="h-1" style={{ background: 'linear-gradient(90deg, #7c3aed, #a855f7)' }} />
+   639→        <CardHeader className="pb-3">
+   640→          <div className="flex items-center justify-between flex-wrap gap-4">
+   641→            <div className="flex items-center gap-2">
+   642→              <div className="h-9 w-9 rounded-xl flex items-center justify-center bg-purple-100">
+   643→                <FileText className="h-5 w-5 text-purple-600" />
+   644→              </div>
+   645→              <CardTitle className="text-lg">अलीकडील पावत्या</CardTitle>
+   646→              <Badge variant="secondary" className="text-xs">{allPayments.length}</Badge>
+   647→            </div>
+   648→            <Button variant="outline" size="sm" onClick={fetchData} className="rounded-lg">
+   649→              <RefreshCw className="h-4 w-4 mr-1" />रिफ्रेश
+   650→            </Button>
+   651→          </div>
+   652→        </CardHeader>
+   653→        <CardContent>
+   654→          {allPayments.length === 0 ? (
+   655→            <div className="text-center py-12">
+   656→              <div className="h-16 w-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-3">
+   657→                <Receipt className="h-8 w-8 text-muted-foreground/50" />
+   658→              </div>
+   659→              <p className="text-muted-foreground font-medium">अद्याप पावत्या नाहीत</p>
+   660→              <p className="text-xs text-muted-foreground/60 mt-1">वरील फॉर्म वापरून पहिली पावती तयार करा</p>
+   661→            </div>
+   662→          ) : (
+   663→            <div className="overflow-x-auto max-h-96 overflow-y-auto rounded-lg border">
+   664→              <Table>
+   665→                <TableHeader>
+   666→                  <TableRow className="bg-muted/50">
+   667→                    <TableHead className="font-semibold">पावती क्र.</TableHead>
+   668→                    <TableHead className="font-semibold">दिनांक</TableHead>
+   669→                    <TableHead className="font-semibold">मालमत्ता</TableHead>
+   670→                    <TableHead className="font-semibold">मालक</TableHead>
+   671→                    <TableHead className="text-right font-semibold">प्राप्त रक्कम</TableHead>
+   672→                    <TableHead className="text-right font-semibold">शिल्लक</TableHead>
+   673→                    <TableHead className="font-semibold">पद्धत</TableHead>
+   674→                    <TableHead className="font-semibold">क्रिया</TableHead>
+   675→                  </TableRow>
+   676→                </TableHeader>
+   677→                <TableBody>
+   678→                  {allPayments.map(p => (
+   679→                    <TableRow key={p.id} className="hover:bg-rose-50/30 transition-colors">
+   680→                      <TableCell>
+   681→                        <span className="font-mono text-xs bg-rose-50 text-rose-700 px-2 py-0.5 rounded-md">
+   682→                          {p.receiptNumber}
+   683→                        </span>
+   684→                      </TableCell>
+   685→                      <TableCell className="text-sm">{formatDate(p.paymentDate)}</TableCell>
+   686→                      <TableCell>
+   687→                        <div className="flex items-center gap-1.5">
+   688→                          <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+   689→                          <span className="font-medium text-sm">{p.property?.propertyNumber || '-'}</span>
+   690→                        </div>
+   691→                      </TableCell>
+   692→                      <TableCell className="text-sm">{getOwnerName(p.property)}</TableCell>
+   693→                      <TableCell className="text-right">
+   694→                        <span className="font-bold text-green-700 text-sm bg-green-50 px-2 py-0.5 rounded-md">
+   695→                          {formatCurrency(p.amountPaid)}
+   696→                        </span>
+   697→                      </TableCell>
+   698→                      <TableCell className="text-right">
+   699→                        <Badge
+   700→                          variant={p.balance > 0 ? 'destructive' : 'default'}
+   701→                          className={`text-xs font-bold ${p.balance > 0 ? 'bg-rose-100 text-rose-800 border-0' : 'bg-green-100 text-green-800 border-0'}`}
+   702→                        >
+   703→                          {formatCurrency(p.balance)}
+   704→                        </Badge>
+   705→                      </TableCell>
+   706→                      <TableCell>
+   707→                        <Badge variant="outline" className="text-xs">
+   708→                          {paymentMethodLabel[p.paymentMethod] || p.paymentMethod}
+   709→                        </Badge>
+   710→                      </TableCell>
+   711→                      <TableCell>
+   712→                        <Button
+   713→                          variant="ghost"
+   714→                          size="sm"
+   715→                          onClick={() => handlePrintReceipt(p)}
+   716→                          className="h-8 text-rose-600 hover:text-rose-800 hover:bg-rose-50"
+   717→                        >
+   718→                          <Printer className="h-4 w-4 mr-1" />प्रिंट
+   719→                        </Button>
+   720→                      </TableCell>
+   721→                    </TableRow>
+   722→                  ))}
+   723→                </TableBody>
+   724→              </Table>
+   725→            </div>
+   726→          )}
+   727→        </CardContent>
+   728→      </Card>
+   729→
+   730→      {/* ========== RECEIPT DIALOG ========== */}
+   731→      <Dialog open={receiptDialogOpen} onOpenChange={setReceiptDialogOpen}>
+   732→        <DialogContent className="max-w-2xl p-0 overflow-hidden">
+   733→          {/* Green header */}
+   734→          <div style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)' }} className="p-5">
+   735→            <DialogHeader>
+   736→              <DialogTitle className="flex items-center gap-2 text-white text-xl">
+   737→                <CheckCircle2 className="h-6 w-6" />
+   738→                पावती यशस्वीरित्या तयार झाली!
+   739→              </DialogTitle>
+   740→            </DialogHeader>
+   741→          </div>
+   742→
+   743→          {lastReceipt && (
+   744→            <div className="p-6 space-y-4">
+   745→              {/* Receipt Box */}
+   746→              <div className="border-3 rounded-2xl overflow-hidden" style={{ border: '3px double #333' }}>
+   747→                {/* Indian Flag Bar */}
+   748→                <div className="h-2" style={{ background: 'linear-gradient(90deg, #FF9933 33%, #fff 33%, #fff 66%, #138808 66%)' }} />
+   749→
+   750→                {/* Receipt Header */}
+   751→                <div className="text-center py-3 px-4" style={{ background: 'linear-gradient(135deg, #c0392b, #e74c3c)' }}>
+   752→                  <h2 className="text-xl font-bold text-white">नमुना ९-क — पावती</h2>
+   753→                  <p className="text-xs text-rose-100">मालमत्ता कर प्राप्ती पावती</p>
+   754→                </div>
+   755→
+   756→                {/* Receipt Body */}
+   757→                <div className="p-5 space-y-4">
+   758→                  {/* Info Grid */}
+   759→                  <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+   760→                    <div><span className="text-muted-foreground">पावती क्रमांक:</span> <strong className="font-mono text-rose-700">{lastReceipt.receiptNumber}</strong></div>
+   761→                    <div><span className="text-muted-foreground">दिनांक:</span> <strong>{formatDate(lastReceipt.paymentDate)}</strong></div>
+   762→                    <div><span className="text-muted-foreground">मालमत्ता:</span> <strong>{selectedProp?.propertyNumber}</strong></div>
+   763→                    <div><span className="text-muted-foreground">मालक:</span> <strong>{getOwnerName(selectedProp)}</strong></div>
+   764→                    <div><span className="text-muted-foreground">पद्धत:</span> <strong>{paymentMethodLabel[lastReceipt.paymentMethod] || lastReceipt.paymentMethod}</strong></div>
+   765→                    <div><span className="text-muted-foreground">वित्तीय वर्ष:</span> <strong>{lastReceipt.namuna9?.financialYear || '-'}</strong></div>
+   766→                  </div>
+   767→
+   768→                  <Separator />
+   769→
+   770→                  {/* Amounts Table */}
+   771→                  <Table>
+   772→                    <TableBody>
+   773→                      <TableRow>
+   774→                        <TableCell className="font-medium">एकूण मागणी</TableCell>
+   775→                        <TableCell className="text-right font-semibold">{formatCurrency(lastReceipt.namuna9?.totalDemand || 0)}</TableCell>
+   776→                      </TableRow>
+   777→                      <TableRow className="bg-green-50">
+   778→                        <TableCell className="font-semibold text-green-800">प्राप्त रक्कम (Received)</TableCell>
+   779→                        <TableCell className="text-right font-extrabold text-green-800 text-lg">{formatCurrency(lastReceipt.amountPaid)}</TableCell>
+   780→                      </TableRow>
+   781→                      <TableRow className="bg-rose-50">
+   782→                        <TableCell className="font-semibold text-rose-800">शिल्लक (Balance)</TableCell>
+   783→                        <TableCell className="text-right font-extrabold text-rose-800 text-lg">{formatCurrency(lastReceipt.balance)}</TableCell>
+   784→                      </TableRow>
+   785→                    </TableBody>
+   786→                  </Table>
+   787→
+   788→                  {/* Received Amount Highlight */}
+   789→                  <div className="rounded-xl p-4 text-center border-2 border-green-300"
+   790→                    style={{ background: 'linear-gradient(135deg, #dcfce7, #bbf7d0)' }}>
+   791→                    <div className="text-sm text-green-700 font-medium">प्राप्त रक्कम</div>
+   792→                    <div className="text-4xl font-extrabold text-green-800 mt-1">{formatCurrency(lastReceipt.amountPaid)}</div>
+   793→                  </div>
+   794→
+   795→                  {/* Balance Highlight */}
+   796→                  {lastReceipt.balance > 0 && (
+   797→                    <div className="rounded-xl p-3 text-center border-2 border-rose-200"
+   798→                      style={{ background: 'linear-gradient(135deg, #fecdd3, #fda4af)' }}>
+   799→                      <div className="text-sm text-rose-700 font-medium">शिल्लक बक्की</div>
+   800→                      <div className="text-2xl font-extrabold text-rose-900 mt-1">{formatCurrency(lastReceipt.balance)}</div>
+   801→                    </div>
+   802→                  )}
+   803→
+   804→                  {/* Signature Area */}
+   805→                  <div className="flex justify-between items-end pt-4 text-xs text-muted-foreground">
+   806→                    <div className="text-center w-28">
+   807→                      <div className="border-t border-gray-400 pt-1 font-semibold text-gray-600">मालकाची सही</div>
+   808→                    </div>
+   809→                    <div className="text-center text-[10px] text-gray-400">संगणकीय पावती</div>
+   810→                    <div className="text-center w-28">
+   811→                      <div className="border-t border-gray-400 pt-1 font-semibold text-gray-600">अधिकृत सही व मुद्रा</div>
+   812→                    </div>
+   813→                  </div>
+   814→                </div>
+   815→
+   816→                {/* Bottom Flag Bar */}
+   817→                <div className="h-2" style={{ background: 'linear-gradient(90deg, #FF9933 33%, #fff 33%, #fff 66%, #138808 66%)' }} />
+   818→              </div>
+   819→
+   820→              {/* Action Buttons */}
+   821→              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+   822→                <Button
+   823→                  onClick={() => handlePrintReceipt(lastReceipt)}
+   824→                  className="flex-1 h-12 rounded-xl text-base font-semibold"
+   825→                  style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)' }}
+   826→                >
+   827→                  <Printer className="h-5 w-5 mr-2" />प्रिंट करा
+   828→                </Button>
+   829→                <Button
+   830→                  variant="outline"
+   831→                  onClick={() => setReceiptDialogOpen(false)}
+   832→                  className="flex-1 h-12 rounded-xl text-base"
+   833→                >
+   834→                  बंद करा
+   835→                </Button>
+   836→              </div>
+   837→            </div>
+   838→          )}
+   839→        </DialogContent>
+   840→      </Dialog>
+   841→    </div>
+   842→  );
+   843→}
+   844→

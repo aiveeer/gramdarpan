@@ -1,0 +1,959 @@
+     1→'use client';
+     2→
+     3→import React, { useState, useEffect, useCallback } from 'react';
+     4→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+     5→import { Button } from '@/components/ui/button';
+     6→import { Input } from '@/components/ui/input';
+     7→import { Label } from '@/components/ui/label';
+     8→import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+     9→import { Badge } from '@/components/ui/badge';
+    10→import { Skeleton } from '@/components/ui/skeleton';
+    11→import { toast } from '@/hooks/use-toast';
+    12→import {
+    13→  FileText, Printer, RefreshCw, Search, Building2, IndianRupee,
+    14→  ChevronRight, Zap, Database, Calculator, CheckCircle2, AlertCircle,
+    15→  Layers, ArrowDownToLine, Hash, Users, MapPin, Route, Loader2,
+    16→  Landmark, Scale, BookOpen
+    17→} from 'lucide-react';
+    18→
+    19→// ===== INTERFACES =====
+    20→
+    21→interface ConstructionDetail {
+    22→  type: string;
+    23→  rate: number;
+    24→  area: number;
+    25→  capitalValue: number;
+    26→  taxAmount: number;
+    27→}
+    28→
+    29→interface OwnerInfo {
+    30→  owner: { firstName: string; lastName: string; firstNameMr: string; lastNameMr: string };
+    31→  ownershipType: string;
+    32→}
+    33→
+    34→interface PropertyInfo {
+    35→  id: string;
+    36→  propertyNumber: string;
+    37→  area: number | null;
+    38→  builtUpArea: number | null;
+    39→  constructionType: string | null;
+    40→  usageType: string | null;
+    41→  citySurveyNo: string | null;
+    42→  boundaryEast?: string;
+    43→  boundaryWest?: string;
+    44→  boundarySouth?: string;
+    45→  boundaryNorth?: string;
+    46→  lengthEast?: number;
+    47→  widthEast?: number;
+    48→  lengthWest?: number;
+    49→  widthWest?: number;
+    50→  lengthSouth?: number;
+    51→  widthSouth?: number;
+    52→  lengthNorth?: number;
+    53→  widthNorth?: number;
+    54→  totalLength?: number;
+    55→  totalWidth?: number;
+    56→  depreciationRate?: number;
+    57→  usageFactor?: number;
+    58→  taxRate?: number;
+    59→  houseTax?: number;
+    60→  lightTax?: number;
+    61→  healthTax?: number;
+    62→  waterTax?: number;
+    63→  constructionDetails?: string;
+    64→  yearBuilt?: string;
+    65→  ward?: { wardNameMr: string; wardNumber: string; wardName: string };
+    66→  road?: { roadNameMr: string; roadNumber: string; roadName: string };
+    67→  owners: OwnerInfo[];
+    68→  taxRates: { taxMasterId: string; rate: number; taxMaster: { name: string; nameMarathi: string; isEnabled: boolean; order: number; category: string } }[];
+    69→}
+    70→
+    71→interface Namuna8Record {
+    72→  id: string;
+    73→  propertyId: string;
+    74→  financialYear: string;
+    75→  taxDetails: string;
+    76→  totalTax: number;
+    77→  totalArea?: number;
+    78→  landRate?: number;
+    79→  buildingRate?: number;
+    80→  constructionRate?: number;
+    81→  depreciationRate?: number;
+    82→  usageFactor?: number;
+    83→  capitalValue?: number;
+    84→  taxRatePercent?: number;
+    85→  houseTaxAmt?: number;
+    86→  lightTaxAmt?: number;
+    87→  healthTaxAmt?: number;
+    88→  waterTaxAmt?: number;
+    89→  totalTaxAmt?: number;
+    90→  constructionDetails?: string;
+    91→  appealHouseTax?: number;
+    92→  appealLightTax?: number;
+    93→  appealHealthTax?: number;
+    94→  appealWaterTax?: number;
+    95→  appealTotalTax?: number;
+    96→  remarks?: string;
+    97→  property: PropertyInfo;
+    98→}
+    99→
+   100→interface VillageInfo {
+   101→  gramPanchayatName: string;
+   102→  gramPanchayatNameMr: string;
+   103→  taluka: string;
+   104→  district: string;
+   105→  state: string;
+   106→  sarpanchNameMr?: string;
+   107→  secretaryNameMr?: string;
+   108→}
+   109→
+   110→// ===== NORMALIZATION HELPERS =====
+   111→
+   112→// Normalize a raw Prisma PropertyMaster object from /api/master to match PropertyInfo interface
+   113→// The Prisma model uses `propertyNo` but the interface uses `propertyNumber`, etc.
+   114→function normalizeProperty(raw: Record<string, unknown>): PropertyInfo {
+   115→  // Parse boundaries JSON if it's a string
+   116→  let boundaryData: Record<string, unknown> = {};
+   117→  if (typeof raw.boundaries === 'string') {
+   118→    try { boundaryData = JSON.parse(raw.boundaries); } catch { /* ignore */ }
+   119→  }
+   120→
+   121→  // Parse floorInfo JSON if it's a string
+   122→  let totalLength: number | undefined;
+   123→  let totalWidth: number | undefined;
+   124→  if (typeof raw.floorInfo === 'string') {
+   125→    try {
+   126→      const fi = JSON.parse(raw.floorInfo);
+   127→      totalLength = fi.totalLength;
+   128→      totalWidth = fi.totalWidth;
+   129→    } catch { /* ignore */ }
+   130→  }
+   131→
+   132→  const ward = raw.ward as Record<string, unknown> | null | undefined;
+   133→  const road = raw.road as Record<string, unknown> | null | undefined;
+   134→
+   135→  return {
+   136→    id: (raw.id as string) || '',
+   137→    propertyNumber: (raw.propertyNo as string) || (raw.propertyNumber as string) || '',
+   138→    area: raw.area != null ? Number(raw.area) : null,
+   139→    builtUpArea: raw.builtUpArea != null ? Number(raw.builtUpArea) : null,
+   140→    constructionType: (raw.constructionType as string) ?? null,
+   141→    usageType: (raw.usageType as string) ?? (raw.propertyUse as string) ?? null,
+   142→    citySurveyNo: (raw.citySurveyNo as string) ?? null,
+   143→    boundaryEast: (boundaryData.boundaryEast as string) ?? undefined,
+   144→    boundaryWest: (boundaryData.boundaryWest as string) ?? undefined,
+   145→    boundarySouth: (boundaryData.boundarySouth as string) ?? undefined,
+   146→    boundaryNorth: (boundaryData.boundaryNorth as string) ?? undefined,
+   147→    lengthEast: boundaryData.lengthEast != null ? Number(boundaryData.lengthEast) : undefined,
+   148→    widthEast: boundaryData.widthEast != null ? Number(boundaryData.widthEast) : undefined,
+   149→    lengthWest: boundaryData.lengthWest != null ? Number(boundaryData.lengthWest) : undefined,
+   150→    widthWest: boundaryData.widthWest != null ? Number(boundaryData.widthWest) : undefined,
+   151→    lengthSouth: boundaryData.lengthSouth != null ? Number(boundaryData.lengthSouth) : undefined,
+   152→    widthSouth: boundaryData.widthSouth != null ? Number(boundaryData.widthSouth) : undefined,
+   153→    lengthNorth: boundaryData.lengthNorth != null ? Number(boundaryData.lengthNorth) : undefined,
+   154→    widthNorth: boundaryData.widthNorth != null ? Number(boundaryData.widthNorth) : undefined,
+   155→    totalLength,
+   156→    totalWidth,
+   157→    depreciationRate: raw.depreciationRate != null ? Number(raw.depreciationRate) : undefined,
+   158→    usageFactor: raw.usageFactor != null ? Number(raw.usageFactor) : undefined,
+   159→    taxRate: raw.taxRate != null ? Number(raw.taxRate) : undefined,
+   160→    houseTax: raw.houseTax != null ? Number(raw.houseTax) : undefined,
+   161→    lightTax: raw.lightTax != null ? Number(raw.lightTax) : undefined,
+   162→    healthTax: raw.healthTax != null ? Number(raw.healthTax) : undefined,
+   163→    waterTax: raw.waterTax != null ? Number(raw.waterTax) : undefined,
+   164→    constructionDetails: (raw.constructionDetails as string) ?? undefined,
+   165→    yearBuilt: (raw.yearBuilt as string) ?? undefined,
+   166→    ward: ward ? {
+   167→      wardNameMr: (ward.wardNameMr as string) ?? '',
+   168→      wardNumber: (ward.wardNumber as string) ?? (ward.wardNo != null ? String(ward.wardNo) : ''),
+   169→      wardName: (ward.wardName as string) ?? '',
+   170→    } : undefined,
+   171→    road: road ? {
+   172→      roadNameMr: (road.roadNameMr as string) ?? '',
+   173→      roadNumber: (road.roadNo as string) ?? (road.roadNumber as string) ?? '',
+   174→      roadName: (road.roadName as string) ?? '',
+   175→    } : undefined,
+   176→    owners: Array.isArray(raw.owners)
+   177→      ? raw.owners.map((o: Record<string, unknown>) => {
+   178→          const ow = o.owner as Record<string, unknown> | null | undefined;
+   179→          return {
+   180→            owner: {
+   181→              firstName: (ow?.firstName as string) ?? '',
+   182→              lastName: (ow?.lastName as string) ?? '',
+   183→              firstNameMr: (ow?.firstNameMr as string) ?? '',
+   184→              lastNameMr: (ow?.lastNameMr as string) ?? '',
+   185→            },
+   186→            ownershipType: (o.ownershipType as string) ?? 'मालक',
+   187→          };
+   188→        })
+   189→      : [],
+   190→    taxRates: Array.isArray(raw.taxRates)
+   191→      ? raw.taxRates.map((tr: Record<string, unknown>) => {
+   192→          const tm = tr.taxMaster as Record<string, unknown> | null | undefined;
+   193→          return {
+   194→            taxMasterId: (tr.taxMasterId as string) ?? '',
+   195→            rate: tr.rate != null ? Number(tr.rate) : 0,
+   196→            taxMaster: {
+   197→              name: (tm?.name as string) ?? '',
+   198→              nameMarathi: (tm?.nameMarathi as string) ?? '',
+   199→              isEnabled: tm?.isEnabled != null ? Boolean(tm.isEnabled) : true,
+   200→              order: tm?.order != null ? Number(tm.order) : 0,
+   201→              category: '',
+   202→            },
+   203→          };
+   204→        })
+   205→      : [],
+   206→  };
+   207→}
+   208→
+   209→// Normalize a raw Namuna8 record from /api/namuna8 to match Namuna8Record interface
+   210→function normalizeRecord(raw: Record<string, unknown>): Namuna8Record {
+   211→  return {
+   212→    id: (raw.id as string) || '',
+   213→    propertyId: (raw.propertyId as string) || '',
+   214→    financialYear: (raw.financialYear as string) || '',
+   215→    taxDetails: (raw.taxDetails as string) ?? '',
+   216→    totalTax: raw.totalTax != null ? Number(raw.totalTax) : 0,
+   217→    totalArea: raw.totalArea != null ? Number(raw.totalArea) : undefined,
+   218→    landRate: raw.landRate != null ? Number(raw.landRate) : undefined,
+   219→    buildingRate: raw.buildingRate != null ? Number(raw.buildingRate) : undefined,
+   220→    constructionRate: raw.constructionRate != null ? Number(raw.constructionRate) : undefined,
+   221→    depreciationRate: raw.depreciationRate != null ? Number(raw.depreciationRate) : undefined,
+   222→    usageFactor: raw.usageFactor != null ? Number(raw.usageFactor) : undefined,
+   223→    capitalValue: raw.capitalValue != null ? Number(raw.capitalValue) : undefined,
+   224→    taxRatePercent: raw.taxRatePercent != null ? Number(raw.taxRatePercent) : undefined,
+   225→    houseTaxAmt: raw.houseTaxAmt != null ? Number(raw.houseTaxAmt) : undefined,
+   226→    lightTaxAmt: raw.lightTaxAmt != null ? Number(raw.lightTaxAmt) : undefined,
+   227→    healthTaxAmt: raw.healthTaxAmt != null ? Number(raw.healthTaxAmt) : undefined,
+   228→    waterTaxAmt: raw.waterTaxAmt != null ? Number(raw.waterTaxAmt) : undefined,
+   229→    totalTaxAmt: raw.totalTaxAmt != null ? Number(raw.totalTaxAmt) : undefined,
+   230→    constructionDetails: (raw.constructionDetails as string) ?? (raw.constructionDetailsStr as string) ?? undefined,
+   231→    appealHouseTax: raw.appealHouseTax != null ? Number(raw.appealHouseTax) : undefined,
+   232→    appealLightTax: raw.appealLightTax != null ? Number(raw.appealLightTax) : undefined,
+   233→    appealHealthTax: raw.appealHealthTax != null ? Number(raw.appealHealthTax) : undefined,
+   234→    appealWaterTax: raw.appealWaterTax != null ? Number(raw.appealWaterTax) : undefined,
+   235→    appealTotalTax: raw.appealTotalTax != null ? Number(raw.appealTotalTax) : undefined,
+   236→    remarks: (raw.remarks as string) ?? undefined,
+   237→    property: normalizeProperty((raw.property as Record<string, unknown>) || {}),
+   238→  };
+   239→}
+   240→
+   241→// ===== CONSTANTS =====
+   242→
+   243→type ProcessStep = 'select' | 'fetch' | 'calculate' | 'generate';
+   244→
+   245→const CONSTRUCTION_TYPES = [
+   246→  { type: 'झोपडी किंवा मातीचे घर', rate: 6403 },
+   247→  { type: 'दगड विटा/मातीचे बांधकाम', rate: 9979 },
+   248→  { type: 'दगड विट/सिमेंटचे बांधकाम', rate: 14923 },
+   249→  { type: 'आर.सि.सि. बांधकाम', rate: 17424 },
+   250→  { type: 'पहिला मजला', rate: 34848 },
+   251→  { type: 'जमीन/खुली जागा', rate: 1310 },
+   252→];
+   253→
+   254→const BOUNDARY_DIRS = [
+   255→  { key: 'East', label: 'पूर्व', bField: 'boundaryEast' as const, lField: 'lengthEast' as const, wField: 'widthEast' as const },
+   256→  { key: 'West', label: 'पश्चिम', bField: 'boundaryWest' as const, lField: 'lengthWest' as const, wField: 'widthWest' as const },
+   257→  { key: 'South', label: 'दक्षिण', bField: 'boundarySouth' as const, lField: 'lengthSouth' as const, wField: 'widthSouth' as const },
+   258→  { key: 'North', label: 'उत्तर', bField: 'boundaryNorth' as const, lField: 'lengthNorth' as const, wField: 'widthNorth' as const },
+   259→];
+   260→
+   261→const fmt = (n: number | null | undefined, d = 2) => {
+   262→  if (n == null || isNaN(n)) return '-';
+   263→  return n.toLocaleString('en-IN', { minimumFractionDigits: d, maximumFractionDigits: d });
+   264→};
+   265→
+   266→// Shared cell classes
+   267→const cellBase = 'border border-green-300 px-1 py-1 text-[10px]';
+   268→const cellR = `${cellBase} text-right`;
+   269→const cellC = `${cellBase} text-center`;
+   270→
+   271→// ===== MAIN COMPONENT =====
+   272→
+   273→export default function Namuna8Component() {
+   274→  const [records, setRecords] = useState<Namuna8Record[]>([]);
+   275→  const [properties, setProperties] = useState<PropertyInfo[]>([]);
+   276→  const [villageInfo, setVillageInfo] = useState<VillageInfo | null>(null);
+   277→  const [loading, setLoading] = useState(true);
+   278→  const [selectedPropertyId, setSelectedPropertyId] = useState('');
+   279→  const [financialYear, setFinancialYear] = useState('2024-25');
+   280→  const [generating, setGenerating] = useState(false);
+   281→  const [searchTerm, setSearchTerm] = useState('');
+   282→  const [activeStep, setActiveStep] = useState<ProcessStep>('select');
+   283→  const [generatingAll, setGeneratingAll] = useState(false);
+   284→  const [generateProgress, setGenerateProgress] = useState({ current: 0, total: 0 });
+   285→
+   286→  const fetchData = useCallback(async () => {
+   287→    setLoading(true);
+   288→    try {
+   289→      const [recRes, propRes, villageRes] = await Promise.all([
+   290→        fetch('/api/namuna8'),
+   291→        fetch('/api/master?table=property'),
+   292→        fetch('/api/master?table=village'),
+   293→      ]);
+   294→
+   295→      // Safely parse and validate records - always ensure array
+   296→      let normalizedRecords: Namuna8Record[] = [];
+   297→      try {
+   298→        const recData = await recRes.json();
+   299→        if (Array.isArray(recData)) {
+   300→          normalizedRecords = recData.map((r: Record<string, unknown>) => normalizeRecord(r));
+   301→        }
+   302→      } catch { /* ignore parse error, keep empty array */ }
+   303→      setRecords(normalizedRecords);
+   304→
+   305→      // Safely parse and validate properties - always ensure array with normalization
+   306→      let normalizedProps: PropertyInfo[] = [];
+   307→      try {
+   308→        const propData = await propRes.json();
+   309→        if (Array.isArray(propData)) {
+   310→          normalizedProps = propData.map((p: Record<string, unknown>) => normalizeProperty(p));
+   311→        }
+   312→      } catch { /* ignore parse error, keep empty array */ }
+   313→      setProperties(normalizedProps);
+   314→
+   315→      // Safely parse village info
+   316→      try {
+   317→        const vd = await villageRes.json();
+   318→        if (vd && !Array.isArray(vd)) setVillageInfo(vd as VillageInfo);
+   319→      } catch { /* ignore parse error */ }
+   320→    } catch {
+   321→      toast({ title: 'त्रुटी', description: 'डेटा लोड अयशस्वी', variant: 'destructive' });
+   322→    } finally {
+   323→      setLoading(false);
+   324→    }
+   325→  }, []);
+   326→
+   327→  useEffect(() => { fetchData(); }, [fetchData]);
+   328→  useEffect(() => { setActiveStep(selectedPropertyId ? 'fetch' : 'select'); }, [selectedPropertyId]);
+   329→
+   330→  const handleGenerate = async () => {
+   331→    if (!selectedPropertyId) { toast({ title: 'त्रुटी', description: 'मालमत्ता निवडा', variant: 'destructive' }); return; }
+   332→    setGenerating(true); setActiveStep('calculate');
+   333→    try {
+   334→      const res = await fetch('/api/namuna8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ propertyId: selectedPropertyId, financialYear }) });
+   335→      if (res.ok) { setActiveStep('generate'); toast({ title: 'यशस्वी', description: 'नमुना ८ तयार झाला' }); fetchData(); setTimeout(() => setActiveStep('select'), 2000); }
+   336→      else { let errMsg = 'नमुना ८ तयार करण्यात अयशस्वी'; try { const err = await res.json(); errMsg = err.error || errMsg; } catch { /* ignore */ } toast({ title: 'त्रुटी', description: errMsg, variant: 'destructive' }); setActiveStep('fetch'); }
+   337→    } catch { toast({ title: 'त्रुटी', description: 'नमुना ८ तयार करण्यात अयशस्वी', variant: 'destructive' }); setActiveStep('fetch'); }
+   338→    finally { setGenerating(false); }
+   339→  };
+   340→
+   341→  const handleGenerateAll = async () => {
+   342→    if (properties.length === 0) return;
+   343→    setGeneratingAll(true); setGenerating(true); setActiveStep('calculate');
+   344→    setGenerateProgress({ current: 0, total: properties.length });
+   345→    try {
+   346→      for (let i = 0; i < properties.length; i++) {
+   347→        await fetch('/api/namuna8', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ propertyId: properties[i].id, financialYear }) });
+   348→        setGenerateProgress({ current: i + 1, total: properties.length });
+   349→      }
+   350→      setActiveStep('generate'); toast({ title: 'यशस्वी', description: `सर्व ${properties.length} मालमत्तांसाठी नमुना ८ तयार` });
+   351→      fetchData(); setTimeout(() => setActiveStep('select'), 2000);
+   352→    } catch { toast({ title: 'त्रुटी', description: 'काही मालमत्तांसाठी तयार करण्यात अयशस्वी', variant: 'destructive' }); }
+   353→    finally { setGenerating(false); setGeneratingAll(false); setGenerateProgress({ current: 0, total: 0 }); }
+   354→  };
+   355→
+   356→  const getOwnerName = (prop: PropertyInfo) => {
+   357→    const o = prop.owners?.find(x => x.ownershipType === 'मालक');
+   358→    if (!o) return prop.owners?.[0] ? `${prop.owners[0].owner.firstNameMr || prop.owners[0].owner.firstName} ${prop.owners[0].owner.lastNameMr || prop.owners[0].owner.lastName}` : '-';
+   359→    return `${o.owner.firstNameMr || o.owner.firstName} ${o.owner.lastNameMr || o.owner.lastName}`;
+   360→  };
+   361→
+   362→  const getOccupantName = (prop: PropertyInfo) => {
+   363→    const o = prop.owners?.find(x => x.ownershipType === 'भोगवटादार');
+   364→    if (!o) return getOwnerName(prop);
+   365→    return `${o.owner.firstNameMr || o.owner.firstName} ${o.owner.lastNameMr || o.owner.lastName}`;
+   366→  };
+   367→
+   368→  const parseCD = (s: string | null | undefined): ConstructionDetail[] => { try { return JSON.parse(s || '[]'); } catch { return []; } };
+   369→
+   370→  // records is always an array (initialized as [] and only set via Array.isArray check)
+   371→  const filtered = records.filter(r => {
+   372→    if (!searchTerm) return true;
+   373→    const s = searchTerm.toLowerCase();
+   374→    return r.property.propertyNumber.toLowerCase().includes(s) || getOwnerName(r.property).toLowerCase().includes(s) || (r.property.ward?.wardNameMr || '').toLowerCase().includes(s);
+   375→  });
+   376→
+   377→  const totalTaxAmount = filtered.reduce((s, r) => s + (r.totalTaxAmt || r.totalTax || 0), 0);
+   378→  const totalProperties = filtered.length;
+   379→  const avgTax = totalProperties > 0 ? totalTaxAmount / totalProperties : 0;
+   380→  const selectedProperty = properties.find(p => p.id === selectedPropertyId);
+   381→
+   382→  // Process steps
+   383→  const processSteps: { key: ProcessStep; label: string; labelEn: string; icon: React.ReactNode }[] = [
+   384→    { key: 'select', label: 'मालमत्ता निवडा', labelEn: 'Select Property', icon: <Building2 className="h-4 w-4" /> },
+   385→    { key: 'fetch', label: 'मास्टर डेटा', labelEn: 'Master Data', icon: <Database className="h-4 w-4" /> },
+   386→    { key: 'calculate', label: 'कर गणना', labelEn: 'Tax Calculation', icon: <Calculator className="h-4 w-4" /> },
+   387→    { key: 'generate', label: 'नमुना ८ तयार', labelEn: 'Generate', icon: <FileText className="h-4 w-4" /> },
+   388→  ];
+   389→  const currentStepIndex = processSteps.findIndex(s => s.key === activeStep);
+   390→
+   391→  // ===== PRINT FUNCTION =====
+   392→  const handlePrintGovFormat = () => {
+   393→    if (filtered.length === 0) { toast({ title: 'त्रुटी', description: 'प्रिंट करण्यासाठी रेकॉर्ड नाहीत', variant: 'destructive' }); return; }
+   394→    const gpName = villageInfo?.gramPanchayatNameMr || 'ग्रामपंचायत';
+   395→    const taluka = villageInfo?.taluka || '';
+   396→    const district = villageInfo?.district || '';
+   397→    const fyParts = financialYear.split('-');
+   398→    const fyFull = `सन ${fyParts[0]}-${(fyParts[1]?.length === 2 ? '20' : '') + (fyParts[1] || '')}`;
+   399→
+   400→    // Build rows for each property
+   401→    const rows = filtered.map((rec, idx) => {
+   402→      const p = rec.property;
+   403→      const on = getOwnerName(p);
+   404→      const occ = getOccupantName(p);
+   405→      const cd = parseCD(rec.constructionDetails).filter(c => c.area > 0);
+   406→      const rn = p.road?.roadNameMr || '-';
+   407→      const totalBlockRows = 4 + Math.max(cd.length, 1) + 1 + 1; // boundaries + constructions + total + note
+   408→
+   409→      const rowBg = idx % 2 === 0 ? '#f0faf5' : '#ffffff';
+   410→      const allRows: string[] = [];
+   411→
+   412→      // 4 Boundary rows
+   413→      BOUNDARY_DIRS.forEach((dir, bi) => {
+   414→        const bName = p[dir.bField] || '-';
+   415→        const bLen = p[dir.lField] || (bi === 0 ? p.totalLength : null) || '';
+   416→        const bWid = p[dir.wField] || (bi === 0 ? p.totalWidth : null) || '';
+   417→        allRows.push(`<tr style="background:${rowBg}">
+   418→          ${bi === 0 ? `<td rowspan="${totalBlockRows}" class="ctr" style="font-weight:700">${idx + 1}</td><td rowspan="${totalBlockRows}">${rn}</td><td rowspan="${totalBlockRows}" class="ctr">${p.citySurveyNo || '-'}</td><td rowspan="${totalBlockRows}" class="ctr" style="font-weight:700;color:#1a5632">${p.propertyNumber}</td><td rowspan="${totalBlockRows}">${on}</td><td rowspan="${totalBlockRows}">${occ}</td>` : ''}
+   419→          <td class="ctr" style="font-weight:600;color:#1a5632">${dir.label}</td>
+   420→          <td>${bName}</td>
+   421→          <td class="rt">${bLen || '-'}</td>
+   422→          <td class="rt">${bWid || '-'}</td>
+   423→          ${bi === 0 ? `<td rowspan="4">${p.constructionType || '-'}</td><td rowspan="4" class="ctr">${p.yearBuilt || '-'}</td><td rowspan="4" class="rt">${fmt(p.builtUpArea || p.area)}</td><td rowspan="4" class="rt">${fmt(rec.landRate)}</td><td rowspan="4" class="rt">${fmt(rec.buildingRate)}</td><td rowspan="4" class="rt">${fmt(rec.constructionRate)}</td><td rowspan="4" class="rt">${fmt(rec.depreciationRate)}</td><td rowspan="4" class="rt">${fmt(rec.usageFactor)}</td><td rowspan="4" class="rt" style="font-weight:700">${fmt(rec.capitalValue)}</td><td rowspan="4" class="rt">${fmt(rec.taxRatePercent)}</td><td rowspan="${Math.max(cd.length, 1)}" class="rt" style="font-weight:600">${fmt(rec.houseTaxAmt)}</td><td rowspan="${Math.max(cd.length, 1)}" class="rt">${fmt(rec.lightTaxAmt)}</td><td rowspan="${Math.max(cd.length, 1)}" class="rt">${fmt(rec.healthTaxAmt)}</td><td rowspan="${Math.max(cd.length, 1)}" class="rt">${fmt(rec.waterTaxAmt)}</td><td rowspan="${Math.max(cd.length, 1)}" class="rt bold" style="color:#138808">${fmt(rec.totalTaxAmt)}</td><td rowspan="${Math.max(cd.length, 1)}" class="rt">${fmt(rec.appealHouseTax)}</td><td rowspan="${Math.max(cd.length, 1)}" class="rt">${fmt(rec.appealLightTax)}</td><td rowspan="${Math.max(cd.length, 1)}" class="rt">${fmt(rec.appealHealthTax)}</td><td rowspan="${Math.max(cd.length, 1)}" class="rt">${fmt(rec.appealWaterTax)}</td><td rowspan="${Math.max(cd.length, 1)}" class="rt">${fmt(rec.appealTotalTax)}</td><td rowspan="${totalBlockRows}">${rec.remarks || '-'}</td>` : ''}
+   424→        </tr>`);
+   425→      });
+   426→
+   427→      // Construction type rows
+   428→      if (cd.length > 0) {
+   429→        cd.forEach((c, ci) => {
+   430→          allRows.push(`<tr style="background:${rowBg}">
+   431→            <td colspan="4"></td>
+   432→            <td style="font-weight:600">${c.type}</td>
+   433→            <td class="ctr">${ci === 0 ? (p.yearBuilt || '-') : ''}</td>
+   434→            <td class="rt">${fmt(c.area)}</td>
+   435→            <td class="rt">${c.type === 'जमीन/खुली जागा' ? fmt(c.rate) : '-'}</td>
+   436→            <td class="rt">${c.type !== 'जमीन/खुली जागा' ? fmt(c.rate) : '-'}</td>
+   437→            <td class="rt">${c.type !== 'जमीन/खुली जागा' ? fmt(c.rate) : '-'}</td>
+   438→            <td class="rt">${fmt(rec.depreciationRate)}</td>
+   439→            <td class="rt">${fmt(rec.usageFactor)}</td>
+   440→            <td class="rt" style="font-weight:700">${fmt(c.capitalValue)}</td>
+   441→            <td class="rt">${fmt(rec.taxRatePercent)}</td>
+   442→            ${ci === 0 ? '' : ''}
+   443→          </tr>`);
+   444→        });
+   445→      } else {
+   446→        allRows.push(`<tr style="background:${rowBg}">
+   447→          <td colspan="4"></td>
+   448→          <td>${p.constructionType || '-'}</td>
+   449→          <td class="ctr">${p.yearBuilt || '-'}</td>
+   450→          <td class="rt">${fmt(p.builtUpArea || p.area)}</td>
+   451→          <td class="rt">${fmt(rec.landRate)}</td>
+   452→          <td class="rt">${fmt(rec.buildingRate)}</td>
+   453→          <td class="rt">${fmt(rec.constructionRate)}</td>
+   454→          <td class="rt">${fmt(rec.depreciationRate)}</td>
+   455→          <td class="rt">${fmt(rec.usageFactor)}</td>
+   456→          <td class="rt" style="font-weight:700">${fmt(rec.capitalValue)}</td>
+   457→          <td class="rt">${fmt(rec.taxRatePercent)}</td>
+   458→        </tr>`);
+   459→      }
+   460→
+   461→      // Total row
+   462→      allRows.push(`<tr class="total-row">
+   463→        <td colspan="8" class="rt bold" style="padding-right:6px">एकुण</td>
+   464→        <td class="rt bold">${fmt(rec.totalArea || p.builtUpArea || p.area)}</td>
+   465→        <td colspan="8"></td>
+   466→        <td class="rt bold">${fmt(rec.houseTaxAmt)}</td>
+   467→        <td class="rt bold">${fmt(rec.lightTaxAmt)}</td>
+   468→        <td class="rt bold">${fmt(rec.healthTaxAmt)}</td>
+   469→        <td class="rt bold">${fmt(rec.waterTaxAmt)}</td>
+   470→        <td class="rt bold" style="color:#138808;font-size:11px">₹${fmt(rec.totalTaxAmt)}</td>
+   471→        <td class="rt">${fmt(rec.appealHouseTax)}</td>
+   472→        <td class="rt">${fmt(rec.appealLightTax)}</td>
+   473→        <td class="rt">${fmt(rec.appealHealthTax)}</td>
+   474→        <td class="rt">${fmt(rec.appealWaterTax)}</td>
+   475→        <td class="rt">${fmt(rec.appealTotalTax)}</td>
+   476→      </tr>`);
+   477→
+   478→      // Note row
+   479→      allRows.push(`<tr class="note-row"><td colspan="31" style="text-align:left;padding:2px 6px;font-size:8px">शेरे: ${rec.remarks || '-'} | सरपंचाची स्वाक्षरी: ________________</td></tr>`);
+   480→
+   481→      return allRows.join('\n');
+   482→    }).join('\n');
+   483→
+   484→    const html = `<!DOCTYPE html><html lang="mr"><head><meta charset="UTF-8"><title>नमुना ८</title>
+   485→<style>
+   486→  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap');
+   487→  *{margin:0;padding:0;box-sizing:border-box}
+   488→  body{font-family:'Noto Sans Devanagari',Arial,sans-serif;padding:10px;font-size:9px;color:#1a1a1a}
+   489→  .flag-bar{display:flex;height:5px;width:100%}.flag-saffron{flex:1;background:#FF9933}.flag-white{flex:1;background:#FFF}.flag-green{flex:1;background:#138808}
+   490→  .form-header{text-align:center;padding:6px 0;border-bottom:2px solid #138808;margin-bottom:6px}
+   491→  .form-title{font-size:12px;font-weight:700}.rule-ref{font-size:9px;color:#666}
+   492→  .fy-row{display:flex;justify-content:space-between;align-items:center;margin:4px 0;padding:3px 6px;background:#f8f9fa;border:1px solid #ddd}
+   493→  .fy-row span{font-size:10px;font-weight:600}
+   494→  .gp-info{display:flex;justify-content:space-between;font-size:9px;padding:2px 6px}
+   495→  .gp-info span{font-weight:600}
+   496→  table{width:100%;border-collapse:collapse;margin:6px 0}
+   497→  th,td{border:1px solid #555;padding:2px 3px;font-size:7.5px;text-align:center;vertical-align:middle;line-height:1.3}
+   498→  th{background:#138808;color:#fff;font-weight:600;font-size:7px}
+   499→  .rt{text-align:right}.ctr{text-align:center}.bold{font-weight:700}
+   500→  .total-row{background:#c8e6c9!important;font-weight:700}.total-row td{border-top:2px solid #138808;font-size:8px}
+   501→  .note-row{background:#fff9c4!important}
+   502→  .header-main th{background:#0d5c2e;font-size:7.5px;padding:3px 1px}
+   503→  .header-sub th{background:#138808;font-size:7px;padding:2px}
+   504→  .header-num th{background:#1a7a3a;font-size:7px;padding:1px;color:#c8e6c9}
+   505→  .footer{margin-top:12px;display:flex;justify-content:space-between;align-items:flex-end}
+   506→  .sig-block{text-align:center;min-width:120px}
+   507→  .sig-line{border-top:1px solid #333;padding-top:3px;margin-top:25px;font-size:9px;font-weight:600}
+   508→  @media print{body{padding:3px;font-size:7px}.flag-bar,th,.total-row,.note-row{-webkit-print-color-adjust:exact;print-color-adjust:exact}table{page-break-inside:auto}tr{page-break-inside:avoid}}
+   509→</style></head><body>
+   510→<div class="flag-bar"><div class="flag-saffron"></div><div class="flag-white"></div><div class="flag-green"></div></div>
+   511→<div class="form-header"><div class="form-title">नमुना नंबर ८</div><div class="rule-ref">नियम (३२) १ पहा</div></div>
+   512→<div class="fy-row"><span>${fyFull} या वर्षासाठी कर आकारणी नोंदवही</span><span style="font-size:9px">पान क्र. _____</span></div>
+   513→<div class="gp-info"><span>ग्रामपंचायत: ${gpName}</span><span>तालुका: ${taluka}</span><span>जिल्हा: ${district}</span></div>
+   514→<table><thead>
+   515→<tr class="header-main"><th rowspan="3" style="width:20px">अ.क्र.</th><th rowspan="3" style="width:50px">रस्त्याचे नाव</th><th rowspan="3" style="width:35px">सिटी सर्वे नंबर</th><th rowspan="3" style="width:30px">मालमत्ता क्र</th><th rowspan="3" style="width:55px">मालकाचे नाव</th><th rowspan="3" style="width:55px">भोगवटा करणारा नाव</th><th colspan="4" style="background:#0a7e3a">क्षेत्रफळ (७-१०)</th><th rowspan="3" style="width:60px">मालमत्तेचे वर्णन</th><th rowspan="3" style="width:25px">बांधका माचे वर्ष</th><th rowspan="3" style="width:30px">क्षेत्रफळ चौ.मी.</th><th colspan="3" style="background:#0a7e3a">रेडीरेकनर दर</th><th rowspan="3" style="width:22px">घसारा दर</th><th rowspan="3" style="width:22px">भारांक</th><th rowspan="3" style="width:40px">भांडवली मूल्य</th><th rowspan="3" style="width:22px">करदर</th><th colspan="5" style="background:#0a7e3a">कराची रक्कम (रु.)</th><th colspan="5" style="background:#b71c1c">अपिलाचे निकाल (रु.)</th><th rowspan="3" style="width:45px">शेरे</th></tr>
+   516→<tr class="header-sub"><th rowspan="2" style="background:#0a7e3a">चर्तू:सिमा</th><th rowspan="2" style="background:#0a7e3a">नाव</th><th rowspan="2" style="background:#0a7e3a">लांबी</th><th rowspan="2" style="background:#0a7e3a">रुंदी</th><th rowspan="2" style="background:#0a7e3a">जमीन</th><th rowspan="2" style="background:#0a7e3a">इमारत</th><th rowspan="2" style="background:#0a7e3a">बांधकाम</th><th>घरपट्टी</th><th>दिवाबत्ती</th><th>आरोग्य</th><th>पाणीपट्टी</th><th>एकुण</th><th style="background:#8b0000">घरपट्टी</th><th style="background:#8b0000">दिवाबत्ती</th><th style="background:#8b0000">आरोग्य</th><th style="background:#8b0000">पाणीपट्टी</th><th style="background:#8b0000">एकुण</th></tr>
+   517→<tr class="header-num"><th>२१</th><th>२२</th><th>२३</th><th>२४</th><th>२५</th><th style="background:#6d0000">२६</th><th style="background:#6d0000">२७</th><th style="background:#6d0000">२८</th><th style="background:#6d0000">२९</th><th style="background:#6d0000">३०</th></tr>
+   518→</thead><tbody>${rows}</tbody></table>
+   519→<div class="footer"><div class="sig-block"><div class="sig-line">मालकाची सही</div></div><div class="sig-block"><div class="sig-line">ग्रामसेवक सही</div></div><div class="sig-block"><div class="sig-line">सरपंच सही व मुद्रा</div></div></div>
+   520→<div style="text-align:center;margin-top:10px;font-size:8px;color:#999">दिनांक: ${new Date().toLocaleDateString('mr-IN')} | नमुना ८ | ${gpName}</div>
+   521→</body></html>`;
+   522→
+   523→    const w = window.open('', '_blank');
+   524→    if (w) { w.document.write(html); w.document.close(); w.focus(); setTimeout(() => w.print(), 500); }
+   525→  };
+   526→
+   527→  // ===== RENDER =====
+   528→  return (
+   529→    <div className="space-y-5">
+   530→      {/* HEADER CARD */}
+   531→      <Card className="border-0 shadow-lg overflow-hidden">
+   532→        <div className="relative" style={{ background: 'linear-gradient(135deg, #1a5632 0%, #0d7377 50%, #1a5632 100%)' }}>
+   533→          <div className="flex h-1.5"><div className="flex-1" style={{ background: '#FF9933' }} /><div className="flex-1 bg-white" /><div className="flex-1" style={{ background: '#138808' }} /></div>
+   534→          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,255,255,0.1) 35px, rgba(255,255,255,0.1) 70px)' }} />
+   535→          <div className="relative p-5 sm:p-6">
+   536→            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+   537→              <div className="flex items-center gap-3">
+   538→                <div className="h-14 w-14 rounded-xl flex items-center justify-center shadow-lg" style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)' }}>
+   539→                  <FileText className="h-7 w-7 text-white" />
+   540→                </div>
+   541→                <div>
+   542→                  <h1 className="text-2xl font-bold text-white leading-tight">नमुना नंबर ८</h1>
+   543→                  <p className="text-green-100 text-sm font-medium">कर आकारणी नोंदवही</p>
+   544→                  <p className="text-green-200/70 text-xs">नियम (३२) १ पहा | Tax Assessment Register</p>
+   545→                  {villageInfo && <p className="text-amber-200 text-xs mt-1 font-semibold">{villageInfo.gramPanchayatNameMr} | ता. {villageInfo.taluka} | जि. {villageInfo.district}</p>}
+   546→                </div>
+   547→              </div>
+   548→              <div className="flex items-center gap-2">
+   549→                <Badge className="bg-white/20 text-white border-white/30 backdrop-blur text-xs px-3 py-1"><Hash className="h-3 w-3 mr-1" />{records.length} रेकॉर्ड्स</Badge>
+   550→                <Button variant="ghost" size="sm" onClick={fetchData} disabled={loading} className="text-white hover:bg-white/20 h-9"><RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />रिफ्रेश</Button>
+   551→              </div>
+   552→            </div>
+   553→            {/* Process Flow */}
+   554→            <div className="mt-5 bg-white/10 backdrop-blur-sm rounded-xl p-4">
+   555→              <div className="flex items-center justify-between mb-2">
+   556→                <span className="text-white/80 text-xs font-medium">प्रक्रिया प्रवाह</span>
+   557→                <Badge className="bg-white/20 text-white border-0 text-xs">Step {currentStepIndex + 1} / {processSteps.length}</Badge>
+   558→              </div>
+   559→              <div className="flex items-center gap-1 sm:gap-2">
+   560→                {processSteps.map((step, i) => {
+   561→                  const isActive = i === currentStepIndex;
+   562→                  const isCompleted = i < currentStepIndex;
+   563→                  return (
+   564→                    <React.Fragment key={step.key}>
+   565→                      <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg transition-all" style={{ background: isActive ? 'rgba(255,255,255,0.3)' : isCompleted ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.05)', border: isActive ? '1.5px solid rgba(255,255,255,0.5)' : '1.5px solid transparent' }}>
+   566→                        <div className="h-6 w-6 rounded-full flex items-center justify-center text-xs" style={{ background: isCompleted ? '#2ecc71' : isActive ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)' }}>
+   567→                          {isCompleted ? <CheckCircle2 className="h-3.5 w-3.5 text-white" /> : <span className="text-white font-semibold">{i + 1}</span>}
+   568→                        </div>
+   569→                        <div className="hidden sm:block"><div className="text-white text-xs font-semibold leading-tight">{step.label}</div><div className="text-white/50 text-[10px] leading-tight">{step.labelEn}</div></div>
+   570→                      </div>
+   571→                      {i < processSteps.length - 1 && <ChevronRight className="h-4 w-4 text-white/30 flex-shrink-0" />}
+   572→                    </React.Fragment>
+   573→                  );
+   574→                })}
+   575→              </div>
+   576→            </div>
+   577→          </div>
+   578→        </div>
+   579→      </Card>
+   580→
+   581→      {/* CONTROLS */}
+   582→      <Card className="border-0 shadow-md overflow-hidden">
+   583→        <div className="h-1" style={{ background: 'linear-gradient(90deg, #FF9933, #FFF, #138808)' }} />
+   584→        <CardContent className="p-5">
+   585→          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4">
+   586→            <div className="lg:col-span-4">
+   587→              <Label className="text-sm font-semibold text-green-800 mb-1.5 flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" />मालमत्ता निवडा</Label>
+   588→              <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
+   589→                <SelectTrigger className="border-green-200 focus:ring-green-500/20 focus:border-green-400 h-10"><SelectValue placeholder="मालमत्ता निवडा..." /></SelectTrigger>
+   590→                <SelectContent>{properties.map(p => <SelectItem key={p.id} value={p.id}><span className="font-semibold">{p.propertyNumber}</span><span className="text-muted-foreground"> - {getOwnerName(p)}</span></SelectItem>)}</SelectContent>
+   591→              </Select>
+   592→            </div>
+   593→            <div className="lg:col-span-3">
+   594→              <Label className="text-sm font-semibold text-green-800 mb-1.5 flex items-center gap-1.5"><Layers className="h-3.5 w-3.5" />वित्तीय वर्ष</Label>
+   595→              <Select value={financialYear} onValueChange={setFinancialYear}>
+   596→                <SelectTrigger className="border-green-200 focus:ring-green-500/20 focus:border-green-400 h-10"><SelectValue /></SelectTrigger>
+   597→                <SelectContent>{['2021-22', '2022-23', '2023-24', '2024-25', '2025-26'].map(y => <SelectItem key={y} value={y}><span className="font-semibold">सन {y}</span></SelectItem>)}</SelectContent>
+   598→              </Select>
+   599→            </div>
+   600→            <div className="lg:col-span-3 flex items-end">
+   601→              <Button onClick={handleGenerate} disabled={generating || !selectedPropertyId} className="w-full h-10 text-sm font-semibold shadow-md" style={{ background: generating || !selectedPropertyId ? undefined : 'linear-gradient(135deg, #1a5632, #0d7377)' }}>
+   602→                {generating ? <><Loader2 className="h-4 w-4 mr-1.5 animate-spin" />तयार होत आहे...</> : <><Zap className="h-4 w-4 mr-1.5" />नमुना ८ तयार करा</>}
+   603→              </Button>
+   604→            </div>
+   605→            <div className="lg:col-span-2 flex items-end">
+   606→              <Button variant="outline" onClick={handleGenerateAll} disabled={generating || properties.length === 0} className="w-full h-10 text-sm border-2 border-green-300 text-green-700 hover:bg-green-50 font-semibold">
+   607→                {generatingAll ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" />{generateProgress.current}/{generateProgress.total}</> : <><ArrowDownToLine className="h-4 w-4 mr-1" />सर्वांसाठी</>}
+   608→              </Button>
+   609→            </div>
+   610→          </div>
+   611→          {selectedProperty && (
+   612→            <div className="mt-4 p-3 rounded-lg border border-green-200" style={{ background: 'linear-gradient(135deg, #eafaf1, #f0fdf4)' }}>
+   613→              <div className="flex items-start gap-3">
+   614→                <div className="h-10 w-10 rounded-lg bg-green-600 flex items-center justify-center shadow-sm flex-shrink-0"><Building2 className="h-5 w-5 text-white" /></div>
+   615→                <div className="flex-1 min-w-0">
+   616→                  <div className="flex items-center gap-2 flex-wrap">
+   617→                    <span className="font-bold text-green-900 text-sm">{selectedProperty.propertyNumber}</span>
+   618→                    <Badge className="bg-green-100 text-green-800 border border-green-300 text-xs">{selectedProperty.constructionType || '-'}</Badge>
+   619→                    <Badge className="bg-teal-100 text-teal-800 border border-teal-300 text-xs">{selectedProperty.usageType || '-'}</Badge>
+   620→                    <Badge className="bg-amber-100 text-amber-800 border border-amber-300 text-xs"><MapPin className="h-3 w-3 mr-0.5" />{selectedProperty.ward?.wardNameMr || '-'}</Badge>
+   621→                  </div>
+   622→                  <div className="flex items-center gap-4 mt-1 text-xs text-green-700">
+   623→                    <span className="flex items-center gap-1"><Users className="h-3 w-3" />{getOwnerName(selectedProperty)}</span>
+   624→                    <span className="flex items-center gap-1"><Route className="h-3 w-3" />{selectedProperty.road?.roadNameMr || '-'}</span>
+   625→                    <span>क्षेत्रफळ: {selectedProperty.area || 0} चौ.मी.</span>
+   626→                  </div>
+   627→                </div>
+   628→              </div>
+   629→            </div>
+   630→          )}
+   631→          <div className="mt-4 flex gap-3">
+   632→            <div className="relative flex-1">
+   633→              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-400" />
+   634→              <Input placeholder="मालमत्ता क्र./मालक नाव/वार्ड शोधा..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10 border-green-200 focus:ring-green-500/20 focus:border-green-400" />
+   635→            </div>
+   636→            {filtered.length > 0 && (
+   637→              <Button onClick={handlePrintGovFormat} className="shadow-md" style={{ background: 'linear-gradient(135deg, #1a5632, #0d7377)' }}>
+   638→                <Printer className="h-4 w-4 mr-1.5" />शासकीय स्वरूप प्रिंट
+   639→              </Button>
+   640→            )}
+   641→          </div>
+   642→        </CardContent>
+   643→      </Card>
+   644→
+   645→      {/* SUMMARY STATS */}
+   646→      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+   647→        {[
+   648→          { icon: FileText, val: totalProperties, label: 'एकूण रेकॉर्ड्स', bg1: '#e8f5e9', bg2: '#f1f8e9', color: '#138808', ic: 'text-green-600' },
+   649→          { icon: Building2, val: properties.length, label: 'एकूण मालमत्ता', bg1: '#e0f2f1', bg2: '#e8f5e9', color: '#0d7377', ic: 'text-teal-600' },
+   650→          { icon: IndianRupee, val: `₹${totalTaxAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, label: 'एकूण कर', bg1: '#fff3e0', bg2: '#fff8e1', color: '#FF9933', ic: 'text-amber-600' },
+   651→          { icon: Scale, val: `₹${avgTax.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, label: 'सरासरी कर', bg1: '#e8f5e9', bg2: '#e0f2f1', color: '#1a5632', ic: 'text-emerald-600' },
+   652→        ].map((s, i) => (
+   653→          <Card key={i} className="border-0 shadow-sm overflow-hidden">
+   654→            <div className="h-1" style={{ background: s.color }} />
+   655→            <CardContent className="p-4 text-center" style={{ background: `linear-gradient(135deg, ${s.bg1}, ${s.bg2})` }}>
+   656→              <s.icon className={`h-5 w-5 mx-auto mb-1 ${s.ic}`} />
+   657→              <div className="text-2xl font-bold" style={{ color: s.color }}>{s.val}</div>
+   658→              <div className="text-xs" style={{ color: s.color }}>{s.label}</div>
+   659→            </CardContent>
+   660→          </Card>
+   661→        ))}
+   662→      </div>
+   663→
+   664→      {/* ===== MAIN EXCEL FORMAT TABLE ===== */}
+   665→      <Card className="border-0 shadow-md overflow-hidden">
+   666→        <div className="flex h-1.5"><div className="flex-1" style={{ background: '#FF9933' }} /><div className="flex-1 bg-white" /><div className="flex-1" style={{ background: '#138808' }} /></div>
+   667→        <CardHeader className="pb-3">
+   668→          <div className="flex items-center justify-between flex-wrap gap-3">
+   669→            <CardTitle className="text-lg flex items-center gap-2 text-green-900">
+   670→              <div className="h-8 w-8 rounded-lg bg-green-100 flex items-center justify-center"><BookOpen className="h-4 w-4 text-green-600" /></div>
+   671→              नमुना ८ - कर आकारणी नोंदवही (३१ स्तंभ)
+   672→            </CardTitle>
+   673→            <div className="flex items-center gap-2">
+   674→              {villageInfo && <Badge className="bg-green-50 text-green-800 border border-green-200 text-xs"><Landmark className="h-3 w-3 mr-1" />{villageInfo.gramPanchayatNameMr}</Badge>}
+   675→              <Badge className="bg-amber-50 text-amber-800 border border-amber-200 text-xs">सन {financialYear}</Badge>
+   676→            </div>
+   677→          </div>
+   678→        </CardHeader>
+   679→        <CardContent>
+   680→          {loading ? (
+   681→            <div className="space-y-3">{[1, 2, 3, 4, 5].map(i => <div key={i} className="flex items-center gap-4"><Skeleton className="h-4 w-8" /><Skeleton className="h-4 w-24" /><Skeleton className="h-4 w-32" /><Skeleton className="h-4 w-20" /><Skeleton className="h-4 w-16" /></div>)}</div>
+   682→          ) : filtered.length === 0 ? (
+   683→            <div className="text-center py-12"><div className="h-16 w-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4"><AlertCircle className="h-8 w-8 text-green-300" /></div><p className="text-muted-foreground font-medium">नमुना ८ रेकॉर्ड नाहीत</p><p className="text-xs text-muted-foreground mt-1">मालमत्ता निवडून &quot;नमुना ८ तयार करा&quot; बटण दाबा</p></div>
+   684→          ) : (
+   685→            <div className="overflow-x-auto border border-green-200 rounded-lg" style={{ scrollbarWidth: 'thin' }}>
+   686→              <table className="w-full border-collapse min-w-[2400px]" style={{ fontSize: '11px' }}>
+   687→                <thead>
+   688→                  {/* Row 1: Main Headers */}
+   689→                  <tr style={{ background: '#0d5c2e' }}>
+   690→                    <th rowSpan={3} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ minWidth: '35px' }}>अ.क्र.<br/><span className="text-green-300 text-[8px]">(१)</span></th>
+   691→                    <th rowSpan={3} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ minWidth: '70px' }}>रस्त्याचे<br/>नाव<br/><span className="text-green-300 text-[8px]">(२)</span></th>
+   692→                    <th rowSpan={3} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ minWidth: '50px' }}>सिटी<br/>सर्वे<br/>नंबर<br/><span className="text-green-300 text-[8px]">(३)</span></th>
+   693→                    <th rowSpan={3} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ minWidth: '45px' }}>मालमत्ता<br/>क्र<br/><span className="text-green-300 text-[8px]">(४)</span></th>
+   694→                    <th rowSpan={3} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ minWidth: '85px' }}>मालकाचे<br/>नाव<br/><span className="text-green-300 text-[8px]">(५)</span></th>
+   695→                    <th rowSpan={3} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ minWidth: '85px' }}>भोगवटा<br/>करणारा<br/>नाव<br/><span className="text-green-300 text-[8px]">(६)</span></th>
+   696→                    <th colSpan={4} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ background: '#0a7e3a' }}>क्षेत्रफळ (७-१०)</th>
+   697→                    <th rowSpan={3} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ minWidth: '85px' }}>मालमत्तेचे<br/>वर्णन<br/><span className="text-green-300 text-[8px]">(११)</span></th>
+   698→                    <th rowSpan={3} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ minWidth: '40px' }}>बांधका<br/>माचे<br/>वर्ष<br/><span className="text-green-300 text-[8px]">(१२)</span></th>
+   699→                    <th rowSpan={3} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ minWidth: '45px' }}>क्षेत्रफळ<br/>चौ.मी.<br/><span className="text-green-300 text-[8px]">(१३)</span></th>
+   700→                    <th colSpan={3} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ background: '#0a7e3a' }}>रेडीरेकनर दर प्रति चौ.मी.</th>
+   701→                    <th rowSpan={3} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ minWidth: '35px' }}>घसारा<br/>दर<br/><span className="text-green-300 text-[8px]">(१७)</span></th>
+   702→                    <th rowSpan={3} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ minWidth: '38px' }}>वापरा<br/>नुसार<br/>भारांक<br/><span className="text-green-300 text-[8px]">(१८)</span></th>
+   703→                    <th rowSpan={3} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ minWidth: '65px' }}>एकुण<br/>भांडवली<br/>मूल्य (रु.)<br/><span className="text-green-300 text-[8px]">(१९)</span></th>
+   704→                    <th rowSpan={3} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ minWidth: '35px' }}>करचा<br/>दर<br/><span className="text-green-300 text-[8px]">(२०)</span></th>
+   705→                    <th colSpan={5} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ background: '#0a7e3a' }}>कराची रक्कम (रु.) (२१-२५)</th>
+   706→                    <th colSpan={5} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ background: '#b71c1c' }}>अपिलाचे निकाल (रु.) (२६-३०)</th>
+   707→                    <th rowSpan={3} className="border border-green-700 text-white px-1 py-2 text-[10px] font-bold" style={{ minWidth: '60px' }}>शेरे व दुरुस्त्या<br/><span className="text-green-300 text-[8px]">(३१)</span></th>
+   708→                  </tr>
+   709→                  {/* Row 2: Sub Headers */}
+   710→                  <tr style={{ background: '#138808' }}>
+   711→                    <th rowSpan={2} className="border border-green-700 text-white px-1 py-1 text-[9px] font-semibold" style={{ background: '#0a7e3a', minWidth: '40px' }}>चर्तू:सिमा</th>
+   712→                    <th rowSpan={2} className="border border-green-700 text-white px-1 py-1 text-[9px] font-semibold" style={{ background: '#0a7e3a', minWidth: '55px' }}>नाव</th>
+   713→                    <th rowSpan={2} className="border border-green-700 text-white px-1 py-1 text-[9px] font-semibold" style={{ background: '#0a7e3a', minWidth: '40px' }}>लांबी<br/>(मी.)</th>
+   714→                    <th rowSpan={2} className="border border-green-700 text-white px-1 py-1 text-[9px] font-semibold" style={{ background: '#0a7e3a', minWidth: '40px' }}>रुंदी<br/>(मी.)</th>
+   715→                    <th rowSpan={2} className="border border-green-700 text-white px-1 py-1 text-[9px] font-semibold" style={{ background: '#0a7e3a', minWidth: '40px' }}>जमीन<br/><span className="text-green-300 text-[7px]">(१४)</span></th>
+   716→                    <th rowSpan={2} className="border border-green-700 text-white px-1 py-1 text-[9px] font-semibold" style={{ background: '#0a7e3a', minWidth: '40px' }}>इमारत<br/><span className="text-green-300 text-[7px]">(१५)</span></th>
+   717→                    <th rowSpan={2} className="border border-green-700 text-white px-1 py-1 text-[9px] font-semibold" style={{ background: '#0a7e3a', minWidth: '40px' }}>बांधकाम<br/><span className="text-green-300 text-[7px]">(१६)</span></th>
+   718→                    <th className="border border-green-700 text-white px-1 py-1 text-[8px] font-semibold" style={{ minWidth: '42px' }}>घरपट्टी</th>
+   719→                    <th className="border border-green-700 text-white px-1 py-1 text-[8px] font-semibold" style={{ minWidth: '40px' }}>दिवाबत्ती<br/>कर</th>
+   720→                    <th className="border border-green-700 text-white px-1 py-1 text-[8px] font-semibold" style={{ minWidth: '42px' }}>आरोग्य<br/>रक्षण कर</th>
+   721→                    <th className="border border-green-700 text-white px-1 py-1 text-[8px] font-semibold" style={{ minWidth: '40px' }}>सा.<br/>पाणीपट्टी</th>
+   722→                    <th className="border border-green-700 text-white px-1 py-1 text-[8px] font-semibold" style={{ minWidth: '48px' }}>एकुण कर</th>
+   723→                    <th className="border border-red-800 text-white px-1 py-1 text-[8px] font-semibold" style={{ background: '#8b0000', minWidth: '38px' }}>घरपट्टी</th>
+   724→                    <th className="border border-red-800 text-white px-1 py-1 text-[8px] font-semibold" style={{ background: '#8b0000', minWidth: '36px' }}>दिवाबत्ती</th>
+   725→                    <th className="border border-red-800 text-white px-1 py-1 text-[8px] font-semibold" style={{ background: '#8b0000', minWidth: '38px' }}>आरोग्य</th>
+   726→                    <th className="border border-red-800 text-white px-1 py-1 text-[8px] font-semibold" style={{ background: '#8b0000', minWidth: '36px' }}>पाणीपट्टी</th>
+   727→                    <th className="border border-red-800 text-white px-1 py-1 text-[8px] font-semibold" style={{ background: '#8b0000', minWidth: '42px' }}>एकुण</th>
+   728→                  </tr>
+   729→                  {/* Row 3: Column Numbers for Tax/Appeal */}
+   730→                  <tr style={{ background: '#1a7a3a' }}>
+   731→                    <th className="border border-green-700 text-green-200 px-1 py-0.5 text-[8px]">२१</th>
+   732→                    <th className="border border-green-700 text-green-200 px-1 py-0.5 text-[8px]">२२</th>
+   733→                    <th className="border border-green-700 text-green-200 px-1 py-0.5 text-[8px]">२३</th>
+   734→                    <th className="border border-green-700 text-green-200 px-1 py-0.5 text-[8px]">२४</th>
+   735→                    <th className="border border-green-700 text-green-200 px-1 py-0.5 text-[8px]">२५</th>
+   736→                    <th className="border border-red-800 text-red-200 px-1 py-0.5 text-[8px]" style={{ background: '#6d0000' }}>२६</th>
+   737→                    <th className="border border-red-800 text-red-200 px-1 py-0.5 text-[8px]" style={{ background: '#6d0000' }}>२७</th>
+   738→                    <th className="border border-red-800 text-red-200 px-1 py-0.5 text-[8px]" style={{ background: '#6d0000' }}>२८</th>
+   739→                    <th className="border border-red-800 text-red-200 px-1 py-0.5 text-[8px]" style={{ background: '#6d0000' }}>२९</th>
+   740→                    <th className="border border-red-800 text-red-200 px-1 py-0.5 text-[8px]" style={{ background: '#6d0000' }}>३०</th>
+   741→                  </tr>
+   742→                </thead>
+   743→
+   744→                <tbody>
+   745→                  {filtered.map((rec, idx) => {
+   746→                    const p = rec.property;
+   747→                    const on = getOwnerName(p);
+   748→                    const occ = getOccupantName(p);
+   749→                    const cd = parseCD(rec.constructionDetails).filter(c => c.area > 0);
+   750→                    const rn = p.road?.roadNameMr || '-';
+   751→                    const cdCount = Math.max(cd.length, 1);
+   752→                    const totalBlockRows = 4 + cdCount + 1 + 1; // 4 boundaries + construction rows + total + note
+   753→                    const rowBg = idx % 2 === 0 ? 'bg-green-50/50' : 'bg-white';
+   754→
+   755→                    return (
+   756→                      <React.Fragment key={rec.id}>
+   757→                        {/* ===== 4 BOUNDARY ROWS ===== */}
+   758→                        {BOUNDARY_DIRS.map((dir, bi) => {
+   759→                          const bName = p[dir.bField] || '-';
+   760→                          const bLen = p[dir.lField] || (bi === 0 ? p.totalLength : null) || null;
+   761→                          const bWid = p[dir.wField] || (bi === 0 ? p.totalWidth : null) || null;
+   762→
+   763→                          return (
+   764→                            <tr key={dir.key} className={rowBg}>
+   765→                              {bi === 0 && (
+   766→                                <>
+   767→                                  {/* Cols 1-6: span entire property block */}
+   768→                                  <td rowSpan={totalBlockRows} className={`${cellC} font-bold text-green-900 align-top`}>{idx + 1}</td>
+   769→                                  <td rowSpan={totalBlockRows} className={`${cellBase} align-top`}>{rn}</td>
+   770→                                  <td rowSpan={totalBlockRows} className={`${cellC} align-top`}>{p.citySurveyNo || '-'}</td>
+   771→                                  <td rowSpan={totalBlockRows} className={`${cellC} font-bold text-green-800 align-top`}>{p.propertyNumber}</td>
+   772→                                  <td rowSpan={totalBlockRows} className={`${cellBase} align-top`}>{on}</td>
+   773→                                  <td rowSpan={totalBlockRows} className={`${cellBase} align-top`}>{occ}</td>
+   774→                                </>
+   775→                              )}
+   776→                              {/* Cols 7-10: boundary data per row */}
+   777→                              <td className={`${cellC} font-medium text-green-800`}>{dir.label}</td>
+   778→                              <td className={cellBase}>{bName}</td>
+   779→                              <td className={cellR}>{bLen != null ? fmt(bLen) : '-'}</td>
+   780→                              <td className={cellR}>{bWid != null ? fmt(bWid) : '-'}</td>
+   781→
+   782→                              {bi === 0 && (
+   783→                                <>
+   784→                                  {/* Cols 11-20: span 4 boundary rows */}
+   785→                                  <td rowSpan={4} className={`${cellBase} align-top`}>{p.constructionType || '-'}</td>
+   786→                                  <td rowSpan={4} className={`${cellC} align-top`}>{p.yearBuilt || '-'}</td>
+   787→                                  <td rowSpan={4} className={`${cellR} align-top`}>{fmt(p.builtUpArea || p.area)}</td>
+   788→                                  <td rowSpan={4} className={`${cellR} align-top`}>{fmt(rec.landRate)}</td>
+   789→                                  <td rowSpan={4} className={`${cellR} align-top`}>{fmt(rec.buildingRate)}</td>
+   790→                                  <td rowSpan={4} className={`${cellR} align-top`}>{fmt(rec.constructionRate)}</td>
+   791→                                  <td rowSpan={4} className={`${cellR} align-top`}>{fmt(rec.depreciationRate)}</td>
+   792→                                  <td rowSpan={4} className={`${cellR} align-top`}>{fmt(rec.usageFactor)}</td>
+   793→                                  <td rowSpan={4} className={`${cellR} font-semibold align-top`}>{fmt(rec.capitalValue)}</td>
+   794→                                  <td rowSpan={4} className={`${cellR} align-top`}>{fmt(rec.taxRatePercent)}</td>
+   795→
+   796→                                  {/* Cols 21-25: tax amounts span construction rows */}
+   797→                                  <td rowSpan={cdCount} className={`${cellR} font-semibold align-top`}>{fmt(rec.houseTaxAmt)}</td>
+   798→                                  <td rowSpan={cdCount} className={`${cellR} align-top`}>{fmt(rec.lightTaxAmt)}</td>
+   799→                                  <td rowSpan={cdCount} className={`${cellR} align-top`}>{fmt(rec.healthTaxAmt)}</td>
+   800→                                  <td rowSpan={cdCount} className={`${cellR} align-top`}>{fmt(rec.waterTaxAmt)}</td>
+   801→                                  <td rowSpan={cdCount} className={`${cellR} font-bold text-green-800 align-top`} style={{ background: '#e8f5e9' }}>{fmt(rec.totalTaxAmt)}</td>
+   802→
+   803→                                  {/* Cols 26-30: appeal amounts span construction rows */}
+   804→                                  <td rowSpan={cdCount} className={`${cellR} align-top`} style={{ background: '#fce4ec' }}>{fmt(rec.appealHouseTax)}</td>
+   805→                                  <td rowSpan={cdCount} className={`${cellR} align-top`} style={{ background: '#fce4ec' }}>{fmt(rec.appealLightTax)}</td>
+   806→                                  <td rowSpan={cdCount} className={`${cellR} align-top`} style={{ background: '#fce4ec' }}>{fmt(rec.appealHealthTax)}</td>
+   807→                                  <td rowSpan={cdCount} className={`${cellR} align-top`} style={{ background: '#fce4ec' }}>{fmt(rec.appealWaterTax)}</td>
+   808→                                  <td rowSpan={cdCount} className={`${cellR} font-semibold align-top`} style={{ background: '#fce4ec' }}>{fmt(rec.appealTotalTax)}</td>
+   809→
+   810→                                  {/* Col 31: span entire property block */}
+   811→                                  <td rowSpan={totalBlockRows} className={`${cellBase} text-[9px] align-top`}>{rec.remarks || '-'}</td>
+   812→                                </>
+   813→                              )}
+   814→                            </tr>
+   815→                          );
+   816→                        })}
+   817→
+   818→                        {/* ===== CONSTRUCTION TYPE ROWS ===== */}
+   819→                        {cd.length > 0 ? (
+   820→                          cd.map((c, ci) => (
+   821→                            <tr key={`cd-${ci}`} className={rowBg}>
+   822→                              {/* Cols 7-10: empty */}
+   823→                              <td className={cellBase}></td>
+   824→                              <td className={cellBase}></td>
+   825→                              <td className={cellBase}></td>
+   826→                              <td className={cellBase}></td>
+   827→                              {/* Cols 11-20: construction data */}
+   828→                              <td className={`${cellBase} font-medium`}>{c.type}</td>
+   829→                              <td className={cellC}>{ci === 0 ? (p.yearBuilt || '-') : ''}</td>
+   830→                              <td className={cellR}>{fmt(c.area)}</td>
+   831→                              <td className={cellR}>{c.type === 'जमीन/खुली जागा' ? fmt(c.rate) : '-'}</td>
+   832→                              <td className={cellR}>{c.type !== 'जमीन/खुली जागा' ? fmt(c.rate) : '-'}</td>
+   833→                              <td className={cellR}>{c.type !== 'जमीन/खुली जागा' ? fmt(c.rate) : '-'}</td>
+   834→                              <td className={cellR}>{fmt(rec.depreciationRate)}</td>
+   835→                              <td className={cellR}>{fmt(rec.usageFactor)}</td>
+   836→                              <td className={`${cellR} font-semibold`}>{fmt(c.capitalValue)}</td>
+   837→                              <td className={cellR}>{fmt(rec.taxRatePercent)}</td>
+   838→                              {/* Cols 21-30: covered by rowspan from first boundary row */}
+   839→                            </tr>
+   840→                          ))
+   841→                        ) : (
+   842→                          /* Default row when no construction details */
+   843→                          <tr className={rowBg}>
+   844→                            <td className={cellBase}></td><td className={cellBase}></td><td className={cellBase}></td><td className={cellBase}></td>
+   845→                            <td className={cellBase}>{p.constructionType || '-'}</td>
+   846→                            <td className={cellC}>{p.yearBuilt || '-'}</td>
+   847→                            <td className={cellR}>{fmt(p.builtUpArea || p.area)}</td>
+   848→                            <td className={cellR}>{fmt(rec.landRate)}</td>
+   849→                            <td className={cellR}>{fmt(rec.buildingRate)}</td>
+   850→                            <td className={cellR}>{fmt(rec.constructionRate)}</td>
+   851→                            <td className={cellR}>{fmt(rec.depreciationRate)}</td>
+   852→                            <td className={cellR}>{fmt(rec.usageFactor)}</td>
+   853→                            <td className={`${cellR} font-semibold`}>{fmt(rec.capitalValue)}</td>
+   854→                            <td className={cellR}>{fmt(rec.taxRatePercent)}</td>
+   855→                          </tr>
+   856→                        )}
+   857→
+   858→                        {/* ===== TOTAL ROW ===== */}
+   859→                        <tr style={{ background: '#c8e6c9' }}>
+   860→                          {/* Cols 7-10: empty */}
+   861→                          <td className="border-2 border-green-500"></td>
+   862→                          <td className="border-2 border-green-500"></td>
+   863→                          <td className="border-2 border-green-500"></td>
+   864→                          <td className="border-2 border-green-500"></td>
+   865→                          {/* Cols 11-12: label */}
+   866→                          <td className="border-2 border-green-500"></td>
+   867→                          <td className="border-2 border-green-500 text-right pr-2 font-bold text-green-900 text-[11px]">एकुण</td>
+   868→                          {/* Col 13: total area */}
+   869→                          <td className="border-2 border-green-500 text-right px-1 py-1 text-[11px] font-bold text-green-900">{fmt(rec.totalArea || p.builtUpArea || p.area)}</td>
+   870→                          {/* Cols 14-20: empty */}
+   871→                          <td className="border-2 border-green-500"></td>
+   872→                          <td className="border-2 border-green-500"></td>
+   873→                          <td className="border-2 border-green-500"></td>
+   874→                          <td className="border-2 border-green-500"></td>
+   875→                          <td className="border-2 border-green-500"></td>
+   876→                          <td className="border-2 border-green-500"></td>
+   877→                          <td className="border-2 border-green-500"></td>
+   878→                          {/* Cols 21-25: total taxes */}
+   879→                          <td className="border-2 border-green-500 text-right px-1 py-1 text-[11px] font-bold">{fmt(rec.houseTaxAmt)}</td>
+   880→                          <td className="border-2 border-green-500 text-right px-1 py-1 text-[11px] font-bold">{fmt(rec.lightTaxAmt)}</td>
+   881→                          <td className="border-2 border-green-500 text-right px-1 py-1 text-[11px] font-bold">{fmt(rec.healthTaxAmt)}</td>
+   882→                          <td className="border-2 border-green-500 text-right px-1 py-1 text-[11px] font-bold">{fmt(rec.waterTaxAmt)}</td>
+   883→                          <td className="border-2 border-green-500 text-right px-1 py-1 text-[12px] font-bold text-green-900" style={{ background: '#a5d6a7' }}>₹{fmt(rec.totalTaxAmt)}</td>
+   884→                          {/* Cols 26-30: total appeals */}
+   885→                          <td className="border-2 border-red-300 text-right px-1 py-1 text-[10px]" style={{ background: '#ef9a9a' }}>{fmt(rec.appealHouseTax)}</td>
+   886→                          <td className="border-2 border-red-300 text-right px-1 py-1 text-[10px]" style={{ background: '#ef9a9a' }}>{fmt(rec.appealLightTax)}</td>
+   887→                          <td className="border-2 border-red-300 text-right px-1 py-1 text-[10px]" style={{ background: '#ef9a9a' }}>{fmt(rec.appealHealthTax)}</td>
+   888→                          <td className="border-2 border-red-300 text-right px-1 py-1 text-[10px]" style={{ background: '#ef9a9a' }}>{fmt(rec.appealWaterTax)}</td>
+   889→                          <td className="border-2 border-red-300 text-right px-1 py-1 text-[10px] font-bold" style={{ background: '#ef9a9a' }}>{fmt(rec.appealTotalTax)}</td>
+   890→                        </tr>
+   891→
+   892→                        {/* ===== NOTE / शेरे ROW ===== */}
+   893→                        <tr style={{ background: '#fff9c4' }}>
+   894→                          <td colSpan={31} className="border border-amber-300 px-2 py-1 text-[9px] text-amber-900 font-medium">
+   895→                            शेरे: {rec.remarks || '-'} | अनुप्रमाणीतकरणारी सरपंचाची स्वाक्षरी: ________________
+   896→                          </td>
+   897→                        </tr>
+   898→                      </React.Fragment>
+   899→                    );
+   900→                  })}
+   901→
+   902→                  {/* ===== GRAND TOTAL ROW ===== */}
+   903→                  {filtered.length > 1 && (
+   904→                    <tr style={{ background: '#1a5632' }}>
+   905→                      <td colSpan={17} className="border-2 border-green-700 text-right pr-2 py-2 text-[12px] font-bold text-white">सर्व एकुण रक्कम</td>
+   906→                      <td className="border-2 border-green-700 text-right px-1 py-2 text-[12px] font-bold text-white">{fmt(filtered.reduce((s, r) => s + (r.capitalValue || 0), 0))}</td>
+   907→                      <td className="border-2 border-green-700"></td>
+   908→                      <td className="border-2 border-green-700 text-right px-1 py-2 text-[11px] font-bold text-white">{fmt(filtered.reduce((s, r) => s + (r.houseTaxAmt || 0), 0))}</td>
+   909→                      <td className="border-2 border-green-700 text-right px-1 py-2 text-[11px] font-bold text-white">{fmt(filtered.reduce((s, r) => s + (r.lightTaxAmt || 0), 0))}</td>
+   910→                      <td className="border-2 border-green-700 text-right px-1 py-2 text-[11px] font-bold text-white">{fmt(filtered.reduce((s, r) => s + (r.healthTaxAmt || 0), 0))}</td>
+   911→                      <td className="border-2 border-green-700 text-right px-1 py-2 text-[11px] font-bold text-white">{fmt(filtered.reduce((s, r) => s + (r.waterTaxAmt || 0), 0))}</td>
+   912→                      <td className="border-2 border-green-700 text-right px-1 py-2 text-[13px] font-bold" style={{ background: '#FF9933', color: '#fff' }}>₹{fmt(totalTaxAmount)}</td>
+   913→                      <td colSpan={5} className="border-2 border-red-800" style={{ background: '#8b0000' }}></td>
+   914→                      <td className="border-2 border-green-700"></td>
+   915→                    </tr>
+   916→                  )}
+   917→                </tbody>
+   918→              </table>
+   919→            </div>
+   920→          )}
+   921→
+   922→          {/* Legend */}
+   923→          {filtered.length > 0 && (
+   924→            <div className="mt-4 p-3 rounded-lg border border-green-200 bg-green-50/50">
+   925→              <div className="flex flex-wrap gap-4 text-[10px] text-green-800">
+   926→                <div className="flex items-center gap-1.5"><div className="h-3 w-3 rounded-sm" style={{ background: '#c8e6c9' }} /><span>एकुण रांग</span></div>
+   927→                <div className="flex items-center gap-1.5"><div className="h-3 w-3 rounded-sm" style={{ background: '#fff9c4' }} /><span>शेरे / नोंद</span></div>
+   928→                <div className="flex items-center gap-1.5"><div className="h-3 w-3 rounded-sm" style={{ background: '#fce4ec' }} /><span>अपिलाचे निकाल</span></div>
+   929→                <div className="flex items-center gap-1.5"><div className="h-3 w-3 rounded-sm" style={{ background: '#1a5632' }} /><span>सर्व एकुण</span></div>
+   930→                <span className="font-semibold">बांधकाम प्रकार दर:</span>
+   931→                {CONSTRUCTION_TYPES.map(ct => <span key={ct.type}>{ct.type}: ₹{ct.rate}</span>)}
+   932→              </div>
+   933→            </div>
+   934→          )}
+   935→        </CardContent>
+   936→      </Card>
+   937→
+   938→      {/* FOOTER SIGNATURE SECTION */}
+   939→      {filtered.length > 0 && (
+   940→        <Card className="border-0 shadow-sm overflow-hidden">
+   941→          <CardContent className="p-6" style={{ background: 'linear-gradient(135deg, #f1f8e9, #e8f5e9)' }}>
+   942→            <div className="flex flex-col sm:flex-row justify-between items-end gap-6">
+   943→              {['मालकाची सही|Owner Signature', 'ग्रामसेवक सही|Gram Sevak', 'सरपंच सही व मुद्रा|Sarpanch & Seal'].map((s, i) => {
+   944→                const [mr, en] = s.split('|');
+   945→                return (
+   946→                  <div key={i} className="text-center">
+   947→                    <div className="text-sm font-semibold text-green-800 mb-8">{mr}</div>
+   948→                    <div className="border-t-2 border-green-700 pt-2 min-w-[150px]"><span className="text-xs text-green-600">{en}</span></div>
+   949→                  </div>
+   950→                );
+   951→              })}
+   952→            </div>
+   953→          </CardContent>
+   954→        </Card>
+   955→      )}
+   956→    </div>
+   957→  );
+   958→}
+   959→

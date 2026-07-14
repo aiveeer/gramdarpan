@@ -1,0 +1,939 @@
+     1→'use client';
+     2→
+     3→import React, { useState, useEffect } from 'react';
+     4→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+     5→import { Badge } from '@/components/ui/badge';
+     6→import { Button } from '@/components/ui/button';
+     7→import { Separator } from '@/components/ui/separator';
+     8→import {
+     9→  Tooltip,
+    10→  TooltipContent,
+    11→  TooltipProvider,
+    12→  TooltipTrigger,
+    13→} from '@/components/ui/tooltip';
+    14→import {
+    15→  TrendingUp,
+    16→  TrendingDown,
+    17→  IndianRupee,
+    18→  Building2,
+    19→  Users,
+    20→  MapPin,
+    21→  HardHat,
+    22→  Shield,
+    23→  Clock,
+    24→  LogOut,
+    25→  LogIn,
+    26→  Activity,
+    27→  CheckCircle2,
+    28→  ArrowRight,
+    29→  Database,
+    30→  FileText,
+    31→  BookOpen,
+    32→  Receipt,
+    33→  Search,
+    34→  ClipboardList,
+    35→  Wrench,
+    36→  CreditCard,
+    37→  BarChart3,
+    38→  CircleDollarSign,
+    39→  AlertCircle,
+    40→  FolderArchive,
+    41→  PackageCheck,
+    42→  BookOpenCheck,
+    43→  FileSpreadsheet,
+    44→  Gauge,
+    45→  FileBadge,
+    46→  FileCheck2,
+    47→  ScrollText,
+    48→  FileBarChart,
+    49→  FileLock2,
+    50→  HandCoinsIcon,
+    51→  Banknote,
+    52→  Landmark,
+    53→  BookCopy,
+    54→  ListChecks,
+    55→  Package,
+    56→  FolderArchiveIcon,
+    57→  RefreshCw,
+    58→  Zap,
+    59→  FileDown,
+    60→  ChevronRight,
+    61→  CircleDot,
+    62→  CircleCheck,
+    63→  Circle,
+    64→} from 'lucide-react';
+    65→
+    66→// ─── Types ────────────────────────────────────────────────────────────────
+    67→
+    68→interface DashboardStats {
+    69→  totalProperties: number;
+    70→  totalTaxMasters: number;
+    71→  enabledTaxMasters: number;
+    72→  totalNamuna8: number;
+    73→  totalNamuna9: number;
+    74→  totalPayments: number;
+    75→  totalWards: number;
+    76→  totalOwners: number;
+    77→  totalRoads: number;
+    78→  totalEmployees: number;
+    79→  totalDemand: number;
+    80→  totalPaid: number;
+    81→  outstandingBalance: number;
+    82→}
+    83→
+    84→interface EnhancedData {
+    85→  totalIncome: number;
+    86→  totalExpenditure: number;
+    87→  balance: number;
+    88→  totalReceiptEntries: number;
+    89→  totalPaymentEntries: number;
+    90→  totalJournalEntries: number;
+    91→  pendingEntries: number;
+    92→  unpostedReceipts: number;
+    93→  unpostedPayments: number;
+    94→  unpostedJournals: number;
+    95→  totalAssetEntries: number;
+    96→  totalStockEntries: number;
+    97→  totalCollectionEntries: number;
+    98→  totalWaterBills: number;
+    99→  totalSchemeFunds: number;
+   100→  totalBankAccounts: number;
+   101→  totalBudgetHeads: number;
+   102→  totalSchemes: number;
+   103→  totalReceiptsPayments: number;
+   104→  totalBudgetEntries: number;
+   105→  totalWorkEntries: number;
+   106→  totalSalaryEntries: number;
+   107→  totalContractors: number;
+   108→  recentReceipts: {
+   109→    id: string;
+   110→    voucherNumber: string;
+   111→    receiptDate: string;
+   112→    receivedFrom: string;
+   113→    receivedFromMr: string | null;
+   114→    amount: number;
+   115→    paymentMethod: string;
+   116→    isPosted: boolean;
+   117→    createdAt: string;
+   118→  }[];
+   119→  recentPayments: {
+   120→    id: string;
+   121→    voucherNumber: string;
+   122→    paymentDate: string;
+   123→    paidTo: string;
+   124→    paidToMr: string | null;
+   125→    amount: number;
+   126→    paymentMethod: string;
+   127→    isPosted: boolean;
+   128→    createdAt: string;
+   129→  }[];
+   130→  namunaStatus: {
+   131→    number: number;
+   132→    name: string;
+   133→    nameMr: string;
+   134→    status: 'available' | 'partial' | 'none';
+   135→    viewId: string;
+   136→  }[];
+   137→}
+   138→
+   139→interface SessionLog {
+   140→  id: string;
+   141→  loginAt: string;
+   142→  logoutAt: string | null;
+   143→  action: string;
+   144→  user: {
+   145→    username: string;
+   146→    name: string;
+   147→    nameMarathi: string;
+   148→    role: string;
+   149→  };
+   150→}
+   151→
+   152→interface DashboardContentProps {
+   153→  stats: DashboardStats | null;
+   154→  user: { authenticated: boolean; user?: { name: string; nameMarathi: string; role: string }; loginAt?: string | null } | null;
+   155→  recentLogs: SessionLog[];
+   156→  setActiveView: (view: string) => void;
+   157→  formatTime: (iso: string | null) => string;
+   158→  refreshStats: () => void;
+   159→}
+   160→
+   161→// ─── Format Currency ──────────────────────────────────────────────────────
+   162→
+   163→function formatCurrency(amount: number): string {
+   164→  return new Intl.NumberFormat('mr-IN', {
+   165→    style: 'currency',
+   166→    currency: 'INR',
+   167→    minimumFractionDigits: 0,
+   168→    maximumFractionDigits: 0,
+   169→  }).format(amount);
+   170→}
+   171→
+   172→// ─── Main Component ───────────────────────────────────────────────────────
+   173→
+   174→export default function ERPDashboard({
+   175→  stats,
+   176→  user,
+   177→  recentLogs,
+   178→  setActiveView,
+   179→  formatTime,
+   180→  refreshStats,
+   181→}: DashboardContentProps) {
+   182→  const [enhanced, setEnhanced] = useState<EnhancedData | null>(null);
+   183→  const [loading, setLoading] = useState(true);
+   184→
+   185→  useEffect(() => {
+   186→    let isMounted = true;
+   187→    const loadEnhanced = async () => {
+   188→      try {
+   189→        setLoading(true);
+   190→        const res = await fetch('/api/dashboard/enhanced');
+   191→        if (res.ok && isMounted) {
+   192→          setEnhanced(await res.json());
+   193→        }
+   194→      } catch {
+   195→        // ignore
+   196→      } finally {
+   197→        if (isMounted) setLoading(false);
+   198→      }
+   199→    };
+   200→    loadEnhanced();
+   201→    const interval = setInterval(loadEnhanced, 60000);
+   202→    return () => {
+   203→      isMounted = false;
+   204→      clearInterval(interval);
+   205→    };
+   206→  }, []);
+   207→
+   208→  const collectionPercent = stats?.totalDemand
+   209→    ? Math.min((stats.totalPaid / stats.totalDemand) * 100, 100)
+   210→    : 0;
+   211→
+   212→  // ─── 1. Financial Summary Cards ──────────────────────────────────────
+   213→
+   214→  const financialCards = [
+   215→    {
+   216→      title: 'एकूण उत्पन्न',
+   217→      titleEn: 'Total Income',
+   218→      amount: enhanced?.totalIncome || stats?.totalPaid || 0,
+   219→      icon: TrendingUp,
+   220→      gradient: 'from-green-500 to-emerald-600',
+   221→      bgGrad: 'from-green-50 to-emerald-50',
+   222→      borderColor: 'border-green-200',
+   223→      textColor: 'text-green-800',
+   224→      iconBg: 'bg-green-500',
+   225→      trend: '+12.5%',
+   226→      trendUp: true,
+   227→      view: 'txn-receipt',
+   228→    },
+   229→    {
+   230→      title: 'एकूण खर्च',
+   231→      titleEn: 'Total Expenditure',
+   232→      amount: enhanced?.totalExpenditure || 0,
+   233→      icon: TrendingDown,
+   234→      gradient: 'from-red-500 to-rose-600',
+   235→      bgGrad: 'from-red-50 to-rose-50',
+   236→      borderColor: 'border-red-200',
+   237→      textColor: 'text-red-800',
+   238→      iconBg: 'bg-red-500',
+   239→      trend: '-3.2%',
+   240→      trendUp: false,
+   241→      view: 'txn-payment',
+   242→    },
+   243→    {
+   244→      title: 'शिल्लक रक्कम',
+   245→      titleEn: 'Balance',
+   246→      amount: enhanced?.balance || 0,
+   247→      icon: IndianRupee,
+   248→      gradient: 'from-teal-500 to-cyan-600',
+   249→      bgGrad: 'from-teal-50 to-cyan-50',
+   250→      borderColor: 'border-teal-200',
+   251→      textColor: 'text-teal-800',
+   252→      iconBg: 'bg-teal-500',
+   253→      trend: '+8.7%',
+   254→      trendUp: true,
+   255→      view: 'registers-receipt-payment',
+   256→    },
+   257→  ];
+   258→
+   259→  // ─── 2. Key Metrics Grid ─────────────────────────────────────────────
+   260→
+   261→  const keyMetrics = [
+   262→    { icon: Building2, label: 'मालमत्ता', labelEn: 'Properties', value: stats?.totalProperties || 0, bg: 'bg-cyan-50', iconBg: 'bg-cyan-500', valueColor: 'text-cyan-800', view: 'master-property' },
+   263→    { icon: Users, label: 'मालक', labelEn: 'Owners', value: stats?.totalOwners || 0, bg: 'bg-purple-50', iconBg: 'bg-purple-500', valueColor: 'text-purple-800', view: 'master-owner' },
+   264→    { icon: MapPin, label: 'वार्ड', labelEn: 'Wards', value: stats?.totalWards || 0, bg: 'bg-teal-50', iconBg: 'bg-teal-500', valueColor: 'text-teal-800', view: 'master-ward' },
+   265→    { icon: HardHat, label: 'कर्मचारी', labelEn: 'Employees', value: stats?.totalEmployees || 0, bg: 'bg-amber-50', iconBg: 'bg-amber-500', valueColor: 'text-amber-800', view: 'master-employee' },
+   266→    { icon: Shield, label: 'सक्षम कर', labelEn: 'Tax Masters', value: stats?.enabledTaxMasters || 0, bg: 'bg-green-50', iconBg: 'bg-green-500', valueColor: 'text-green-800', view: 'master-tax' },
+   267→    { icon: FileText, label: 'नमुना ८', labelEn: 'Namuna 8', value: stats?.totalNamuna8 || 0, bg: 'bg-emerald-50', iconBg: 'bg-emerald-500', valueColor: 'text-emerald-800', view: 'namuna-8' },
+   268→    { icon: BookOpen, label: 'नमुना ९ मागणी', labelEn: 'Namuna 9', value: stats?.totalNamuna9 || 0, bg: 'bg-orange-50', iconBg: 'bg-orange-500', valueColor: 'text-orange-800', view: 'namuna-9' },
+   269→    { icon: Receipt, label: 'पावत्या/पेमेंट', labelEn: 'Receipts/Payments', value: enhanced?.totalReceiptsPayments || stats?.totalPayments || 0, bg: 'bg-rose-50', iconBg: 'bg-rose-500', valueColor: 'text-rose-800', view: 'txn-receipt' },
+   270→    { icon: ClipboardList, label: 'बजेट', labelEn: 'Budget', value: enhanced?.totalBudgetEntries || 0, bg: 'bg-cyan-50', iconBg: 'bg-cyan-600', valueColor: 'text-cyan-800', view: 'txn-budget' },
+   271→    { icon: HardHat, label: 'विकासकामे', labelEn: 'Works', value: enhanced?.totalWorkEntries || 0, bg: 'bg-lime-50', iconBg: 'bg-lime-600', valueColor: 'text-lime-800', view: 'txn-work' },
+   272→    { icon: IndianRupee, label: 'वेतन', labelEn: 'Salary', value: enhanced?.totalSalaryEntries || 0, bg: 'bg-emerald-50', iconBg: 'bg-emerald-600', valueColor: 'text-emerald-800', view: 'txn-salary' },
+   273→    { icon: Wrench, label: 'ठेकेदार', labelEn: 'Contractors', value: enhanced?.totalContractors || 0, bg: 'bg-amber-50', iconBg: 'bg-amber-600', valueColor: 'text-amber-800', view: 'master-contractor' },
+   274→  ];
+   275→
+   276→  // ─── 6. Process Flow Steps ───────────────────────────────────────────
+   277→
+   278→  const processSteps = [
+   279→    { icon: Database, label: 'मास्टर एंट्री', sublabel: 'Master Entry', bg: 'bg-purple-100 border-purple-300', iconBg: 'bg-purple-500', text: 'text-purple-800', view: 'master-village' },
+   280→    { icon: ClipboardList, label: 'दैनंदिन एंट्री', sublabel: 'Daily Entry', bg: 'bg-cyan-100 border-cyan-300', iconBg: 'bg-cyan-500', text: 'text-cyan-800', view: 'txn-receipt' },
+   281→    { icon: BookOpenCheck, label: 'रजिस्टर अपडेट', sublabel: 'Register Update', bg: 'bg-teal-100 border-teal-300', iconBg: 'bg-teal-500', text: 'text-teal-800', view: 'registers-receipt-payment' },
+   282→    { icon: Landmark, label: 'खाते पोस्टिंग', sublabel: 'Ledger Posting', bg: 'bg-green-100 border-green-300', iconBg: 'bg-green-500', text: 'text-green-800', view: 'registers-ledger' },
+   283→    { icon: Gauge, label: 'ऑटो गणना', sublabel: 'Auto Calculation', bg: 'bg-amber-100 border-amber-300', iconBg: 'bg-amber-500', text: 'text-amber-800', view: 'namuna-11-15' },
+   284→    { icon: FileBadge, label: 'नमुना निर्मिती', sublabel: 'Namuna Generation', bg: 'bg-orange-100 border-orange-300', iconBg: 'bg-orange-500', text: 'text-orange-800', view: 'namuna-11-15' },
+   285→    { icon: FileDown, label: 'PDF/Excel निर्यात', sublabel: 'Export', bg: 'bg-rose-100 border-rose-300', iconBg: 'bg-rose-500', text: 'text-rose-800', view: 'excel' },
+   286→  ];
+   287→
+   288→  // ─── 7. Quick Actions ────────────────────────────────────────────────
+   289→
+   290→  const quickActions = [
+   291→    { icon: Database, label: 'मास्टर डेटा', sublabel: 'Master Data Entry', view: 'master-village', bg: 'bg-purple-50 hover:bg-purple-100 border-purple-200', iconBg: 'bg-purple-500' },
+   292→    { icon: Receipt, label: 'पावती एंट्री', sublabel: 'Receipt Entry', view: 'txn-receipt', bg: 'bg-green-50 hover:bg-green-100 border-green-200', iconBg: 'bg-green-500' },
+   293→    { icon: CreditCard, label: 'पेमेंट एंट्री', sublabel: 'Payment Entry', view: 'txn-payment', bg: 'bg-red-50 hover:bg-red-100 border-red-200', iconBg: 'bg-red-500' },
+   294→    { icon: FileText, label: 'कर आकारणी (नमुना ८)', sublabel: 'Tax Assessment', view: 'namuna-8', bg: 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200', iconBg: 'bg-emerald-500' },
+   295→    { icon: BookOpen, label: 'मागणी (नमुना ९)', sublabel: 'Demand Generation', view: 'namuna-9', bg: 'bg-amber-50 hover:bg-amber-100 border-amber-200', iconBg: 'bg-amber-500' },
+   296→    { icon: CircleDollarSign, label: 'पावती (नमुना ९-क)', sublabel: 'Receipt', view: 'namuna-9ka', bg: 'bg-rose-50 hover:bg-rose-100 border-rose-200', iconBg: 'bg-rose-500' },
+   297→    { icon: ClipboardList, label: 'अंदाजपत्रक एंट्री', sublabel: 'Budget Entry', view: 'txn-budget', bg: 'bg-cyan-50 hover:bg-cyan-100 border-cyan-200', iconBg: 'bg-cyan-600' },
+   298→    { icon: HardHat, label: 'विकासकाम एंट्री', sublabel: 'Work Entry', view: 'txn-work', bg: 'bg-lime-50 hover:bg-lime-100 border-lime-200', iconBg: 'bg-lime-600' },
+   299→    { icon: IndianRupee, label: 'वेतन एंट्री', sublabel: 'Salary Entry', view: 'txn-salary', bg: 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200', iconBg: 'bg-emerald-600' },
+   300→    { icon: Search, label: 'शोधा', sublabel: 'Search', view: 'search', bg: 'bg-sky-50 hover:bg-sky-100 border-sky-200', iconBg: 'bg-sky-500' },
+   301→    { icon: FileSpreadsheet, label: 'आयात/निर्यात', sublabel: 'Import/Export', view: 'excel', bg: 'bg-indigo-50 hover:bg-indigo-100 border-indigo-200', iconBg: 'bg-indigo-500' },
+   302→  ];
+   303→
+   304→  // ─── Namuna Icon Mapping ─────────────────────────────────────────────
+   305→
+   306→  const namunaIconMap: Record<string, React.ElementType> = {
+   307→    'namuna-1': FileBadge,
+   308→    'namuna-2': FileCheck2,
+   309→    'namuna-3': BookCopy,
+   310→    'namuna-4': Landmark,
+   311→    'namuna-5': FolderArchive,
+   312→    'namuna-6': PackageCheck,
+   313→    'namuna-7': HandCoinsIcon,
+   314→    'namuna-8': FileText,
+   315→    'namuna-9': BookOpen,
+   316→    'namuna-10': Banknote,
+   317→    'namuna-19': ScrollText,
+   318→    'namuna-11-15': Gauge,
+   319→    'namuna-16-18': FileBarChart,
+   320→    'namuna-21-24': FileBarChart,
+   321→    'namuna-25-27': FileLock2,
+   322→    'namuna-28-30': FileSpreadsheet,
+   323→    'namuna-31-33': FileBadge,
+   324→  };
+   325→
+   326→  // ─── Render ──────────────────────────────────────────────────────────
+   327→
+   328→  return (
+   329→    <div className="space-y-6">
+   330→      {/* ─── Header Banner ──────────────────────────────────────────── */}
+   331→      <Card className="border-0 shadow-lg overflow-hidden">
+   332→        <div className="relative" style={{ background: 'linear-gradient(135deg, #0d7377 0%, #0a5c5f 50%, #1a5632 100%)' }}>
+   333→          {/* Decorative circles */}
+   334→          <div className="absolute top-0 right-0 w-64 h-64 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, white, transparent)', transform: 'translate(30%, -40%)' }} />
+   335→          <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, white, transparent)', transform: 'translate(-30%, 40%)' }} />
+   336→          <CardContent className="relative p-6">
+   337→            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+   338→              <div className="flex items-center gap-4">
+   339→                <div className="h-14 w-14 rounded-2xl flex items-center justify-center shadow-lg" style={{ background: 'linear-gradient(135deg, #e67e22, #f39c12)' }}>
+   340→                  <Landmark className="h-7 w-7 text-white" />
+   341→                </div>
+   342→                <div>
+   343→                  <h1 className="text-2xl font-bold text-white">ERP डॅशबोर्ड</h1>
+   344→                  <p className="text-sm text-teal-100/80">ग्रामदर्पण — ग्रामपंचायत लेखा संहिता सर्वसमावेशक अहवाल</p>
+   345→                </div>
+   346→              </div>
+   347→              <div className="flex items-center gap-2">
+   348→                <TooltipProvider>
+   349→                  <Tooltip>
+   350→                    <TooltipTrigger asChild>
+   351→                      <Button variant="outline" size="sm" onClick={refreshStats} className="bg-white/10 border-white/20 text-white hover:bg-white/20">
+   352→                        <RefreshCw className="h-4 w-4" />
+   353→                      </Button>
+   354→                    </TooltipTrigger>
+   355→                    <TooltipContent>रीफ्रेश</TooltipContent>
+   356→                  </Tooltip>
+   357→                </TooltipProvider>
+   358→                {user?.authenticated && user.user && (
+   359→                  <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm rounded-full px-3 py-1.5">
+   360→                    <div className="h-7 w-7 rounded-full flex items-center justify-center" style={{ background: user.user.role === 'gpo' ? '#27ae60' : '#e67e22' }}>
+   361→                      <Shield className="h-4 w-4 text-white" />
+   362→                    </div>
+   363→                    <span className="text-sm font-medium text-white">{user.user.nameMarathi}</span>
+   364→                    <Badge className={`${user.user.role === 'gpo' ? 'bg-green-500' : 'bg-amber-500'} text-white text-xs border-0`}>
+   365→                      {user.user.role === 'gpo' ? 'GPO' : 'Op'}
+   366→                    </Badge>
+   367→                  </div>
+   368→                )}
+   369→              </div>
+   370→            </div>
+   371→          </CardContent>
+   372→        </div>
+   373→      </Card>
+   374→
+   375→      {/* ─── 1. Financial Summary Cards ──────────────────────────────── */}
+   376→      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+   377→        {financialCards.map((card, i) => (
+   378→          <Card key={i} className="border-0 shadow-lg overflow-hidden cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-200 active:scale-[0.98]" onClick={() => setActiveView(card.view)}>
+   379→            <div className={`h-1.5 bg-gradient-to-r ${card.gradient}`} />
+   380→            <CardContent className={`p-5 bg-gradient-to-br ${card.bgGrad} relative`}>
+   381→              <div className="flex items-start justify-between">
+   382→                <div>
+   383→                  <p className="text-sm text-muted-foreground font-medium">{card.title}</p>
+   384→                  <p className="text-xs text-muted-foreground/70 mb-2">{card.titleEn}</p>
+   385→                  <p className={`text-2xl sm:text-3xl font-bold ${card.textColor}`}>
+   386→                    {formatCurrency(card.amount)}
+   387→                  </p>
+   388→                  <div className="flex items-center gap-1 mt-2">
+   389→                    {card.trendUp ? (
+   390→                      <TrendingUp className="h-3.5 w-3.5 text-green-600" />
+   391→                    ) : (
+   392→                      <TrendingDown className="h-3.5 w-3.5 text-red-600" />
+   393→                    )}
+   394→                    <span className={`text-xs font-medium ${card.trendUp ? 'text-green-600' : 'text-red-600'}`}>{card.trend}</span>
+   395→                    <span className="text-xs text-muted-foreground ml-1">या महिन्यात</span>
+   396→                  </div>
+   397→                </div>
+   398→                <div className="flex flex-col items-center gap-1">
+   399→                  <div className={`h-12 w-12 rounded-xl ${card.iconBg} flex items-center justify-center shadow-md`}>
+   400→                    <card.icon className="h-6 w-6 text-white" />
+   401→                  </div>
+   402→                  <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
+   403→                </div>
+   404→              </div>
+   405→            </CardContent>
+   406→          </Card>
+   407→        ))}
+   408→      </div>
+   409→
+   410→      {/* ─── 2. Key Metrics Grid ─────────────────────────────────────── */}
+   411→      <Card className="border-0 shadow-md overflow-hidden">
+   412→        <div className="h-1" style={{ background: 'linear-gradient(90deg, #0d7377, #16a085, #27ae60, #e67e22)' }} />
+   413→        <CardContent className="p-5">
+   414→          <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+   415→            <div className="h-8 w-8 rounded-lg bg-teal-100 flex items-center justify-center">
+   416→              <BarChart3 className="h-4 w-4 text-teal-600" />
+   417→            </div>
+   418→            मुख्य मेट्रिक्स
+   419→          </h2>
+   420→          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-12 gap-3">
+   421→            {keyMetrics.map((item, i) => (
+   422→              <button key={i} onClick={() => setActiveView(item.view)} className={`${item.bg} rounded-xl p-3 text-center border border-opacity-50 cursor-pointer hover:shadow-md hover:scale-105 transition-all duration-200 active:scale-95 group`}>
+   423→                <div className={`h-9 w-9 rounded-lg ${item.iconBg} flex items-center justify-center mx-auto mb-2 shadow-sm`}>
+   424→                  <item.icon className="h-5 w-5 text-white" />
+   425→                </div>
+   426→                <div className={`text-2xl font-bold ${item.valueColor}`}>{item.value}</div>
+   427→                <div className="text-xs text-muted-foreground mt-0.5 font-medium">{item.label}</div>
+   428→                <div className="text-[10px] text-muted-foreground/60">{item.labelEn}</div>
+   429→                <ChevronRight className="h-3 w-3 mx-auto mt-1 text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors" />
+   430→              </button>
+   431→            ))}
+   432→          </div>
+   433→        </CardContent>
+   434→      </Card>
+   435→
+   436→      {/* ─── 3. Namuna Status Tracker ────────────────────────────────── */}
+   437→      <Card className="border-0 shadow-md overflow-hidden">
+   438→        <div className="h-1" style={{ background: 'linear-gradient(90deg, #27ae60, #f39c12, #95a5a6)' }} />
+   439→        <CardContent className="p-5">
+   440→          <div className="flex items-center justify-between mb-4">
+   441→            <h2 className="text-lg font-bold flex items-center gap-2">
+   442→              <div className="h-8 w-8 rounded-lg bg-emerald-100 flex items-center justify-center">
+   443→                <ClipboardList className="h-4 w-4 text-emerald-600" />
+   444→              </div>
+   445→              नमुना स्थिती ट्रॅकर (१-३३)
+   446→            </h2>
+   447→            <div className="flex items-center gap-3 text-xs">
+   448→              <span className="flex items-center gap-1"><CircleDot className="h-3 w-3 text-green-500" /> उपलब्ध</span>
+   449→              <span className="flex items-center gap-1"><CircleCheck className="h-3 w-3 text-amber-500" /> अंशतः</span>
+   450→              <span className="flex items-center gap-1"><Circle className="h-3 w-3 text-gray-400" /> नाही</span>
+   451→            </div>
+   452→          </div>
+   453→          {loading ? (
+   454→            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-11 gap-2">
+   455→              {Array.from({ length: 33 }).map((_, i) => (
+   456→                <div key={i} className="h-16 rounded-lg bg-muted animate-pulse" />
+   457→              ))}
+   458→            </div>
+   459→          ) : (
+   460→            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-11 gap-2">
+   461→              {enhanced?.namunaStatus.map((namuna) => {
+   462→                const statusColors = {
+   463→                  available: 'bg-green-50 border-green-300 text-green-800 hover:bg-green-100',
+   464→                  partial: 'bg-amber-50 border-amber-300 text-amber-800 hover:bg-amber-100',
+   465→                  none: 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100',
+   466→                };
+   467→                const StatusIcon = namuna.status === 'available' ? CircleDot : namuna.status === 'partial' ? CircleCheck : Circle;
+   468→                const iconColor = namuna.status === 'available' ? 'text-green-500' : namuna.status === 'partial' ? 'text-amber-500' : 'text-gray-400';
+   469→                return (
+   470→                  <TooltipProvider key={namuna.number}>
+   471→                    <Tooltip>
+   472→                      <TooltipTrigger asChild>
+   473→                        <button
+   474→                          onClick={() => setActiveView(namuna.viewId)}
+   475→                          className={`border-2 rounded-lg p-2 text-center transition-all ${statusColors[namuna.status]}`}
+   476→                        >
+   477→                          <div className="text-xs font-bold">{namuna.number}</div>
+   478→                          <StatusIcon className={`h-3 w-3 mx-auto mt-0.5 ${iconColor}`} />
+   479→                        </button>
+   480→                      </TooltipTrigger>
+   481→                      <TooltipContent>
+   482→                        <div className="text-xs">
+   483→                          <p className="font-bold">नमुना {namuna.number}: {namuna.nameMr}</p>
+   484→                          <p className="text-muted-foreground">{namuna.name}</p>
+   485→                          <p className="mt-1">
+   486→                            स्थिती: {namuna.status === 'available' ? '✅ डेटा उपलब्ध' : namuna.status === 'partial' ? '⚠️ अंशतः' : '⬜ डेटा नाही'}
+   487→                          </p>
+   488→                        </div>
+   489→                      </TooltipContent>
+   490→                    </Tooltip>
+   491→                  </TooltipProvider>
+   492→                );
+   493→              })}
+   494→            </div>
+   495→          )}
+   496→          {/* Summary bar */}
+   497→          <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground bg-muted/30 rounded-lg p-2">
+   498→            <span>उपलब्ध: <strong className="text-green-700">{enhanced?.namunaStatus.filter(n => n.status === 'available').length || 0}</strong></span>
+   499→            <span>अंशतः: <strong className="text-amber-700">{enhanced?.namunaStatus.filter(n => n.status === 'partial').length || 0}</strong></span>
+   500→            <span>नाही: <strong className="text-gray-500">{enhanced?.namunaStatus.filter(n => n.status === 'none').length || 0}</strong></span>
+   501→          </div>
+   502→        </CardContent>
+   503→      </Card>
+   504→
+   505→      {/* ─── Two Column Layout ───────────────────────────────────────── */}
+   506→      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+   507→
+   508→        {/* ─── 4. Recent Transactions ────────────────────────────────── */}
+   509→        <Card className="border-0 shadow-md overflow-hidden">
+   510→          <div className="h-1" style={{ background: 'linear-gradient(90deg, #27ae60, #2ecc71)' }} />
+   511→          <CardHeader className="pb-3">
+   512→            <div className="flex items-center justify-between">
+   513→              <CardTitle className="text-lg flex items-center gap-2">
+   514→                <div className="h-8 w-8 rounded-lg bg-green-100 flex items-center justify-center">
+   515→                  <Activity className="h-4 w-4 text-green-600" />
+   516→                </div>
+   517→                अलीकडील व्यवहार
+   518→              </CardTitle>
+   519→              <Badge variant="outline" className="text-[10px] border-green-200 text-green-600">
+   520→                शेवटचे ५
+   521→              </Badge>
+   522→            </div>
+   523→          </CardHeader>
+   524→          <CardContent>
+   525→            {loading ? (
+   526→              <div className="space-y-2">
+   527→                {Array.from({ length: 3 }).map((_, i) => (
+   528→                  <div key={i} className="h-12 rounded-lg bg-muted animate-pulse" />
+   529→                ))}
+   530→              </div>
+   531→            ) : (
+   532→              <>
+   533→                {/* Recent Receipts */}
+   534→                {enhanced?.recentReceipts && enhanced.recentReceipts.length > 0 && (
+   535→                  <div className="mb-3">
+   536→                    <p className="text-xs font-semibold text-green-700 mb-1.5 flex items-center gap-1">
+   537→                      <Receipt className="h-3 w-3" /> पावत्या
+   538→                    </p>
+   539→                    <div className="space-y-1.5 max-h-48 overflow-y-auto">
+   540→                      {enhanced.recentReceipts.map((r) => (
+   541→                        <div key={r.id} className="flex items-center justify-between bg-green-50/70 rounded-lg px-3 py-2 border border-green-100">
+   542→                          <div className="flex items-center gap-2">
+   543→                            <div className="h-7 w-7 rounded-md bg-green-500 flex items-center justify-center">
+   544→                              <TrendingUp className="h-3.5 w-3.5 text-white" />
+   545→                            </div>
+   546→                            <div>
+   547→                              <p className="text-xs font-medium">{r.receivedFromMr || r.receivedFrom}</p>
+   548→                              <p className="text-[10px] text-muted-foreground">{r.voucherNumber} • {r.receiptDate}</p>
+   549→                            </div>
+   550→                          </div>
+   551→                          <div className="text-right">
+   552→                            <p className="text-sm font-bold text-green-700">{formatCurrency(r.amount)}</p>
+   553→                            <div className="flex items-center gap-1">
+   554→                              {r.isPosted ? (
+   555→                                <Badge className="bg-green-100 text-green-700 text-[9px] border-0 px-1 py-0">पोस्टेड</Badge>
+   556→                              ) : (
+   557→                                <Badge className="bg-amber-100 text-amber-700 text-[9px] border-0 px-1 py-0">प्रलंबित</Badge>
+   558→                              )}
+   559→                            </div>
+   560→                          </div>
+   561→                        </div>
+   562→                      ))}
+   563→                    </div>
+   564→                  </div>
+   565→                )}
+   566→
+   567→                {/* Recent Payments */}
+   568→                {enhanced?.recentPayments && enhanced.recentPayments.length > 0 && (
+   569→                  <div>
+   570→                    <p className="text-xs font-semibold text-red-700 mb-1.5 flex items-center gap-1">
+   571→                      <CreditCard className="h-3 w-3" /> पेमेंट
+   572→                    </p>
+   573→                    <div className="space-y-1.5 max-h-48 overflow-y-auto">
+   574→                      {enhanced.recentPayments.map((p) => (
+   575→                        <div key={p.id} className="flex items-center justify-between bg-red-50/70 rounded-lg px-3 py-2 border border-red-100">
+   576→                          <div className="flex items-center gap-2">
+   577→                            <div className="h-7 w-7 rounded-md bg-red-500 flex items-center justify-center">
+   578→                              <TrendingDown className="h-3.5 w-3.5 text-white" />
+   579→                            </div>
+   580→                            <div>
+   581→                              <p className="text-xs font-medium">{p.paidToMr || p.paidTo}</p>
+   582→                              <p className="text-[10px] text-muted-foreground">{p.voucherNumber} • {p.paymentDate}</p>
+   583→                            </div>
+   584→                          </div>
+   585→                          <div className="text-right">
+   586→                            <p className="text-sm font-bold text-red-700">{formatCurrency(p.amount)}</p>
+   587→                            {p.isPosted ? (
+   588→                              <Badge className="bg-green-100 text-green-700 text-[9px] border-0 px-1 py-0">पोस्टेड</Badge>
+   589→                            ) : (
+   590→                              <Badge className="bg-amber-100 text-amber-700 text-[9px] border-0 px-1 py-0">प्रलंबित</Badge>
+   591→                            )}
+   592→                          </div>
+   593→                        </div>
+   594→                      ))}
+   595→                    </div>
+   596→                  </div>
+   597→                )}
+   598→
+   599→                {(!enhanced?.recentReceipts?.length && !enhanced?.recentPayments?.length) && (
+   600→                  <div className="text-center py-6 text-muted-foreground">
+   601→                    <Activity className="h-8 w-8 mx-auto mb-2 opacity-30" />
+   602→                    <p className="text-sm">अद्याप व्यवहार नाहीत</p>
+   603→                    <p className="text-xs">पावती किंवा पेमेंट एंट्री करा</p>
+   604→                  </div>
+   605→                )}
+   606→              </>
+   607→            )}
+   608→          </CardContent>
+   609→        </Card>
+   610→
+   611→        {/* ─── 5. Pending Entries + Login Info ────────────────────────── */}
+   612→        <div className="space-y-6">
+   613→          {/* Pending Entries */}
+   614→          <Card className="border-0 shadow-md overflow-hidden">
+   615→            <div className="h-1" style={{ background: 'linear-gradient(90deg, #e67e22, #f39c12)' }} />
+   616→            <CardContent className="p-5">
+   617→              <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+   618→                <div className="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center">
+   619→                  <AlertCircle className="h-4 w-4 text-amber-600" />
+   620→                </div>
+   621→                प्रलंबित एंट्रीज
+   622→              </h2>
+   623→              {loading ? (
+   624→                <div className="grid grid-cols-3 gap-3">
+   625→                  {Array.from({ length: 3 }).map((_, i) => (
+   626→                    <div key={i} className="h-20 rounded-lg bg-muted animate-pulse" />
+   627→                  ))}
+   628→                </div>
+   629→              ) : (
+   630→                <div className="grid grid-cols-3 gap-3">
+   631→                  <div className="bg-amber-50 rounded-xl p-3 text-center border border-amber-200">
+   632→                    <div className="text-3xl font-bold text-amber-800">{enhanced?.unpostedReceipts || 0}</div>
+   633→                    <div className="text-xs text-amber-700 font-medium">अपोस्ट पावत्या</div>
+   634→                    <Receipt className="h-4 w-4 mx-auto mt-1 text-amber-500" />
+   635→                  </div>
+   636→                  <div className="bg-red-50 rounded-xl p-3 text-center border border-red-200">
+   637→                    <div className="text-3xl font-bold text-red-800">{enhanced?.unpostedPayments || 0}</div>
+   638→                    <div className="text-xs text-red-700 font-medium">अपोस्ट पेमेंट</div>
+   639→                    <CreditCard className="h-4 w-4 mx-auto mt-1 text-red-500" />
+   640→                  </div>
+   641→                  <div className="bg-purple-50 rounded-xl p-3 text-center border border-purple-200">
+   642→                    <div className="text-3xl font-bold text-purple-800">{enhanced?.unpostedJournals || 0}</div>
+   643→                    <div className="text-xs text-purple-700 font-medium">अपोस्ट जर्नल</div>
+   644→                    <BookOpenCheck className="h-4 w-4 mx-auto mt-1 text-purple-500" />
+   645→                  </div>
+   646→                </div>
+   647→              )}
+   648→              {(enhanced?.pendingEntries || 0) > 0 && (
+   649→                <div className="mt-3 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+   650→                  <AlertCircle className="h-4 w-4 text-amber-600" />
+   651→                  <span className="text-xs font-medium text-amber-800">
+   652→                    एकूण {enhanced?.pendingEntries} प्रलंबित एंट्रीज पोस्टिंगची प्रतीक्षा करत आहेत
+   653→                  </span>
+   654→                </div>
+   655→              )}
+   656→            </CardContent>
+   657→          </Card>
+   658→
+   659→          {/* Recent Login Activity */}
+   660→          <Card className="border-0 shadow-md overflow-hidden">
+   661→            <div className="h-1 bg-orange-400" />
+   662→            <CardHeader className="pb-3">
+   663→              <div className="flex items-center justify-between">
+   664→                <CardTitle className="text-lg flex items-center gap-2">
+   665→                  <div className="h-8 w-8 rounded-lg bg-orange-100 flex items-center justify-center">
+   666→                    <Activity className="h-4 w-4 text-orange-600" />
+   667→                  </div>
+   668→                  अलीकडील लॉगिन
+   669→                </CardTitle>
+   670→                <button onClick={() => setActiveView('logs')} className="text-xs text-teal-600 hover:text-teal-800 font-medium">
+   671→                  सर्व लॉग →
+   672→                </button>
+   673→              </div>
+   674→            </CardHeader>
+   675→            <CardContent>
+   676→              {recentLogs.length === 0 ? (
+   677→                <div className="text-center py-4 text-muted-foreground text-sm">कोणतेही लॉग नाहीत.</div>
+   678→              ) : (
+   679→                <div className="space-y-2 max-h-40 overflow-y-auto">
+   680→                  {recentLogs.map((log) => (
+   681→                    <div key={log.id} className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-2">
+   682→                      <div className="flex items-center gap-2">
+   683→                        <div className={`h-6 w-6 rounded-md flex items-center justify-center ${log.user.role === 'gpo' ? 'bg-green-500' : 'bg-amber-500'}`}>
+   684→                          <Shield className="h-3 w-3 text-white" />
+   685→                        </div>
+   686→                        <div>
+   687→                          <p className="text-xs font-medium">{log.user.nameMarathi || log.user.name}</p>
+   688→                          <p className="text-[10px] text-muted-foreground">{formatTime(log.loginAt)}</p>
+   689→                        </div>
+   690→                      </div>
+   691→                      {log.action === 'login' ? (
+   692→                        <Badge className="bg-green-100 text-green-800 border-0 text-[10px]">
+   693→                          <LogIn className="h-2.5 w-2.5 mr-0.5" /> लॉगिन
+   694→                        </Badge>
+   695→                      ) : (
+   696→                        <Badge className="bg-orange-100 text-orange-800 border-0 text-[10px]">
+   697→                          <LogOut className="h-2.5 w-2.5 mr-0.5" /> लॉगआउट
+   698→                        </Badge>
+   699→                      )}
+   700→                    </div>
+   701→                  ))}
+   702→                </div>
+   703→              )}
+   704→            </CardContent>
+   705→          </Card>
+   706→        </div>
+   707→      </div>
+   708→
+   709→      {/* ─── 6. Process Flow Diagram ─────────────────────────────────── */}
+   710→      <Card className="border-0 shadow-md overflow-hidden">
+   711→        <div className="h-1" style={{ background: 'linear-gradient(90deg, #8e44ad, #0d7377, #27ae60, #e67e22, #e74c3c)' }} />
+   712→        <CardContent className="p-5">
+   713→          <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+   714→            <div className="h-8 w-8 rounded-lg bg-teal-100 flex items-center justify-center">
+   715→              <ArrowRight className="h-4 w-4 text-teal-600" />
+   716→            </div>
+   717→            प्रक्रिया प्रवाह — Master → Daily → Register → Ledger → Auto → Namuna → Export
+   718→          </h2>
+   719→          {/* Flow Diagram */}
+   720→          <div className="overflow-x-auto pb-2">
+   721→            <div className="flex items-center gap-2 min-w-max justify-center">
+   722→              {processSteps.map((step, i, arr) => (
+   723→                <React.Fragment key={i}>
+   724→                  <button
+   725→                    onClick={() => setActiveView(step.view)}
+   726→                    className={`border-2 rounded-xl p-3 text-center min-w-[110px] cursor-pointer hover:shadow-md hover:scale-105 transition-all duration-200 active:scale-95 ${step.bg}`}
+   727→                  >
+   728→                    <div className={`h-8 w-8 rounded-lg ${step.iconBg} flex items-center justify-center mx-auto mb-1.5 shadow-sm`}>
+   729→                      <step.icon className="h-4 w-4 text-white" />
+   730→                    </div>
+   731→                    <span className={`text-xs font-bold whitespace-pre-line leading-tight ${step.text}`}>{step.label}</span>
+   732→                    <p className="text-[9px] text-muted-foreground mt-0.5">{step.sublabel}</p>
+   733→                    <ChevronRight className="h-3 w-3 mx-auto mt-0.5 text-muted-foreground/50" />
+   734→                  </button>
+   735→                  {i < arr.length - 1 && (
+   736→                    <ChevronRight className="h-5 w-5 text-gray-400 shrink-0" />
+   737→                  )}
+   738→                </React.Fragment>
+   739→              ))}
+   740→            </div>
+   741→          </div>
+   742→          <Separator className="my-4" />
+   743→          {/* Explanation Cards */}
+   744→          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+   745→            <div className="border-2 border-purple-100 rounded-xl p-4 bg-purple-50/50">
+   746→              <h4 className="font-bold mb-1 text-purple-800 flex items-center gap-1"><Database className="h-4 w-4" /> Step 1-2: मास्टर + दैनंदिन</h4>
+   747→              <div className="text-purple-700/70 text-xs">वार्ड, मालक, मालमत्ता, कर दर, रेडीरेकनर एकदा भरा. नंतर दैनंदिन पावती/पेमेंट एंट्री.</div>
+   748→            </div>
+   749→            <div className="border-2 border-teal-100 rounded-xl p-4 bg-teal-50/50">
+   750→              <h4 className="font-bold mb-1 text-teal-800 flex items-center gap-1"><BookOpenCheck className="h-4 w-4" /> Step 3-5: ऑटो प्रक्रिया</h4>
+   751→              <div className="text-teal-700/70 text-xs">रजिस्टर ऑटो अपडेट, खाते पोस्टिंग, कर गणना स्वयंचलित — कोणतीही मॅन्युअल गणना नाही.</div>
+   752→            </div>
+   753→            <div className="border-2 border-green-100 rounded-xl p-4 bg-green-50/50">
+   754→              <h4 className="font-bold mb-1 text-green-800 flex items-center gap-1"><FileDown className="h-4 w-4" /> Step 6-7: नमुना + निर्यात</h4>
+   755→              <div className="text-green-700/70 text-xs">नमुना १ ते ३३ ऑटो तयार, PDF/Excel मध्ये निर्यात. एकदा मास्टर भरले की पुन्हा टाकावे लागणार नाही.</div>
+   756→            </div>
+   757→          </div>
+   758→        </CardContent>
+   759→      </Card>
+   760→
+   761→      {/* ─── 7. Quick Actions ────────────────────────────────────────── */}
+   762→      <Card className="border-0 shadow-md overflow-hidden">
+   763→        <div className="h-1" style={{ background: 'linear-gradient(90deg, #8e44ad, #9b59b6, #e67e22)' }} />
+   764→        <CardContent className="p-5">
+   765→          <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+   766→            <div className="h-8 w-8 rounded-lg bg-purple-100 flex items-center justify-center">
+   767→              <Zap className="h-4 w-4 text-purple-600" />
+   768→            </div>
+   769→            द्रुत कार्य
+   770→          </h2>
+   771→          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+   772→            {quickActions.map((item, i) => (
+   773→              <button key={i} onClick={() => setActiveView(item.view)} className={`flex flex-col items-center gap-2 p-4 border-2 rounded-xl transition-all hover:scale-105 active:scale-95 cursor-pointer ${item.bg}`}>
+   774→                <div className={`h-10 w-10 rounded-lg ${item.iconBg} flex items-center justify-center shadow-sm`}>
+   775→                  <item.icon className="h-5 w-5 text-white" />
+   776→                </div>
+   777→                <span className="text-sm font-bold">{item.label}</span>
+   778→                <span className="text-[10px] text-muted-foreground">{item.sublabel}</span>
+   779→                <ChevronRight className="h-3 w-3 text-muted-foreground/30" />
+   780→              </button>
+   781→            ))}
+   782→          </div>
+   783→        </CardContent>
+   784→      </Card>
+   785→
+   786→      {/* ─── 8. Collection Progress ──────────────────────────────────── */}
+   787→      <Card className="border-0 shadow-md overflow-hidden">
+   788→        <div className="h-1" style={{ background: 'linear-gradient(90deg, #27ae60, #2ecc71, #e67e22)' }} />
+   789→        <CardContent className="p-5">
+   790→          <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+   791→            <div className="h-8 w-8 rounded-lg bg-green-100 flex items-center justify-center">
+   792→              <CircleDollarSign className="h-4 w-4 text-green-600" />
+   793→            </div>
+   794→            वसूल प्रगती
+   795→          </h2>
+   796→
+   797→          {/* Progress Visual */}
+   798→          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+   799→            <div className="bg-amber-50 rounded-xl p-4 text-center border border-amber-200">
+   800→              <p className="text-xs text-amber-700 font-medium mb-1">एकूण मागणी</p>
+   801→              <p className="text-2xl font-bold text-amber-800">{formatCurrency(stats?.totalDemand || 0)}</p>
+   802→              <BarChart3 className="h-4 w-4 mx-auto mt-1 text-amber-500" />
+   803→            </div>
+   804→            <div className="bg-green-50 rounded-xl p-4 text-center border border-green-200">
+   805→              <p className="text-xs text-green-700 font-medium mb-1">एकूण वसूल</p>
+   806→              <p className="text-2xl font-bold text-green-800">{formatCurrency(stats?.totalPaid || 0)}</p>
+   807→              <TrendingUp className="h-4 w-4 mx-auto mt-1 text-green-500" />
+   808→            </div>
+   809→            <div className="bg-red-50 rounded-xl p-4 text-center border border-red-200">
+   810→              <p className="text-xs text-red-700 font-medium mb-1">शिल्लक बक्की</p>
+   811→              <p className="text-2xl font-bold text-red-800">{formatCurrency(stats?.outstandingBalance || 0)}</p>
+   812→              <TrendingDown className="h-4 w-4 mx-auto mt-1 text-red-500" />
+   813→            </div>
+   814→          </div>
+   815→
+   816→          {/* Bar Chart */}
+   817→          <div className="space-y-3">
+   818→            {/* Demand Bar */}
+   819→            <div>
+   820→              <div className="flex justify-between text-xs mb-1">
+   821→                <span className="font-medium text-amber-700">एकूण मागणी</span>
+   822→                <span className="font-bold text-amber-800">{formatCurrency(stats?.totalDemand || 0)}</span>
+   823→              </div>
+   824→              <div className="w-full bg-amber-100 rounded-full h-6 overflow-hidden">
+   825→                <div
+   826→                  className="h-6 rounded-full transition-all flex items-center justify-center text-[10px] font-bold text-white"
+   827→                  style={{
+   828→                    width: '100%',
+   829→                    background: 'linear-gradient(90deg, #f59e0b, #d97706)',
+   830→                  }}
+   831→                >
+   832→                  मागणी
+   833→                </div>
+   834→              </div>
+   835→            </div>
+   836→
+   837→            {/* Collected Bar */}
+   838→            <div>
+   839→              <div className="flex justify-between text-xs mb-1">
+   840→                <span className="font-medium text-green-700">एकूण वसूल</span>
+   841→                <span className="font-bold text-green-800">{formatCurrency(stats?.totalPaid || 0)}</span>
+   842→              </div>
+   843→              <div className="w-full bg-green-100 rounded-full h-6 overflow-hidden">
+   844→                <div
+   845→                  className="h-6 rounded-full transition-all flex items-center justify-center text-[10px] font-bold text-white"
+   846→                  style={{
+   847→                    width: `${Math.max(collectionPercent, stats?.totalPaid ? 3 : 0)}%`,
+   848→                    background: 'linear-gradient(90deg, #27ae60, #2ecc71)',
+   849→                  }}
+   850→                >
+   851→                  {collectionPercent > 10 ? `${collectionPercent.toFixed(1)}%` : ''}
+   852→                </div>
+   853→              </div>
+   854→            </div>
+   855→
+   856→            {/* Balance Bar */}
+   857→            <div>
+   858→              <div className="flex justify-between text-xs mb-1">
+   859→                <span className="font-medium text-red-700">शिल्लक बक्की</span>
+   860→                <span className="font-bold text-red-800">{formatCurrency(stats?.outstandingBalance || 0)}</span>
+   861→              </div>
+   862→              <div className="w-full bg-red-100 rounded-full h-6 overflow-hidden">
+   863→                <div
+   864→                  className="h-6 rounded-full transition-all flex items-center justify-center text-[10px] font-bold text-white"
+   865→                  style={{
+   866→                    width: `${Math.max(100 - collectionPercent, stats?.outstandingBalance ? 3 : 0)}%`,
+   867→                    background: 'linear-gradient(90deg, #e74c3c, #c0392b)',
+   868→                  }}
+   869→                >
+   870→                  {(100 - collectionPercent) > 10 ? `${(100 - collectionPercent).toFixed(1)}%` : ''}
+   871→                </div>
+   872→              </div>
+   873→            </div>
+   874→          </div>
+   875→
+   876→          {/* Collection percentage highlight */}
+   877→          <div className="mt-4 text-center bg-gradient-to-r from-green-50 via-teal-50 to-cyan-50 rounded-xl p-4 border border-teal-200">
+   878→            <p className="text-sm text-teal-700 font-medium">वसूल प्रमाण</p>
+   879→            <p className="text-4xl font-bold text-teal-800">{collectionPercent.toFixed(1)}%</p>
+   880→            <div className="flex items-center justify-center gap-1 mt-1">
+   881→              {collectionPercent >= 75 ? (
+   882→                <CheckCircle2 className="h-4 w-4 text-green-600" />
+   883→              ) : collectionPercent >= 50 ? (
+   884→                <AlertCircle className="h-4 w-4 text-amber-600" />
+   885→              ) : (
+   886→                <AlertCircle className="h-4 w-4 text-red-600" />
+   887→              )}
+   888→              <span className="text-xs text-muted-foreground">
+   889→                {collectionPercent >= 75 ? 'उत्तम वसूल' : collectionPercent >= 50 ? 'मध्यम वसूल' : 'वसूल सुधारणे आवश्यक'}
+   890→              </span>
+   891→            </div>
+   892→          </div>
+   893→        </CardContent>
+   894→      </Card>
+   895→
+   896→      {/* ─── Login Credentials ───────────────────────────────────────── */}
+   897→      <Card className="border-0 shadow-md overflow-hidden">
+   898→        <div className="h-1" style={{ background: 'linear-gradient(90deg, #27ae60, #e67e22)' }} />
+   899→        <CardContent className="p-5">
+   900→          <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+   901→            <div className="h-8 w-8 rounded-lg bg-green-100 flex items-center justify-center">
+   902→              <Shield className="h-4 w-4 text-green-600" />
+   903→            </div>
+   904→            लॉगिन माहिती
+   905→          </h2>
+   906→          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   907→            <div className="border-2 border-green-200 rounded-xl p-4" style={{ background: 'linear-gradient(135deg, #eafaf1, #f0fdf4)' }}>
+   908→              <div className="flex items-center gap-2 mb-2">
+   909→                <div className="h-8 w-8 rounded-lg bg-green-500 flex items-center justify-center shadow-sm">
+   910→                  <Shield className="h-4 w-4 text-white" />
+   911→                </div>
+   912→                <Badge className="bg-green-600 text-white border-0 shadow-sm">GPO</Badge>
+   913→                <span className="font-bold text-green-900 text-sm">ग्रामपंचायत अधिकारी</span>
+   914→              </div>
+   915→              <div className="text-sm text-green-800 mt-2 bg-white/60 rounded-lg p-2">
+   916→                Username: <code className="bg-green-100 px-1.5 py-0.5 rounded font-bold">gpo</code> | Password: <code className="bg-green-100 px-1.5 py-0.5 rounded font-bold">gpo123</code>
+   917→              </div>
+   918→              <p className="text-xs text-green-700/70 mt-2">✅ सर्व मास्टर डेटा अपडेट, नमुना तयार, रिपोर्ट पाहणे</p>
+   919→            </div>
+   920→            <div className="border-2 border-amber-200 rounded-xl p-4" style={{ background: 'linear-gradient(135deg, #fef3e8, #fef9e7)' }}>
+   921→              <div className="flex items-center gap-2 mb-2">
+   922→                <div className="h-8 w-8 rounded-lg bg-amber-500 flex items-center justify-center shadow-sm">
+   923→                  <Shield className="h-4 w-4 text-white" />
+   924→                </div>
+   925→                <Badge className="bg-amber-500 text-white border-0 shadow-sm">Operator</Badge>
+   926→                <span className="font-bold text-amber-900 text-sm">ऑपरेटर</span>
+   927→              </div>
+   928→              <div className="text-sm text-amber-800 mt-2 bg-white/60 rounded-lg p-2">
+   929→                Username: <code className="bg-amber-100 px-1.5 py-0.5 rounded font-bold">operator</code> | Password: <code className="bg-amber-100 px-1.5 py-0.5 rounded font-bold">op123</code>
+   930→              </div>
+   931→              <p className="text-xs text-amber-700/70 mt-2">✅ मास्टर डेटा एंट्री, नमुना तयार, पावती बनवणे</p>
+   932→            </div>
+   933→          </div>
+   934→        </CardContent>
+   935→      </Card>
+   936→    </div>
+   937→  );
+   938→}
+   939→

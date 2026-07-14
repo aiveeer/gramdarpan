@@ -1,0 +1,2002 @@
+     1→'use client';
+     2→
+     3→import React, { useState, useEffect, useCallback } from 'react';
+     4→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+     5→import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+     6→import { Button } from '@/components/ui/button';
+     7→import { Input } from '@/components/ui/input';
+     8→import { Label } from '@/components/ui/label';
+     9→import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+    10→import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+    11→import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+    12→import { Switch } from '@/components/ui/switch';
+    13→import { Checkbox } from '@/components/ui/checkbox';
+    14→import { Textarea } from '@/components/ui/textarea';
+    15→import { Badge } from '@/components/ui/badge';
+    16→import { Separator } from '@/components/ui/separator';
+    17→import { toast } from '@/hooks/use-toast';
+    18→import {
+    19→  Plus, Search, Pencil, Trash2, RefreshCw, Home, MapPin, User, Route,
+    20→  Droplets, Lightbulb, Calculator, Accessibility, Users, Settings,
+    21→  Building2, Save, X, Loader2, Landmark, Zap, Droplet, Sun,
+    22→  FileText, AlertTriangle, Percent, MoreHorizontal, Eye, ToggleLeft,
+    23→  Compass, CalendarDays, PiggyBank, BanknoteIcon, FolderOpen, HardHat,
+    24→  Layers, Tag, TreePine
+    25→} from 'lucide-react';
+    26→
+    27→// ===== TAB COLOR DEFINITIONS =====
+    28→
+    29→const tabColors = {
+    30→  village: { bg: 'bg-teal-50', header: 'from-teal-600 to-teal-700', text: 'text-teal-800', icon: 'bg-teal-500', badge: 'bg-teal-100 text-teal-800', border: 'border-teal-200', headerBg: 'bg-teal-600', headerText: 'text-white', ring: 'ring-teal-500' },
+    31→  ward: { bg: 'bg-green-50', header: 'from-green-600 to-green-700', text: 'text-green-800', icon: 'bg-green-500', badge: 'bg-green-100 text-green-800', border: 'border-green-200', headerBg: 'bg-green-600', headerText: 'text-white', ring: 'ring-green-500' },
+    32→  owner: { bg: 'bg-purple-50', header: 'from-purple-600 to-purple-700', text: 'text-purple-800', icon: 'bg-purple-500', badge: 'bg-purple-100 text-purple-800', border: 'border-purple-200', headerBg: 'bg-purple-600', headerText: 'text-white', ring: 'ring-purple-500' },
+    33→  property: { bg: 'bg-cyan-50', header: 'from-cyan-600 to-cyan-700', text: 'text-cyan-800', icon: 'bg-cyan-500', badge: 'bg-cyan-100 text-cyan-800', border: 'border-cyan-200', headerBg: 'bg-cyan-600', headerText: 'text-white', ring: 'ring-cyan-500' },
+    34→  road: { bg: 'bg-amber-50', header: 'from-amber-600 to-amber-700', text: 'text-amber-800', icon: 'bg-amber-500', badge: 'bg-amber-100 text-amber-800', border: 'border-amber-200', headerBg: 'bg-amber-600', headerText: 'text-white', ring: 'ring-amber-500' },
+    35→  drainage: { bg: 'bg-blue-50', header: 'from-blue-600 to-blue-700', text: 'text-blue-800', icon: 'bg-blue-500', badge: 'bg-blue-100 text-blue-800', border: 'border-blue-200', headerBg: 'bg-blue-600', headerText: 'text-white', ring: 'ring-blue-500' },
+    36→  waterSupply: { bg: 'bg-sky-50', header: 'from-sky-600 to-sky-700', text: 'text-sky-800', icon: 'bg-sky-500', badge: 'bg-sky-100 text-sky-800', border: 'border-sky-200', headerBg: 'bg-sky-600', headerText: 'text-white', ring: 'ring-sky-500' },
+    37→  streetLight: { bg: 'bg-yellow-50', header: 'from-yellow-600 to-yellow-700', text: 'text-yellow-800', icon: 'bg-yellow-500', badge: 'bg-yellow-100 text-yellow-800', border: 'border-yellow-200', headerBg: 'bg-yellow-600', headerText: 'text-white', ring: 'ring-yellow-500' },
+    38→  readyReckoner: { bg: 'bg-orange-50', header: 'from-orange-600 to-orange-700', text: 'text-orange-800', icon: 'bg-orange-500', badge: 'bg-orange-100 text-orange-800', border: 'border-orange-200', headerBg: 'bg-orange-600', headerText: 'text-white', ring: 'ring-orange-500' },
+    39→  disability: { bg: 'bg-pink-50', header: 'from-pink-600 to-pink-700', text: 'text-pink-800', icon: 'bg-pink-500', badge: 'bg-pink-100 text-pink-800', border: 'border-pink-200', headerBg: 'bg-pink-600', headerText: 'text-white', ring: 'ring-pink-500' },
+    40→  employee: { bg: 'bg-indigo-50', header: 'from-indigo-600 to-indigo-700', text: 'text-indigo-800', icon: 'bg-indigo-500', badge: 'bg-indigo-100 text-indigo-800', border: 'border-indigo-200', headerBg: 'bg-indigo-600', headerText: 'text-white', ring: 'ring-indigo-500' },
+    41→  tax: { bg: 'bg-rose-50', header: 'from-rose-600 to-rose-700', text: 'text-rose-800', icon: 'bg-rose-500', badge: 'bg-rose-100 text-rose-800', border: 'border-rose-200', headerBg: 'bg-rose-600', headerText: 'text-white', ring: 'ring-rose-500' },
+    42→  bank: { bg: 'bg-emerald-50', header: 'from-emerald-600 to-emerald-700', text: 'text-emerald-800', icon: 'bg-emerald-500', badge: 'bg-emerald-100 text-emerald-800', border: 'border-emerald-200', headerBg: 'bg-emerald-600', headerText: 'text-white', ring: 'ring-emerald-500' },
+    43→  namuna8: { bg: 'bg-lime-50', header: 'from-lime-600 to-lime-700', text: 'text-lime-800', icon: 'bg-lime-500', badge: 'bg-lime-100 text-lime-800', border: 'border-lime-200', headerBg: 'bg-lime-600', headerText: 'text-white', ring: 'ring-lime-500' },
+    44→  namuna13: { bg: 'bg-fuchsia-50', header: 'from-fuchsia-600 to-fuchsia-700', text: 'text-fuchsia-800', icon: 'bg-fuchsia-500', badge: 'bg-fuchsia-100 text-fuchsia-800', border: 'border-fuchsia-200', headerBg: 'bg-fuchsia-600', headerText: 'text-white', ring: 'ring-fuchsia-500' },
+    45→  namuna22: { bg: 'bg-stone-50', header: 'from-stone-600 to-stone-700', text: 'text-stone-800', icon: 'bg-stone-500', badge: 'bg-stone-100 text-stone-800', border: 'border-stone-200', headerBg: 'bg-stone-600', headerText: 'text-white', ring: 'ring-stone-500' },
+    46→  namuna23: { bg: 'bg-violet-50', header: 'from-violet-600 to-violet-700', text: 'text-violet-800', icon: 'bg-violet-500', badge: 'bg-violet-100 text-violet-800', border: 'border-violet-200', headerBg: 'bg-violet-600', headerText: 'text-white', ring: 'ring-violet-500' },
+    47→  namuna24: { bg: 'bg-amber-50', header: 'from-amber-700 to-amber-800', text: 'text-amber-900', icon: 'bg-amber-600', badge: 'bg-amber-100 text-amber-800', border: 'border-amber-300', headerBg: 'bg-amber-700', headerText: 'text-white', ring: 'ring-amber-600' },
+    48→  namuna33: { bg: 'bg-green-50', header: 'from-green-700 to-green-800', text: 'text-green-900', icon: 'bg-green-600', badge: 'bg-green-100 text-green-800', border: 'border-green-300', headerBg: 'bg-green-700', headerText: 'text-white', ring: 'ring-green-600' },
+    49→};
+    50→
+    51→type TabColorKey = keyof typeof tabColors;
+    52→
+    53→// ===== SHARED HELPERS =====
+    54→
+    55→async function apiGet(table: string, search?: string) {
+    56→  const params = new URLSearchParams({ table });
+    57→  if (search) params.set('search', search);
+    58→  const res = await fetch(`/api/master?${params}`);
+    59→  if (!res.ok) throw new Error('Fetch failed');
+    60→  return res.json();
+    61→}
+    62→
+    63→async function apiCreate(table: string, data: Record<string, unknown>) {
+    64→  const res = await fetch('/api/master', {
+    65→    method: 'POST',
+    66→    headers: { 'Content-Type': 'application/json' },
+    67→    body: JSON.stringify({ table, data }),
+    68→  });
+    69→  const json = await res.json();
+    70→  if (!res.ok) throw new Error(json.error || 'Create failed');
+    71→  return json;
+    72→}
+    73→
+    74→async function apiUpdate(table: string, data: Record<string, unknown>) {
+    75→  const res = await fetch('/api/master', {
+    76→    method: 'POST',
+    77→    headers: { 'Content-Type': 'application/json' },
+    78→    body: JSON.stringify({ table, data }),
+    79→  });
+    80→  const json = await res.json();
+    81→  if (!res.ok) throw new Error(json.error || 'Update failed');
+    82→  return json;
+    83→}
+    84→
+    85→async function apiDelete(table: string, id: string) {
+    86→  const res = await fetch(`/api/master?table=${table}&id=${id}`, { method: 'DELETE' });
+    87→  if (!res.ok) throw new Error('Delete failed');
+    88→  return res.json();
+    89→}
+    90→
+    91→async function apiSeed(table: string) {
+    92→  const res = await fetch('/api/master', {
+    93→    method: 'POST',
+    94→    headers: { 'Content-Type': 'application/json' },
+    95→    body: JSON.stringify({ table, action: 'seed' }),
+    96→  });
+    97→  return res.json();
+    98→}
+    99→
+   100→// ===== SECTION HEADER COMPONENT =====
+   101→
+   102→function SectionHeader({ colorKey, title, icon, count, search, onSearchChange, onRefresh, onAdd, loading }: {
+   103→  colorKey: TabColorKey;
+   104→  title: string;
+   105→  icon: React.ReactNode;
+   106→  count: number;
+   107→  search: string;
+   108→  onSearchChange: (v: string) => void;
+   109→  onRefresh: () => void;
+   110→  onAdd: () => void;
+   111→  loading: boolean;
+   112→}) {
+   113→  const c = tabColors[colorKey];
+   114→  return (
+   115→    <div className={`rounded-t-xl bg-gradient-to-r ${c.header} p-4`}>
+   116→      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+   117→        <div className="flex items-center gap-3">
+   118→          <div className={`${c.icon} p-2 rounded-lg text-white`}>
+   119→            {icon}
+   120→          </div>
+   121→          <div>
+   122→            <h3 className="text-lg font-bold text-white">{title}</h3>
+   123→          </div>
+   124→          <Badge className={`${c.badge} border-0 font-bold text-sm`}>{count}</Badge>
+   125→        </div>
+   126→        <div className="flex items-center gap-2">
+   127→          <div className="relative">
+   128→            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-white/60" />
+   129→            <Input
+   130→              className="pl-9 w-48 bg-white/20 border-white/30 text-white placeholder:text-white/60 focus:bg-white/30"
+   131→              placeholder="शोधा..."
+   132→              value={search}
+   133→              onChange={(e) => onSearchChange(e.target.value)}
+   134→            />
+   135→          </div>
+   136→          <Button variant="outline" size="sm" onClick={onRefresh} disabled={loading} className="bg-white/20 border-white/30 text-white hover:bg-white/30">
+   137→            <RefreshCw className="h-4 w-4" />
+   138→          </Button>
+   139→          <Button size="sm" onClick={onAdd} className={`bg-gradient-to-r ${c.header} text-white shadow-lg hover:opacity-90 border-0`}>
+   140→            <Plus className="h-4 w-4 mr-1" /> नवीन
+   141→          </Button>
+   142→        </div>
+   143→      </div>
+   144→    </div>
+   145→  );
+   146→}
+   147→
+   148→// ===== COLORED TABLE HEADER =====
+   149→
+   150→function ColoredTableHeader({ colorKey, children }: { colorKey: TabColorKey; children: React.ReactNode }) {
+   151→  const c = tabColors[colorKey];
+   152→  return (
+   153→    <TableHeader>
+   154→      <TableRow className={`${c.headerBg} hover:${c.headerBg}`}>
+   155→        {children}
+   156→      </TableRow>
+   157→    </TableHeader>
+   158→  );
+   159→}
+   160→
+   161→function ColoredTableHead({ colorKey, children, className }: { colorKey: TabColorKey; children: React.ReactNode; className?: string }) {
+   162→  const c = tabColors[colorKey];
+   163→  return (
+   164→    <TableHead className={`${c.headerText} font-bold ${className || ''}`}>
+   165→      {children}
+   166→    </TableHead>
+   167→  );
+   168→}
+   169→
+   170→// ================================================================
+   171→// TAB 1: VILLAGE INFO (गाव माहिती) - Single Record Form
+   172→// ================================================================
+   173→
+   174→function VillageInfoTab() {
+   175→  const [data, setData] = useState<Record<string, unknown> | null>(null);
+   176→  const [loading, setLoading] = useState(true);
+   177→  const [saving, setSaving] = useState(false);
+   178→  const [form, setForm] = useState<Record<string, string>>({});
+   179→
+   180→  const c = tabColors.village;
+   181→
+   182→  const fetchData = useCallback(async () => {
+   183→    setLoading(true);
+   184→    try {
+   185→      const result = await apiGet('village');
+   186→      setData(result);
+   187→      if (result) {
+   188→        setForm({
+   189→          gramPanchayatName: String(result.gramPanchayatName || ''),
+   190→          gramPanchayatNameMr: String(result.gramPanchayatNameMr || ''),
+   191→          taluka: String(result.taluka || ''),
+   192→          district: String(result.district || ''),
+   193→          state: String(result.state || 'महाराष्ट्र'),
+   194→          pinCode: String(result.pinCode || ''),
+   195→          population: String(result.population || ''),
+   196→          totalArea: String(result.totalArea || ''),
+   197→          gramSabhaDate: String(result.gramSabhaDate || ''),
+   198→          sarpanchName: String(result.sarpanchName || ''),
+   199→          sarpanchNameMr: String(result.sarpanchNameMr || ''),
+   200→          secretaryName: String(result.secretaryName || ''),
+   201→          secretaryNameMr: String(result.secretaryNameMr || ''),
+   202→        });
+   203→      } else {
+   204→        setForm({ state: 'महाराष्ट्र' });
+   205→      }
+   206→    } catch {
+   207→      toast({ title: 'त्रुटी', description: 'डेटा लोड करण्यात अयशस्वी', variant: 'destructive' });
+   208→    } finally {
+   209→      setLoading(false);
+   210→    }
+   211→  }, []);
+   212→
+   213→  useEffect(() => { fetchData(); }, [fetchData]);
+   214→
+   215→  const handleSave = async () => {
+   216→    setSaving(true);
+   217→    try {
+   218→      const saveData: Record<string, unknown> = {};
+   219→      if (data?.id) saveData.id = data.id;
+   220→      for (const [key, value] of Object.entries(form)) {
+   221→        if (key === 'population') {
+   222→          saveData[key] = value ? parseInt(value) : null;
+   223→        } else if (key === 'totalArea') {
+   224→          saveData[key] = value ? parseFloat(value) : null;
+   225→        } else {
+   226→          saveData[key] = value || null;
+   227→        }
+   228→      }
+   229→      await (data?.id ? apiUpdate('village', saveData) : apiCreate('village', saveData));
+   230→      toast({ title: 'यशस्वी', description: 'गाव माहिती जतन झाली' });
+   231→      fetchData();
+   232→    } catch (err: unknown) {
+   233→      toast({ title: 'त्रुटी', description: err instanceof Error ? err.message : 'जतन अयशस्वी', variant: 'destructive' });
+   234→    } finally {
+   235→      setSaving(false);
+   236→    }
+   237→  };
+   238→
+   239→  if (loading) return (
+   240→    <Card className="overflow-hidden">
+   241→      <div className={`bg-gradient-to-r ${c.header} p-4`}>
+   242→        <div className="flex items-center gap-3">
+   243→          <div className={`${c.icon} p-2 rounded-lg text-white`}><Landmark className="h-5 w-5" /></div>
+   244→          <h3 className="text-lg font-bold text-white">गाव माहिती</h3>
+   245→        </div>
+   246→      </div>
+   247→      <CardContent className="p-6"><div className="text-center py-8 text-muted-foreground animate-pulse">लोड होत आहे...</div></CardContent>
+   248→    </Card>
+   249→  );
+   250→
+   251→  const fields = [
+   252→    { key: 'gramPanchayatName', label: 'ग्रामपंचायतचे नाव (English)', required: true },
+   253→    { key: 'gramPanchayatNameMr', label: 'ग्रामपंचायतचे नाव (मराठी)', required: true },
+   254→    { key: 'taluka', label: 'तालुका' },
+   255→    { key: 'district', label: 'जिल्हा' },
+   256→    { key: 'state', label: 'राज्य' },
+   257→    { key: 'pinCode', label: 'पिन कोड' },
+   258→    { key: 'population', label: 'लोकसंख्या', type: 'number' },
+   259→    { key: 'totalArea', label: 'एकूण क्षेत्रफळ (चौ.मी.)', type: 'number' },
+   260→    { key: 'gramSabhaDate', label: 'ग्रामसभा दिनांक' },
+   261→    { key: 'sarpanchName', label: 'सरपंचाचे नाव (English)' },
+   262→    { key: 'sarpanchNameMr', label: 'सरपंचाचे नाव (मराठी)' },
+   263→    { key: 'secretaryName', label: 'सचिवाचे नाव (English)' },
+   264→    { key: 'secretaryNameMr', label: 'सचिवाचे नाव (मराठी)' },
+   265→  ];
+   266→
+   267→  return (
+   268→    <Card className="overflow-hidden">
+   269→      <div className={`bg-gradient-to-r ${c.header} p-4`}>
+   270→        <div className="flex items-center justify-between">
+   271→          <div className="flex items-center gap-3">
+   272→            <div className={`${c.icon} p-2 rounded-lg text-white`}><Landmark className="h-5 w-5" /></div>
+   273→            <h3 className="text-lg font-bold text-white">गाव माहिती</h3>
+   274→            <Badge className={`${c.badge} border-0`}>{data ? 1 : 0}</Badge>
+   275→          </div>
+   276→          <Button variant="outline" size="sm" onClick={fetchData} className="bg-white/20 border-white/30 text-white hover:bg-white/30">
+   277→            <RefreshCw className="h-4 w-4 mr-1" /> रिफ्रेश
+   278→          </Button>
+   279→        </div>
+   280→      </div>
+   281→      <CardContent className={`${c.bg} p-6`}>
+   282→        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+   283→          {fields.map((f) => (
+   284→            <div key={f.key} className="space-y-1">
+   285→              <Label className={`text-sm ${c.text} font-medium`}>
+   286→                {f.label} {f.required && <span className="text-red-500">*</span>}
+   287→              </Label>
+   288→              <Input
+   289→                value={form[f.key] || ''}
+   290→                onChange={(e) => setForm((prev) => ({ ...prev, [f.key]: e.target.value }))}
+   291→                type={f.type || 'text'}
+   292→                placeholder={f.label}
+   293→                className="bg-white"
+   294→              />
+   295→            </div>
+   296→          ))}
+   297→        </div>
+   298→        <div className="mt-6 flex justify-end">
+   299→          <Button onClick={handleSave} disabled={saving} className={`bg-gradient-to-r ${c.header} text-white shadow-lg border-0 hover:opacity-90`}>
+   300→            {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
+   301→            {saving ? 'जतन करत आहे...' : 'जतन करा'}
+   302→          </Button>
+   303→        </div>
+   304→      </CardContent>
+   305→    </Card>
+   306→  );
+   307→}
+   308→
+   309→// ================================================================
+   310→// GENERIC CRUD LIST - Reusable with color theming
+   311→// ================================================================
+   312→
+   313→interface CrudListProps {
+   314→  title: string;
+   315→  table: string;
+   316→  colorKey: TabColorKey;
+   317→  icon: React.ReactNode;
+   318→  columns: { key: string; label: string; render?: (item: Record<string, unknown>) => React.ReactNode }[];
+   319→  formFields: FormField[];
+   320→  seedOnEmpty?: boolean;
+   321→  renderExtraForm?: (data: Record<string, unknown>, setData: (d: Record<string, unknown>) => void) => React.ReactNode;
+   322→  renderExtraColumns?: (item: Record<string, unknown>) => React.ReactNode;
+   323→  defaultFormData?: Record<string, unknown>;
+   324→}
+   325→
+   326→interface FormField {
+   327→  key: string;
+   328→  label: string;
+   329→  type?: 'text' | 'number' | 'select' | 'checkbox' | 'textarea';
+   330→  required?: boolean;
+   331→  placeholder?: string;
+   332→  options?: { value: string; label: string }[];
+   333→  colSpan?: number;
+   334→}
+   335→
+   336→function CrudList({
+   337→  title,
+   338→  table,
+   339→  colorKey,
+   340→  icon,
+   341→  columns,
+   342→  formFields,
+   343→  seedOnEmpty,
+   344→  renderExtraForm,
+   345→  renderExtraColumns,
+   346→  defaultFormData,
+   347→}: CrudListProps) {
+   348→  const [items, setItems] = useState<Record<string, unknown>[]>([]);
+   349→  const [loading, setLoading] = useState(true);
+   350→  const [search, setSearch] = useState('');
+   351→  const [dialogOpen, setDialogOpen] = useState(false);
+   352→  const [editItem, setEditItem] = useState<Record<string, unknown> | null>(null);
+   353→  const [formData, setFormData] = useState<Record<string, unknown>>(defaultFormData || {});
+   354→  const [saving, setSaving] = useState(false);
+   355→  const [deleting, setDeleting] = useState<string | null>(null);
+   356→
+   357→  const c = tabColors[colorKey];
+   358→
+   359→  const fetchData = useCallback(async () => {
+   360→    setLoading(true);
+   361→    try {
+   362→      let result = await apiGet(table, search || undefined);
+   363→      if (!Array.isArray(result)) result = result ? [result] : [];
+   364→      if (result.length === 0 && seedOnEmpty) {
+   365→        await apiSeed(table);
+   366→        result = await apiGet(table, search || undefined);
+   367→        if (!Array.isArray(result)) result = result ? [result] : [];
+   368→      }
+   369→      setItems(result);
+   370→    } catch {
+   371→      toast({ title: 'त्रुटी', description: 'डेटा लोड करण्यात अयशस्वी', variant: 'destructive' });
+   372→    } finally {
+   373→      setLoading(false);
+   374→    }
+   375→  }, [table, search, seedOnEmpty]);
+   376→
+   377→  useEffect(() => { fetchData(); }, [fetchData]);
+   378→
+   379→  const handleAdd = () => {
+   380→    setEditItem(null);
+   381→    setFormData(defaultFormData || {});
+   382→    setDialogOpen(true);
+   383→  };
+   384→
+   385→  const handleEdit = (item: Record<string, unknown>) => {
+   386→    setEditItem(item);
+   387→    const fd: Record<string, unknown> = {};
+   388→    for (const f of formFields) {
+   389→      fd[f.key] = item[f.key] ?? (f.type === 'checkbox' ? false : f.type === 'number' ? '' : '');
+   390→    }
+   391→    setFormData(fd);
+   392→    setDialogOpen(true);
+   393→  };
+   394→
+   395→  const handleDelete = async (id: string) => {
+   396→    if (!confirm('हा रेकॉर्ड हटवायचा आहे का?')) return;
+   397→    setDeleting(id);
+   398→    try {
+   399→      await apiDelete(table, id);
+   400→      toast({ title: 'यशस्वी', description: 'रेकॉर्ड हटवला' });
+   401→      fetchData();
+   402→    } catch (err: unknown) {
+   403→      toast({ title: 'त्रुटी', description: err instanceof Error ? err.message : 'हटवणे अयशस्वी', variant: 'destructive' });
+   404→    } finally {
+   405→      setDeleting(null);
+   406→    }
+   407→  };
+   408→
+   409→  const handleSave = async () => {
+   410→    setSaving(true);
+   411→    try {
+   412→      const saveData: Record<string, unknown> = { ...formData };
+   413→      if (editItem?.id) saveData.id = editItem.id;
+   414→      for (const f of formFields) {
+   415→        if (f.type === 'number' && saveData[f.key] !== undefined && saveData[f.key] !== '') {
+   416→          saveData[f.key] = parseFloat(String(saveData[f.key])) || 0;
+   417→        }
+   418→        if (f.type === 'number' && (saveData[f.key] === '' || saveData[f.key] === undefined)) {
+   419→          saveData[f.key] = null;
+   420→        }
+   421→      }
+   422→      await (editItem?.id ? apiUpdate(table, saveData) : apiCreate(table, saveData));
+   423→      toast({ title: 'यशस्वी', description: editItem?.id ? 'रेकॉर्ड अपडेट झाला' : 'नवीन रेकॉर्ड जोडला' });
+   424→      setDialogOpen(false);
+   425→      fetchData();
+   426→    } catch (err: unknown) {
+   427→      toast({ title: 'त्रुटी', description: err instanceof Error ? err.message : 'जतन अयशस्वी', variant: 'destructive' });
+   428→    } finally {
+   429→      setSaving(false);
+   430→    }
+   431→  };
+   432→
+   433→  const filteredItems = items;
+   434→
+   435→  return (
+   436→    <Card className="overflow-hidden">
+   437→      <SectionHeader
+   438→        colorKey={colorKey}
+   439→        title={title}
+   440→        icon={icon}
+   441→        count={filteredItems.length}
+   442→        search={search}
+   443→        onSearchChange={setSearch}
+   444→        onRefresh={fetchData}
+   445→        onAdd={handleAdd}
+   446→        loading={loading}
+   447→      />
+   448→      <CardContent className={`${c.bg} p-4`}>
+   449→        {loading ? (
+   450→          <div className="text-center py-8 text-muted-foreground animate-pulse">लोड होत आहे...</div>
+   451→        ) : filteredItems.length === 0 ? (
+   452→          <div className="text-center py-8 text-muted-foreground">कोणतेही रेकॉर्ड नाहीत</div>
+   453→        ) : (
+   454→          <div className="max-h-96 overflow-y-auto border rounded-lg border-white/50 shadow-sm">
+   455→            <Table>
+   456→              <ColoredTableHeader colorKey={colorKey}>
+   457→                <ColoredTableHead colorKey={colorKey} className="w-12">क्र.</ColoredTableHead>
+   458→                {columns.map((col) => (
+   459→                  <ColoredTableHead key={col.key} colorKey={colorKey}>{col.label}</ColoredTableHead>
+   460→                ))}
+   461→                <ColoredTableHead colorKey={colorKey} className="w-24 text-right">क्रिया</ColoredTableHead>
+   462→              </ColoredTableHeader>
+   463→              <TableBody>
+   464→                {filteredItems.map((item, idx) => (
+   465→                  <TableRow key={String(item.id)} className="hover:bg-white/60">
+   466→                    <TableCell className="font-medium">{idx + 1}</TableCell>
+   467→                    {columns.map((col) => (
+   468→                      <TableCell key={col.key}>
+   469→                        {col.render ? col.render(item) : String(item[col.key] ?? '-')}
+   470→                      </TableCell>
+   471→                    ))}
+   472→                    {renderExtraColumns && <TableCell>{renderExtraColumns(item)}</TableCell>}
+   473→                    <TableCell className="text-right">
+   474→                      <div className="flex justify-end gap-1">
+   475→                        <Button variant="ghost" size="sm" onClick={() => handleEdit(item)} className="hover:bg-white/60">
+   476→                          <Pencil className="h-4 w-4" />
+   477→                        </Button>
+   478→                        <Button
+   479→                          variant="ghost"
+   480→                          size="sm"
+   481→                          onClick={() => handleDelete(String(item.id))}
+   482→                          disabled={deleting === String(item.id)}
+   483→                          className="hover:bg-white/60"
+   484→                        >
+   485→                          {deleting === String(item.id) ? (
+   486→                            <Loader2 className="h-4 w-4 animate-spin" />
+   487→                          ) : (
+   488→                            <Trash2 className="h-4 w-4 text-red-500" />
+   489→                          )}
+   490→                        </Button>
+   491→                      </div>
+   492→                    </TableCell>
+   493→                  </TableRow>
+   494→                ))}
+   495→              </TableBody>
+   496→            </Table>
+   497→          </div>
+   498→        )}
+   499→      </CardContent>
+   500→
+   501→      {/* Add/Edit Dialog */}
+   502→      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+   503→        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+   504→          <DialogHeader>
+   505→            <DialogTitle className={`flex items-center gap-2 ${c.text}`}>
+   506→              <div className={`${c.icon} p-1.5 rounded text-white`}>{icon}</div>
+   507→              {editItem ? 'रेकॉर्ड संपादा' : 'नवीन रेकॉर्ड'}
+   508→            </DialogTitle>
+   509→          </DialogHeader>
+   510→          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
+   511→            {formFields.map((f) => (
+   512→              <div key={f.key} className={`space-y-1 ${f.colSpan === 2 ? 'sm:col-span-2' : ''}`}>
+   513→                <Label className="text-sm">
+   514→                  {f.label} {f.required && <span className="text-red-500">*</span>}
+   515→                </Label>
+   516→                {f.type === 'select' ? (
+   517→                  <Select
+   518→                    value={String(formData[f.key] || '')}
+   519→                    onValueChange={(v) => setFormData((prev) => ({ ...prev, [f.key]: v }))}
+   520→                  >
+   521→                    <SelectTrigger>
+   522→                      <SelectValue placeholder={f.placeholder || 'निवडा'} />
+   523→                    </SelectTrigger>
+   524→                    <SelectContent>
+   525→                      {f.options?.map((opt) => (
+   526→                        <SelectItem key={opt.value} value={opt.value}>
+   527→                          {opt.label}
+   528→                        </SelectItem>
+   529→                      ))}
+   530→                    </SelectContent>
+   531→                  </Select>
+   532→                ) : f.type === 'checkbox' ? (
+   533→                  <div className="flex items-center gap-2 pt-2">
+   534→                    <Checkbox
+   535→                      checked={!!formData[f.key]}
+   536→                      onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, [f.key]: !!checked }))}
+   537→                    />
+   538→                    <span className="text-sm text-muted-foreground">{f.placeholder || 'होय'}</span>
+   539→                  </div>
+   540→                ) : f.type === 'textarea' ? (
+   541→                  <Textarea
+   542→                    value={String(formData[f.key] || '')}
+   543→                    onChange={(e) => setFormData((prev) => ({ ...prev, [f.key]: e.target.value }))}
+   544→                    placeholder={f.placeholder || f.label}
+   545→                    rows={3}
+   546→                  />
+   547→                ) : (
+   548→                  <Input
+   549→                    value={String(formData[f.key] ?? '')}
+   550→                    onChange={(e) => setFormData((prev) => ({ ...prev, [f.key]: e.target.value }))}
+   551→                    type={f.type || 'text'}
+   552→                    placeholder={f.placeholder || f.label}
+   553→                  />
+   554→                )}
+   555→              </div>
+   556→            ))}
+   557→            {renderExtraForm && renderExtraForm(formData, setFormData)}
+   558→          </div>
+   559→          <DialogFooter>
+   560→            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+   561→              <X className="h-4 w-4 mr-1" /> रद्द करा
+   562→            </Button>
+   563→            <Button onClick={handleSave} disabled={saving} className={`bg-gradient-to-r ${c.header} text-white border-0 hover:opacity-90`}>
+   564→              {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
+   565→              {saving ? 'जतन करत आहे...' : 'जतन करा'}
+   566→            </Button>
+   567→          </DialogFooter>
+   568→        </DialogContent>
+   569→      </Dialog>
+   570→    </Card>
+   571→  );
+   572→}
+   573→
+   574→// ================================================================
+   575→// TAB 2: WARD (वार्ड)
+   576→// ================================================================
+   577→
+   578→function WardTab() {
+   579→  return (
+   580→    <CrudList
+   581→      title="वार्ड"
+   582→      table="ward"
+   583→      colorKey="ward"
+   584→      icon={<MapPin className="h-5 w-5" />}
+   585→      columns={[
+   586→        { key: 'wardNumber', label: 'वार्ड क्र.' },
+   587→        { key: 'wardName', label: 'वार्ड नाव' },
+   588→        { key: 'wardNameMr', label: 'वार्ड नाव (मराठी)' },
+   589→        { key: 'population', label: 'लोकसंख्या', render: (i) => String(i.population ?? '-') },
+   590→        { key: 'area', label: 'क्षेत्रफळ', render: (i) => i.area ? `${i.area} चौ.मी.` : '-' },
+   591→      ]}
+   592→      formFields={[
+   593→        { key: 'wardNumber', label: 'वार्ड क्रमांक', required: true },
+   594→        { key: 'wardName', label: 'वार्ड नाव (English)', required: true },
+   595→        { key: 'wardNameMr', label: 'वार्ड नाव (मराठी)', required: true },
+   596→        { key: 'population', label: 'लोकसंख्या', type: 'number' },
+   597→        { key: 'area', label: 'क्षेत्रफळ (चौ.मी.)', type: 'number' },
+   598→        { key: 'description', label: 'वर्णन', type: 'textarea', colSpan: 2 },
+   599→      ]}
+   600→    />
+   601→  );
+   602→}
+   603→
+   604→// ================================================================
+   605→// TAB 3: OWNER (मालक)
+   606→// ================================================================
+   607→
+   608→function OwnerTab() {
+   609→  return (
+   610→    <CrudList
+   611→      title="मालक"
+   612→      table="owner"
+   613→      colorKey="owner"
+   614→      icon={<User className="h-5 w-5" />}
+   615→      columns={[
+   616→        { key: 'ownerNumber', label: 'मालक क्र.' },
+   617→        { key: 'firstName', label: 'नाव', render: (i) => `${i.firstName || ''} ${i.middleName || ''} ${i.lastName || ''}`.trim() },
+   618→        { key: 'firstNameMr', label: 'नाव (मराठी)', render: (i) => `${i.firstNameMr || ''} ${i.middleNameMr || ''} ${i.lastNameMr || ''}`.trim() },
+   619→        { key: 'mobileNumber', label: 'मोबाईल' },
+   620→        { key: 'isDisabled', label: 'अपंग', render: (i) => i.isDisabled ? <Badge variant="destructive">होय</Badge> : 'नाही' },
+   621→      ]}
+   622→      formFields={[
+   623→        { key: 'ownerNumber', label: 'मालक क्रमांक', required: true },
+   624→        { key: 'firstName', label: 'पहिले नाव', required: true },
+   625→        { key: 'middleName', label: 'मधले नाव' },
+   626→        { key: 'lastName', label: 'आडनाव', required: true },
+   627→        { key: 'firstNameMr', label: 'पहिले नाव (मराठी)', required: true },
+   628→        { key: 'middleNameMr', label: 'मधले नाव (मराठी)' },
+   629→        { key: 'lastNameMr', label: 'आडनाव (मराठी)' },
+   630→        { key: 'mobileNumber', label: 'मोबाईल क्रमांक', placeholder: '10 अंकी क्रमांक' },
+   631→        { key: 'aadhaarNumber', label: 'आधार क्रमांक' },
+   632→        { key: 'panNumber', label: 'PAN क्रमांक' },
+   633→        { key: 'email', label: 'ईमेल' },
+   634→        { key: 'address', label: 'पत्ता', type: 'textarea', colSpan: 2 },
+   635→        { key: 'addressMr', label: 'पत्ता (मराठी)', type: 'textarea', colSpan: 2 },
+   636→        { key: 'isDisabled', label: 'अपंगत्व', type: 'checkbox', placeholder: 'अपंग आहे' },
+   637→        { key: 'disabilityType', label: 'अपंगत्व प्रकार' },
+   638→        { key: 'disabilityPercentage', label: 'अपंगत्व टक्के', type: 'number' },
+   639→      ]}
+   640→    />
+   641→  );
+   642→}
+   643→
+   644→// ================================================================
+   645→// TAB 4: ROAD (रस्ते)
+   646→// ================================================================
+   647→
+   648→function RoadTab() {
+   649→  const [wards, setWards] = useState<Record<string, unknown>[]>([]);
+   650→
+   651→  useEffect(() => {
+   652→    apiGet('ward').then((d) => setWards(Array.isArray(d) ? d : [])).catch(() => {});
+   653→  }, []);
+   654→
+   655→  return (
+   656→    <CrudList
+   657→      title="रस्ते"
+   658→      table="road"
+   659→      colorKey="road"
+   660→      icon={<Route className="h-5 w-5" />}
+   661→      columns={[
+   662→        { key: 'roadNumber', label: 'रस्ता क्र.' },
+   663→        { key: 'roadName', label: 'रस्ता नाव' },
+   664→        { key: 'roadNameMr', label: 'रस्ता नाव (मराठी)' },
+   665→        { key: 'roadType', label: 'प्रकार' },
+   666→        { key: 'length', label: 'लांबी (मी.)', render: (i) => String(i.length ?? '-') },
+   667→        { key: 'width', label: 'रुंदी (मी.)', render: (i) => String(i.width ?? '-') },
+   668→      ]}
+   669→      formFields={[
+   670→        { key: 'roadNumber', label: 'रस्ता क्रमांक', required: true },
+   671→        { key: 'roadName', label: 'रस्ता नाव (English)', required: true },
+   672→        { key: 'roadNameMr', label: 'रस्ता नाव (मराठी)', required: true },
+   673→        { key: 'roadType', label: 'रस्ता प्रकार', type: 'select', options: [
+   674→          { value: 'पक्का', label: 'पक्का' },
+   675→          { value: 'अर्धपक्का', label: 'अर्धपक्का' },
+   676→          { value: 'कच्चा', label: 'कच्चा' },
+   677→        ]},
+   678→        { key: 'length', label: 'लांबी (मीटर)', type: 'number' },
+   679→        { key: 'width', label: 'रुंदी (मीटर)', type: 'number' },
+   680→      ]}
+   681→      renderExtraForm={(formData, setFormData) => (
+   682→        <div className="space-y-1 sm:col-span-2">
+   683→          <Label className="text-sm">वार्ड</Label>
+   684→          <Select
+   685→            value={String(formData.wardId || '')}
+   686→            onValueChange={(v) => setFormData({ ...formData, wardId: v === '__none__' ? null : v })}
+   687→          >
+   688→            <SelectTrigger>
+   689→              <SelectValue placeholder="वार्ड निवडा" />
+   690→            </SelectTrigger>
+   691→            <SelectContent>
+   692→              <SelectItem value="__none__">कोणताही नाही</SelectItem>
+   693→              {wards.map((w: Record<string, unknown>) => (
+   694→                <SelectItem key={String(w.id)} value={String(w.id)}>
+   695→                  {String(w.wardNumber)} - {String(w.wardNameMr || w.wardName)}
+   696→                </SelectItem>
+   697→              ))}
+   698→            </SelectContent>
+   699→          </Select>
+   700→        </div>
+   701→      )}
+   702→    />
+   703→  );
+   704→}
+   705→
+   706→// ================================================================
+   707→// TAB 5: DRAINAGE (कालवे)
+   708→// ================================================================
+   709→
+   710→function DrainageTab() {
+   711→  const [wards, setWards] = useState<Record<string, unknown>[]>([]);
+   712→
+   713→  useEffect(() => {
+   714→    apiGet('ward').then((d) => setWards(Array.isArray(d) ? d : [])).catch(() => {});
+   715→  }, []);
+   716→
+   717→  return (
+   718→    <CrudList
+   719→      title="कालवे"
+   720→      table="drainage"
+   721→      colorKey="drainage"
+   722→      icon={<Droplets className="h-5 w-5" />}
+   723→      columns={[
+   724→        { key: 'drainageNumber', label: 'कालवा क्र.' },
+   725→        { key: 'drainageName', label: 'कालवा नाव' },
+   726→        { key: 'drainageNameMr', label: 'नाव (मराठी)' },
+   727→        { key: 'drainageType', label: 'प्रकार' },
+   728→        { key: 'length', label: 'लांबी (मी.)', render: (i) => String(i.length ?? '-') },
+   729→        { key: 'status', label: 'स्थिती' },
+   730→      ]}
+   731→      formFields={[
+   732→        { key: 'drainageNumber', label: 'कालवा क्रमांक', required: true },
+   733→        { key: 'drainageName', label: 'कालवा नाव (English)', required: true },
+   734→        { key: 'drainageNameMr', label: 'कालवा नाव (मराठी)', required: true },
+   735→        { key: 'drainageType', label: 'कालवा प्रकार', type: 'select', options: [
+   736→          { value: 'उघडा', label: 'उघडा' },
+   737→          { value: 'बंद', label: 'बंद' },
+   738→        ]},
+   739→        { key: 'length', label: 'लांबी (मीटर)', type: 'number' },
+   740→        { key: 'status', label: 'स्थिती', type: 'select', options: [
+   741→          { value: 'Active', label: 'सक्रिय' },
+   742→          { value: 'Inactive', label: 'निष्क्रिय' },
+   743→          { value: 'Under Repair', label: 'दुरुस्तीत' },
+   744→        ]},
+   745→      ]}
+   746→      renderExtraForm={(formData, setFormData) => (
+   747→        <div className="space-y-1">
+   748→          <Label className="text-sm">वार्ड</Label>
+   749→          <Select
+   750→            value={String(formData.wardId || '')}
+   751→            onValueChange={(v) => setFormData({ ...formData, wardId: v === '__none__' ? null : v })}
+   752→          >
+   753→            <SelectTrigger>
+   754→              <SelectValue placeholder="वार्ड निवडा" />
+   755→            </SelectTrigger>
+   756→            <SelectContent>
+   757→              <SelectItem value="__none__">कोणताही नाही</SelectItem>
+   758→              {wards.map((w: Record<string, unknown>) => (
+   759→                <SelectItem key={String(w.id)} value={String(w.id)}>
+   760→                  {String(w.wardNumber)} - {String(w.wardNameMr || w.wardName)}
+   761→                </SelectItem>
+   762→              ))}
+   763→            </SelectContent>
+   764→          </Select>
+   765→        </div>
+   766→      )}
+   767→    />
+   768→  );
+   769→}
+   770→
+   771→// ================================================================
+   772→// TAB 6: WATER SUPPLY (पाणीपुरवठा)
+   773→// ================================================================
+   774→
+   775→function WaterSupplyTab() {
+   776→  const [wards, setWards] = useState<Record<string, unknown>[]>([]);
+   777→
+   778→  useEffect(() => {
+   779→    apiGet('ward').then((d) => setWards(Array.isArray(d) ? d : [])).catch(() => {});
+   780→  }, []);
+   781→
+   782→  return (
+   783→    <CrudList
+   784→      title="पाणीपुरवठा"
+   785→      table="waterSupply"
+   786→      colorKey="waterSupply"
+   787→      icon={<Droplet className="h-5 w-5" />}
+   788→      columns={[
+   789→        { key: 'connectionNumber', label: 'जोडणी क्र.' },
+   790→        { key: 'connectionType', label: 'जोडणी प्रकार' },
+   791→        { key: 'connectionStatus', label: 'स्थिती' },
+   792→        { key: 'tapSize', label: 'नळ आकार' },
+   793→        { key: 'monthlyRate', label: 'मासिक दर', render: (i) => `₹${i.monthlyRate ?? 0}` },
+   794→      ]}
+   795→      formFields={[
+   796→        { key: 'connectionNumber', label: 'जोडणी क्रमांक', required: true },
+   797→        { key: 'connectionType', label: 'जोडणी प्रकार', type: 'select', required: true, options: [
+   798→          { value: 'घरगुती', label: 'घरगुती' },
+   799→          { value: 'व्यावसायिक', label: 'व्यावसायिक' },
+   800→          { value: 'औद्योगिक', label: 'औद्योगिक' },
+   801→        ]},
+   802→        { key: 'connectionStatus', label: 'जोडणी स्थिती', type: 'select', options: [
+   803→          { value: 'Active', label: 'सक्रिय' },
+   804→          { value: 'Inactive', label: 'निष्क्रिय' },
+   805→          { value: 'Disconnected', label: 'खंडित' },
+   806→        ]},
+   807→        { key: 'tapSize', label: 'नळ आकार' },
+   808→        { key: 'monthlyRate', label: 'मासिक दर (₹)', type: 'number' },
+   809→      ]}
+   810→      renderExtraForm={(formData, setFormData) => (
+   811→        <div className="space-y-1">
+   812→          <Label className="text-sm">वार्ड</Label>
+   813→          <Select
+   814→            value={String(formData.wardId || '')}
+   815→            onValueChange={(v) => setFormData({ ...formData, wardId: v === '__none__' ? null : v })}
+   816→          >
+   817→            <SelectTrigger>
+   818→              <SelectValue placeholder="वार्ड निवडा" />
+   819→            </SelectTrigger>
+   820→            <SelectContent>
+   821→              <SelectItem value="__none__">कोणताही नाही</SelectItem>
+   822→              {wards.map((w: Record<string, unknown>) => (
+   823→                <SelectItem key={String(w.id)} value={String(w.id)}>
+   824→                  {String(w.wardNumber)} - {String(w.wardNameMr || w.wardName)}
+   825→                </SelectItem>
+   826→              ))}
+   827→            </SelectContent>
+   828→          </Select>
+   829→        </div>
+   830→      )}
+   831→    />
+   832→  );
+   833→}
+   834→
+   835→// ================================================================
+   836→// TAB 7: STREET LIGHT (दिवाबत्ती)
+   837→// ================================================================
+   838→
+   839→function StreetLightTab() {
+   840→  const [wards, setWards] = useState<Record<string, unknown>[]>([]);
+   841→  const [roads, setRoads] = useState<Record<string, unknown>[]>([]);
+   842→
+   843→  useEffect(() => {
+   844→    apiGet('ward').then((d) => setWards(Array.isArray(d) ? d : [])).catch(() => {});
+   845→    apiGet('road').then((d) => setRoads(Array.isArray(d) ? d : [])).catch(() => {});
+   846→  }, []);
+   847→
+   848→  return (
+   849→    <CrudList
+   850→      title="दिवाबत्ती"
+   851→      table="streetLight"
+   852→      colorKey="streetLight"
+   853→      icon={<Sun className="h-5 w-5" />}
+   854→      columns={[
+   855→        { key: 'lightNumber', label: 'दिवा क्र.' },
+   856→        { key: 'lightType', label: 'दिवा प्रकार' },
+   857→        { key: 'wattage', label: 'वॅटेज', render: (i) => i.wattage ? `${i.wattage} W` : '-' },
+   858→        { key: 'poleNumber', label: 'खांब क्र.' },
+   859→        { key: 'status', label: 'स्थिती' },
+   860→      ]}
+   861→      formFields={[
+   862→        { key: 'lightNumber', label: 'दिवा क्रमांक', required: true },
+   863→        { key: 'lightType', label: 'दिवा प्रकार', type: 'select', required: true, options: [
+   864→          { value: 'LED', label: 'LED' },
+   865→          { value: 'CFL', label: 'CFL' },
+   866→          { value: 'Tube', label: 'Tube' },
+   867→          { value: 'इतर', label: 'इतर' },
+   868→        ]},
+   869→        { key: 'wattage', label: 'वॅटेज (W)', type: 'number' },
+   870→        { key: 'poleNumber', label: 'खांब क्रमांक' },
+   871→        { key: 'status', label: 'स्थिती', type: 'select', options: [
+   872→          { value: 'Working', label: 'चालू' },
+   873→          { value: 'Not Working', label: 'बंद' },
+   874→          { value: 'Under Repair', label: 'दुरुस्तीत' },
+   875→        ]},
+   876→      ]}
+   877→      renderExtraForm={(formData, setFormData) => (
+   878→        <>
+   879→          <div className="space-y-1">
+   880→            <Label className="text-sm">वार्ड</Label>
+   881→            <Select
+   882→              value={String(formData.wardId || '')}
+   883→              onValueChange={(v) => setFormData({ ...formData, wardId: v === '__none__' ? null : v })}
+   884→            >
+   885→              <SelectTrigger>
+   886→                <SelectValue placeholder="वार्ड निवडा" />
+   887→              </SelectTrigger>
+   888→              <SelectContent>
+   889→                <SelectItem value="__none__">कोणताही नाही</SelectItem>
+   890→                {wards.map((w: Record<string, unknown>) => (
+   891→                  <SelectItem key={String(w.id)} value={String(w.id)}>
+   892→                    {String(w.wardNumber)} - {String(w.wardNameMr || w.wardName)}
+   893→                  </SelectItem>
+   894→                ))}
+   895→              </SelectContent>
+   896→            </Select>
+   897→          </div>
+   898→          <div className="space-y-1">
+   899→            <Label className="text-sm">रस्ता</Label>
+   900→            <Select
+   901→              value={String(formData.roadId || '')}
+   902→              onValueChange={(v) => setFormData({ ...formData, roadId: v === '__none__' ? null : v })}
+   903→            >
+   904→              <SelectTrigger>
+   905→                <SelectValue placeholder="रस्ता निवडा" />
+   906→              </SelectTrigger>
+   907→              <SelectContent>
+   908→                <SelectItem value="__none__">कोणताही नाही</SelectItem>
+   909→                {roads.map((r: Record<string, unknown>) => (
+   910→                  <SelectItem key={String(r.id)} value={String(r.id)}>
+   911→                    {String(r.roadNumber)} - {String(r.roadNameMr || r.roadName)}
+   912→                  </SelectItem>
+   913→                ))}
+   914→              </SelectContent>
+   915→            </Select>
+   916→          </div>
+   917→        </>
+   918→      )}
+   919→    />
+   920→  );
+   921→}
+   922→
+   923→// ================================================================
+   924→// TAB 8: READY RECKONER (रेडीरेकनर)
+   925→// ================================================================
+   926→
+   927→function ReadyReckonerTab() {
+   928→  return (
+   929→    <CrudList
+   930→      title="रेडीरेकनर"
+   931→      table="readyReckoner"
+   932→      colorKey="readyReckoner"
+   933→      icon={<Calculator className="h-5 w-5" />}
+   934→      columns={[
+   935→        { key: 'usageType', label: 'वापर प्रकार' },
+   936→        { key: 'constructionType', label: 'बांधकाम प्रकार' },
+   937→        { key: 'ratePerSqFt', label: 'दर (₹/चौ.फूट)', render: (i) => `₹${i.ratePerSqFt ?? 0}` },
+   938→        { key: 'year', label: 'वर्ष' },
+   939→        { key: 'zone', label: 'झोन', render: (i) => String(i.zone ?? '-') },
+   940→      ]}
+   941→      formFields={[
+   942→        { key: 'usageType', label: 'वापर प्रकार', type: 'select', required: true, options: [
+   943→          { value: 'राहणीमान', label: 'राहणीमान' },
+   944→          { value: 'व्यावसायिक', label: 'व्यावसायिक' },
+   945→          { value: 'औद्योगिक', label: 'औद्योगिक' },
+   946→          { value: 'शेती', label: 'शेती' },
+   947→        ]},
+   948→        { key: 'constructionType', label: 'बांधकाम प्रकार', type: 'select', required: true, options: [
+   949→          { value: 'झोपडी किंवा मातीचे घर', label: 'झोपडी किंवा मातीचे घर' },
+   950→          { value: 'दगड विटा/मातीचे बांधकाम', label: 'दगड विटा/मातीचे बांधकाम' },
+   951→          { value: 'दगड विट/सिमेंटचे बांधकाम', label: 'दगड विट/सिमेंटचे बांधकाम' },
+   952→          { value: 'आर.सि.सि. बांधकाम', label: 'आर.सि.सि. बांधकाम' },
+   953→          { value: 'पहिला मजला', label: 'पहिला मजला' },
+   954→          { value: 'जमीन/खुली जागा', label: 'जमीन/खुली जागा' },
+   955→          { value: 'पक्के', label: 'पक्के' },
+   956→          { value: 'अर्धपक्के', label: 'अर्धपक्के' },
+   957→          { value: 'कच्चे', label: 'कच्चे' },
+   958→          { value: 'इतर', label: 'इतर' },
+   959→        ]},
+   960→        { key: 'ratePerSqFt', label: 'दर प्रति चौ.फूट (₹)', type: 'number', required: true },
+   961→        { key: 'year', label: 'वर्ष', required: true, placeholder: 'उदा. 2024-25' },
+   962→        { key: 'zone', label: 'झोन' },
+   963→      ]}
+   964→    />
+   965→  );
+   966→}
+   967→
+   968→// ================================================================
+   969→// TAB 9: DISABILITY (अपंगत्व) - auto-seed on empty
+   970→// ================================================================
+   971→
+   972→function DisabilityTab() {
+   973→  return (
+   974→    <CrudList
+   975→      title="अपंगत्व"
+   976→      table="disability"
+   977→      colorKey="disability"
+   978→      icon={<Accessibility className="h-5 w-5" />}
+   979→      seedOnEmpty
+   980→      columns={[
+   981→        { key: 'disabilityType', label: 'अपंगत्व प्रकार' },
+   982→        { key: 'disabilityTypeMr', label: 'प्रकार (मराठी)' },
+   983→        { key: 'percentageRange', label: 'टक्के श्रेणी' },
+   984→        { key: 'description', label: 'वर्णन', render: (i) => String(i.description ?? '-') },
+   985→      ]}
+   986→      formFields={[
+   987→        { key: 'disabilityType', label: 'अपंगत्व प्रकार (English)', required: true },
+   988→        { key: 'disabilityTypeMr', label: 'अपंगत्व प्रकार (मराठी)', required: true },
+   989→        { key: 'percentageRange', label: 'टक्के श्रेणी', required: true, placeholder: 'उदा. 40-100' },
+   990→        { key: 'description', label: 'वर्णन', type: 'textarea', colSpan: 2 },
+   991→      ]}
+   992→    />
+   993→  );
+   994→}
+   995→
+   996→// ================================================================
+   997→// TAB 10: EMPLOYEE (कर्मचारी)
+   998→// ================================================================
+   999→
+  1000→function EmployeeTab() {
+  1001→  return (
+  1002→    <CrudList
+  1003→      title="कर्मचारी"
+  1004→      table="employee"
+  1005→      colorKey="employee"
+  1006→      icon={<Users className="h-5 w-5" />}
+  1007→      columns={[
+  1008→        { key: 'employeeId', label: 'कर्मचारी क्र.' },
+  1009→        { key: 'firstName', label: 'नाव', render: (i) => `${i.firstName || ''} ${i.middleName || ''} ${i.lastName || ''}`.trim() },
+  1010→        { key: 'designation', label: 'पद' },
+  1011→        { key: 'mobileNumber', label: 'मोबाईल' },
+  1012→        { key: 'isActive', label: 'सक्रिय', render: (i) => i.isActive ? <Badge className="bg-green-600 text-white">सक्रिय</Badge> : <Badge variant="destructive">निष्क्रिय</Badge> },
+  1013→      ]}
+  1014→      formFields={[
+  1015→        { key: 'employeeId', label: 'कर्मचारी क्रमांक', required: true },
+  1016→        { key: 'firstName', label: 'पहिले नाव', required: true },
+  1017→        { key: 'middleName', label: 'मधले नाव' },
+  1018→        { key: 'lastName', label: 'आडनाव', required: true },
+  1019→        { key: 'firstNameMr', label: 'पहिले नाव (मराठी)', required: true },
+  1020→        { key: 'middleNameMr', label: 'मधले नाव (मराठी)' },
+  1021→        { key: 'lastNameMr', label: 'आडनाव (मराठी)' },
+  1022→        { key: 'designation', label: 'पद', required: true },
+  1023→        { key: 'designationMr', label: 'पद (मराठी)' },
+  1024→        { key: 'mobileNumber', label: 'मोबाईल क्रमांक' },
+  1025→        { key: 'aadhaarNumber', label: 'आधार क्रमांक' },
+  1026→        { key: 'joinDate', label: 'रुजू दिनांक', placeholder: 'उदा. 2024-01-15' },
+  1027→        { key: 'salary', label: 'पगार (₹)', type: 'number' },
+  1028→        { key: 'isActive', label: 'सक्रिय', type: 'checkbox', placeholder: 'सक्रिय आहे' },
+  1029→      ]}
+  1030→    />
+  1031→  );
+  1032→}
+  1033→
+  1034→// ================================================================
+  1035→// TAB 11: TAX MASTER (कर मास्टर) - auto-seed, enable/disable, dynamic
+  1036→// ================================================================
+  1037→
+  1038→// Default 14 taxes
+  1039→const DEFAULT_TAXES = [
+  1040→  { name: 'House Tax', nameMarathi: 'गृहकर', rate: 12, isEnabled: true, order: 1, category: 'general' },
+  1041→  { name: 'Water Tax', nameMarathi: 'पाणीकर', rate: 5, isEnabled: true, order: 2, category: 'general' },
+  1042→  { name: 'Light Tax', nameMarathi: 'दिवाबत्ती कर', rate: 3, isEnabled: true, order: 3, category: 'general' },
+  1043→  { name: 'Health Tax', nameMarathi: 'आरोग्य कर', rate: 2, isEnabled: true, order: 4, category: 'general' },
+  1044→  { name: 'Education Tax', nameMarathi: 'शिक्षण कर', rate: 2, isEnabled: true, order: 5, category: 'general' },
+  1045→  { name: 'Tree Tax', nameMarathi: 'वृक्ष कर', rate: 1, isEnabled: true, order: 6, category: 'general' },
+  1046→  { name: 'Employment Tax', nameMarathi: 'रोजगार कर', rate: 2, isEnabled: true, order: 7, category: 'general' },
+  1047→  { name: 'Drainage Tax', nameMarathi: 'नाला कर', rate: 3, isEnabled: true, order: 8, category: 'general' },
+  1048→  { name: 'Sanitation Tax', nameMarathi: 'स्वच्छता कर', rate: 2, isEnabled: true, order: 9, category: 'general' },
+  1049→  { name: 'Fire Tax', nameMarathi: 'अग्निशामक कर', rate: 1, isEnabled: true, order: 10, category: 'general' },
+  1050→  { name: 'Special Tax', nameMarathi: 'विशेष कर', rate: 0, isEnabled: false, order: 11, category: 'other' },
+  1051→  { name: 'Penalty', nameMarathi: 'दंड', rate: 0, isEnabled: true, order: 12, category: 'penalty' },
+  1052→  { name: 'Interest', nameMarathi: 'व्याज', rate: 0, isEnabled: true, order: 13, category: 'interest' },
+  1053→  { name: 'Other Charges', nameMarathi: 'इतर आकारणी', rate: 0, isEnabled: false, order: 14, category: 'other' },
+  1054→];
+  1055→
+  1056→// Map which Namuna forms each tax category appears in
+  1057→const TAX_NAMUNA_MAP: Record<string, string[]> = {
+  1058→  general: ['नमुना ८', 'नमुना ९', 'नमुना ९-क'],
+  1059→  penalty: ['नमुना ८', 'नमुना ९'],
+  1060→  interest: ['नमुना ८', 'नमुना ९'],
+  1061→  other: ['नमुना ८'],
+  1062→};
+  1063→
+  1064→function TaxTab() {
+  1065→  const [taxes, setTaxes] = useState<Record<string, unknown>[]>([]);
+  1066→  const [loading, setLoading] = useState(true);
+  1067→  const [saving, setSaving] = useState(false);
+  1068→  const [dialogOpen, setDialogOpen] = useState(false);
+  1069→  const [editItem, setEditItem] = useState<Record<string, unknown> | null>(null);
+  1070→  const [formData, setFormData] = useState<Record<string, unknown>>({
+  1071→    name: '', nameMarathi: '', rate: 0, isEnabled: true, order: 0, category: 'general',
+  1072→  });
+  1073→  const [search, setSearch] = useState('');
+  1074→
+  1075→  const c = tabColors.tax;
+  1076→
+  1077→  const fetchTaxes = useCallback(async () => {
+  1078→    setLoading(true);
+  1079→    try {
+  1080→      let result = await apiGet('tax');
+  1081→      if (!Array.isArray(result)) result = [];
+  1082→      if (result.length === 0) {
+  1083→        await apiSeed('tax');
+  1084→        result = await apiGet('tax');
+  1085→        if (!Array.isArray(result)) result = [];
+  1086→      }
+  1087→      setTaxes(result);
+  1088→    } catch {
+  1089→      toast({ title: 'त्रुटी', description: 'कर मास्टर लोड करण्यात अयशस्वी', variant: 'destructive' });
+  1090→    } finally {
+  1091→      setLoading(false);
+  1092→    }
+  1093→  }, []);
+  1094→
+  1095→  useEffect(() => { fetchTaxes(); }, [fetchTaxes]);
+  1096→
+  1097→  const handleToggle = async (id: string, isEnabled: boolean) => {
+  1098→    try {
+  1099→      const tax = taxes.find((t) => t.id === id);
+  1100→      if (tax) {
+  1101→        await apiUpdate('tax', { id, isEnabled, name: tax.name, nameMarathi: tax.nameMarathi, rate: tax.rate, order: tax.order, category: tax.category });
+  1102→        setTaxes((prev) => prev.map((t) => (t.id === id ? { ...t, isEnabled } : t)));
+  1103→        toast({
+  1104→          title: 'यशस्वी',
+  1105→          description: isEnabled
+  1106→            ? `${String(tax.nameMarathi)} कर सक्षम केला - नमुना ८, ९, ९-क मध्ये दिसेल`
+  1107→            : `${String(tax.nameMarathi)} कर अक्षम केला - नमुना ८, ९, ९-क मधून काढला जाईल`,
+  1108→        });
+  1109→      }
+  1110→    } catch {
+  1111→      toast({ title: 'त्रुटी', description: 'अपडेट अयशस्वी', variant: 'destructive' });
+  1112→    }
+  1113→  };
+  1114→
+  1115→  const handleRateChange = async (id: string, rate: number) => {
+  1116→    try {
+  1117→      const tax = taxes.find((t) => t.id === id);
+  1118→      if (tax) {
+  1119→        await apiUpdate('tax', { id, rate, name: tax.name, nameMarathi: tax.nameMarathi, isEnabled: tax.isEnabled, order: tax.order, category: tax.category });
+  1120→        setTaxes((prev) => prev.map((t) => (t.id === id ? { ...t, rate } : t)));
+  1121→      }
+  1122→    } catch {
+  1123→      toast({ title: 'त्रुटी', description: 'दर अपडेट अयशस्वी', variant: 'destructive' });
+  1124→    }
+  1125→  };
+  1126→
+  1127→  const handleAdd = () => {
+  1128→    setEditItem(null);
+  1129→    setFormData({ name: '', nameMarathi: '', rate: 0, isEnabled: true, order: taxes.length + 1, category: 'general' });
+  1130→    setDialogOpen(true);
+  1131→  };
+  1132→
+  1133→  const handleEdit = (item: Record<string, unknown>) => {
+  1134→    setEditItem(item);
+  1135→    setFormData({
+  1136→      name: item.name || '',
+  1137→      nameMarathi: item.nameMarathi || '',
+  1138→      rate: item.rate || 0,
+  1139→      isEnabled: item.isEnabled ?? true,
+  1140→      order: item.order || 0,
+  1141→      category: item.category || 'general',
+  1142→    });
+  1143→    setDialogOpen(true);
+  1144→  };
+  1145→
+  1146→  const handleSave = async () => {
+  1147→    setSaving(true);
+  1148→    try {
+  1149→      const saveData: Record<string, unknown> = {
+  1150→        ...formData,
+  1151→        rate: parseFloat(String(formData.rate)) || 0,
+  1152→        order: parseInt(String(formData.order)) || 0,
+  1153→      };
+  1154→      if (editItem?.id) saveData.id = editItem.id;
+  1155→      await (editItem?.id ? apiUpdate('tax', saveData) : apiCreate('tax', saveData));
+  1156→      toast({ title: 'यशस्वी', description: editItem?.id ? 'कर अपडेट झाला' : 'नवीन कर जोडला' });
+  1157→      setDialogOpen(false);
+  1158→      fetchTaxes();
+  1159→    } catch (err: unknown) {
+  1160→      toast({ title: 'त्रुटी', description: err instanceof Error ? err.message : 'जतन अयशस्वी', variant: 'destructive' });
+  1161→    } finally {
+  1162→      setSaving(false);
+  1163→    }
+  1164→  };
+  1165→
+  1166→  const handleDelete = async (id: string) => {
+  1167→    if (!confirm('हा कर हटवायचा आहे का?')) return;
+  1168→    try {
+  1169→      await apiDelete('tax', id);
+  1170→      toast({ title: 'यशस्वी', description: 'कर हटवला' });
+  1171→      fetchTaxes();
+  1172→    } catch {
+  1173→      toast({ title: 'त्रुटी', description: 'हटवणे अयशस्वी', variant: 'destructive' });
+  1174→    }
+  1175→  };
+  1176→
+  1177→  const filteredTaxes = taxes.filter((t) =>
+  1178→    !search || String(t.name || '').toLowerCase().includes(search.toLowerCase()) ||
+  1179→    String(t.nameMarathi || '').includes(search) ||
+  1180→    String(t.category || '').toLowerCase().includes(search.toLowerCase())
+  1181→  );
+  1182→
+  1183→  const getCategoryBadge = (cat: string) => {
+  1184→    switch (cat) {
+  1185→      case 'general': return <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 border">सामान्य</Badge>;
+  1186→      case 'penalty': return <Badge className="bg-red-100 text-red-800 border-red-200 border">दंड</Badge>;
+  1187→      case 'interest': return <Badge className="bg-amber-100 text-amber-800 border-amber-200 border">व्याज</Badge>;
+  1188→      case 'other': return <Badge className="bg-purple-100 text-purple-800 border-purple-200 border">इतर</Badge>;
+  1189→      default: return <Badge variant="outline">{cat}</Badge>;
+  1190→    }
+  1191→  };
+  1192→
+  1193→  const getNamunaIndicator = (cat: string, isEnabled: boolean) => {
+  1194→    const namunas = TAX_NAMUNA_MAP[cat] || [];
+  1195→    if (!isEnabled) return null;
+  1196→    return (
+  1197→      <div className="flex items-center gap-1 mt-1">
+  1198→        <Eye className="h-3 w-3 text-rose-600" />
+  1199→        <span className="text-xs text-rose-600 font-medium">
+  1200→          {namunas.join(', ')}
+  1201→        </span>
+  1202→      </div>
+  1203→    );
+  1204→  };
+  1205→
+  1206→  const enabledCount = taxes.filter((t) => t.isEnabled).length;
+  1207→  const disabledCount = taxes.length - enabledCount;
+  1208→
+  1209→  return (
+  1210→    <Card className="overflow-hidden">
+  1211→      {/* Header */}
+  1212→      <div className={`bg-gradient-to-r ${c.header} p-4`}>
+  1213→        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+  1214→          <div className="flex items-center gap-3">
+  1215→            <div className={`${c.icon} p-2 rounded-lg text-white`}>
+  1216→              <Settings className="h-5 w-5" />
+  1217→            </div>
+  1218→            <div>
+  1219→              <h3 className="text-lg font-bold text-white">कर मास्टर</h3>
+  1220→              <p className="text-xs text-white/70 mt-0.5">कर सक्षम/अक्षम केल्यास नमुना ८, ९, ९-क अपडेट होतील</p>
+  1221→            </div>
+  1222→            <Badge className={`${c.badge} border-0 font-bold text-sm`}>{filteredTaxes.length}</Badge>
+  1223→            <Badge className="bg-green-100 text-green-800 border-0 text-xs">सक्षम: {enabledCount}</Badge>
+  1224→            <Badge className="bg-red-100 text-red-800 border-0 text-xs">अक्षम: {disabledCount}</Badge>
+  1225→          </div>
+  1226→          <div className="flex items-center gap-2">
+  1227→            <div className="relative">
+  1228→              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-white/60" />
+  1229→              <Input className="pl-9 w-48 bg-white/20 border-white/30 text-white placeholder:text-white/60 focus:bg-white/30" placeholder="शोधा..." value={search} onChange={(e) => setSearch(e.target.value)} />
+  1230→            </div>
+  1231→            <Button variant="outline" size="sm" onClick={fetchTaxes} disabled={loading} className="bg-white/20 border-white/30 text-white hover:bg-white/30">
+  1232→              <RefreshCw className="h-4 w-4" />
+  1233→            </Button>
+  1234→            <Button size="sm" onClick={handleAdd} className={`bg-gradient-to-r ${c.header} text-white shadow-lg hover:opacity-90 border-0`}>
+  1235→              <Plus className="h-4 w-4 mr-1" /> नवीन कर
+  1236→            </Button>
+  1237→          </div>
+  1238→        </div>
+  1239→      </div>
+  1240→
+  1241→      <CardContent className={`${c.bg} p-4`}>
+  1242→        {loading ? (
+  1243→          <div className="text-center py-8 text-muted-foreground animate-pulse">लोड होत आहे...</div>
+  1244→        ) : (
+  1245→          <div className="max-h-[500px] overflow-y-auto border rounded-lg border-white/50 shadow-sm">
+  1246→            <Table>
+  1247→              <ColoredTableHeader colorKey="tax">
+  1248→                <ColoredTableHead colorKey="tax" className="w-12">क्र.</ColoredTableHead>
+  1249→                <ColoredTableHead colorKey="tax">कर नाव</ColoredTableHead>
+  1250→                <ColoredTableHead colorKey="tax">मराठी नाव</ColoredTableHead>
+  1251→                <ColoredTableHead colorKey="tax" className="w-32">दर (₹)</ColoredTableHead>
+  1252→                <ColoredTableHead colorKey="tax">वर्ग</ColoredTableHead>
+  1253→                <ColoredTableHead colorKey="tax">नमुना</ColoredTableHead>
+  1254→                <ColoredTableHead colorKey="tax" className="w-24 text-center">सक्षम</ColoredTableHead>
+  1255→                <ColoredTableHead colorKey="tax" className="w-24 text-right">क्रिया</ColoredTableHead>
+  1256→              </ColoredTableHeader>
+  1257→              <TableBody>
+  1258→                {filteredTaxes.map((tax, idx) => (
+  1259→                  <TableRow key={String(tax.id)} className={`hover:bg-white/60 transition-colors ${!tax.isEnabled ? 'opacity-50 bg-gray-50' : ''}`}>
+  1260→                    <TableCell className="font-medium">{idx + 1}</TableCell>
+  1261→                    <TableCell>
+  1262→                      <div className="font-medium">{String(tax.name)}</div>
+  1263→                    </TableCell>
+  1264→                    <TableCell>
+  1265→                      <div className="font-medium">{String(tax.nameMarathi)}</div>
+  1266→                    </TableCell>
+  1267→                    <TableCell>
+  1268→                      <Input
+  1269→                        type="number"
+  1270→                        value={Number(tax.rate)}
+  1271→                        onChange={(e) => handleRateChange(String(tax.id), parseFloat(e.target.value) || 0)}
+  1272→                        className="h-8 w-24 text-sm"
+  1273→                        min={0}
+  1274→                        step={0.5}
+  1275→                        disabled={!tax.isEnabled}
+  1276→                      />
+  1277→                    </TableCell>
+  1278→                    <TableCell>{getCategoryBadge(String(tax.category || 'general'))}</TableCell>
+  1279→                    <TableCell>{getNamunaIndicator(String(tax.category || 'general'), !!tax.isEnabled)}</TableCell>
+  1280→                    <TableCell className="text-center">
+  1281→                      <div className="flex items-center justify-center gap-2">
+  1282→                        <Switch
+  1283→                          checked={!!tax.isEnabled}
+  1284→                          onCheckedChange={(checked) => handleToggle(String(tax.id), checked)}
+  1285→                        />
+  1286→                        <span className={`text-xs font-medium ${tax.isEnabled ? 'text-green-600' : 'text-red-500'}`}>
+  1287→                          {tax.isEnabled ? 'चालू' : 'बंद'}
+  1288→                        </span>
+  1289→                      </div>
+  1290→                    </TableCell>
+  1291→                    <TableCell className="text-right">
+  1292→                      <div className="flex justify-end gap-1">
+  1293→                        <Button variant="ghost" size="sm" onClick={() => handleEdit(tax)} className="hover:bg-white/60">
+  1294→                          <Pencil className="h-4 w-4" />
+  1295→                        </Button>
+  1296→                        <Button variant="ghost" size="sm" onClick={() => handleDelete(String(tax.id))} className="hover:bg-white/60">
+  1297→                          <Trash2 className="h-4 w-4 text-red-500" />
+  1298→                        </Button>
+  1299→                      </div>
+  1300→                    </TableCell>
+  1301→                  </TableRow>
+  1302→                ))}
+  1303→              </TableBody>
+  1304→            </Table>
+  1305→          </div>
+  1306→        )}
+  1307→
+  1308→        {/* Tax propagation info */}
+  1309→        <div className="mt-4 p-3 bg-white/60 rounded-lg border border-rose-200">
+  1310→          <div className="flex items-center gap-2 mb-2">
+  1311→            <ToggleLeft className="h-4 w-4 text-rose-600" />
+  1312→            <span className="text-sm font-semibold text-rose-800">डायनॅमिक कर लॉजिक</span>
+  1313→          </div>
+  1314→          <p className="text-xs text-rose-700">
+  1315→            कर सक्षम/अक्षम केल्यास ते आपोआप नमुना ८ (मालमत्ता कर विवरण), नमुना ९ (कर आकारणी), नमुना ९-क (कर वसुली) या फॉर्ममध्ये दिसेल किंवा लपेल.
+  1316→            सामान्य कर तिन्ही नमुनांमध्ये दिसतात, दंड व व्याज नमुना ८ व ९ मध्ये दिसतात, इतर केवळ नमुना ८ मध्ये.
+  1317→          </p>
+  1318→        </div>
+  1319→      </CardContent>
+  1320→
+  1321→      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+  1322→        <DialogContent className="max-w-lg">
+  1323→          <DialogHeader>
+  1324→            <DialogTitle className={`flex items-center gap-2 ${c.text}`}>
+  1325→              <div className={`${c.icon} p-1.5 rounded text-white`}><Settings className="h-4 w-4" /></div>
+  1326→              {editItem ? 'कर संपादा' : 'नवीन कर'}
+  1327→            </DialogTitle>
+  1328→          </DialogHeader>
+  1329→          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
+  1330→            <div className="space-y-1">
+  1331→              <Label className="text-sm">कर नाव (English) <span className="text-red-500">*</span></Label>
+  1332→              <Input value={String(formData.name || '')} onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))} />
+  1333→            </div>
+  1334→            <div className="space-y-1">
+  1335→              <Label className="text-sm">कर नाव (मराठी) <span className="text-red-500">*</span></Label>
+  1336→              <Input value={String(formData.nameMarathi || '')} onChange={(e) => setFormData((p) => ({ ...p, nameMarathi: e.target.value }))} />
+  1337→            </div>
+  1338→            <div className="space-y-1">
+  1339→              <Label className="text-sm">दर (₹)</Label>
+  1340→              <Input type="number" value={Number(formData.rate)} onChange={(e) => setFormData((p) => ({ ...p, rate: parseFloat(e.target.value) || 0 }))} />
+  1341→            </div>
+  1342→            <div className="space-y-1">
+  1343→              <Label className="text-sm">क्रम</Label>
+  1344→              <Input type="number" value={Number(formData.order)} onChange={(e) => setFormData((p) => ({ ...p, order: parseInt(e.target.value) || 0 }))} />
+  1345→            </div>
+  1346→            <div className="space-y-1">
+  1347→              <Label className="text-sm">वर्ग</Label>
+  1348→              <Select value={String(formData.category || 'general')} onValueChange={(v) => setFormData((p) => ({ ...p, category: v }))}>
+  1349→                <SelectTrigger><SelectValue /></SelectTrigger>
+  1350→                <SelectContent>
+  1351→                  <SelectItem value="general">सामान्य</SelectItem>
+  1352→                  <SelectItem value="penalty">दंड</SelectItem>
+  1353→                  <SelectItem value="interest">व्याज</SelectItem>
+  1354→                  <SelectItem value="other">इतर</SelectItem>
+  1355→                </SelectContent>
+  1356→              </Select>
+  1357→            </div>
+  1358→            <div className="space-y-1 flex items-center gap-2 pt-6">
+  1359→              <Checkbox checked={!!formData.isEnabled} onCheckedChange={(c) => setFormData((p) => ({ ...p, isEnabled: !!c }))} />
+  1360→              <Label className="text-sm">सक्षम</Label>
+  1361→            </div>
+  1362→            {/* Namuna indicator in dialog */}
+  1363→            <div className="sm:col-span-2 p-2 bg-rose-50 rounded-lg border border-rose-200">
+  1364→              <div className="flex items-center gap-1.5 text-xs text-rose-700">
+  1365→                <Eye className="h-3.5 w-3.5" />
+  1366→                <span className="font-medium">हा कर खालील नमुन्यांमध्ये दिसेल:</span>
+  1367→                <span className="font-bold">{(TAX_NAMUNA_MAP[String(formData.category || 'general')] || []).join(', ')}</span>
+  1368→              </div>
+  1369→            </div>
+  1370→          </div>
+  1371→          <DialogFooter>
+  1372→            <Button variant="outline" onClick={() => setDialogOpen(false)}><X className="h-4 w-4 mr-1" /> रद्द</Button>
+  1373→            <Button onClick={handleSave} disabled={saving} className={`bg-gradient-to-r ${c.header} text-white border-0 hover:opacity-90`}>
+  1374→              {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
+  1375→              जतन करा
+  1376→            </Button>
+  1377→          </DialogFooter>
+  1378→        </DialogContent>
+  1379→      </Dialog>
+  1380→    </Card>
+  1381→  );
+  1382→}
+  1383→
+  1384→// ================================================================
+  1385→// TAB 12: PROPERTY (मालमत्ता) - Complex with owners & tax rates
+  1386→// ================================================================
+  1387→
+  1388→interface PropertyItem {
+  1389→  id: string;
+  1390→  propertyNumber: string;
+  1391→  wardId?: string;
+  1392→  roadId?: string;
+  1393→  citySurveyNo?: string;
+  1394→  area?: number;
+  1395→  builtUpArea?: number;
+  1396→  boundaries?: string;
+  1397→  constructionType?: string;
+  1398→  usageType?: string;
+  1399→  floorInfo?: string;
+  1400→  yearBuilt?: string;
+  1401→  propertyStatus?: string;
+  1402→  waterConnectionId?: string;
+  1403→  boundaryEast?: string;
+  1404→  boundaryWest?: string;
+  1405→  boundarySouth?: string;
+  1406→  boundaryNorth?: string;
+  1407→  lengthEast?: number;
+  1408→  widthEast?: number;
+  1409→  lengthWest?: number;
+  1410→  widthWest?: number;
+  1411→  lengthSouth?: number;
+  1412→  widthSouth?: number;
+  1413→  lengthNorth?: number;
+  1414→  widthNorth?: number;
+  1415→  totalLength?: number;
+  1416→  totalWidth?: number;
+  1417→  depreciationRate?: number;
+  1418→  usageFactor?: number;
+  1419→  taxRate?: number;
+  1420→  houseTax?: number;
+  1421→  lightTax?: number;
+  1422→  healthTax?: number;
+  1423→  waterTax?: number;
+  1424→  constructionDetails?: string;
+  1425→  ward?: { id: string; wardNumber: string; wardName: string; wardNameMr: string };
+  1426→  road?: { id: string; roadNumber: string; roadName: string; roadNameMr: string };
+  1427→  owners?: { id: string; ownerId: string; ownershipType: string; owner: { id: string; ownerNumber: string; firstName: string; lastName: string; firstNameMr: string; lastNameMr: string } }[];
+  1428→  taxRates?: { id: string; taxMasterId: string; rate: number; taxMaster: { id: string; name: string; nameMarathi: string; isEnabled: boolean } }[];
+  1429→}
+  1430→
+  1431→interface TaxMasterItem {
+  1432→  id: string;
+  1433→  name: string;
+  1434→  nameMarathi: string;
+  1435→  rate: number;
+  1436→  isEnabled: boolean;
+  1437→  order: number;
+  1438→  category: string;
+  1439→}
+  1440→
+  1441→function PropertyTab() {
+  1442→  const [items, setItems] = useState<PropertyItem[]>([]);
+  1443→  const [loading, setLoading] = useState(true);
+  1444→  const [search, setSearch] = useState('');
+  1445→  const [dialogOpen, setDialogOpen] = useState(false);
+  1446→  const [editItem, setEditItem] = useState<PropertyItem | null>(null);
+  1447→  const [saving, setSaving] = useState(false);
+  1448→  const [deleting, setDeleting] = useState<string | null>(null);
+  1449→
+  1450→  const [wards, setWards] = useState<Record<string, unknown>[]>([]);
+  1451→  const [roads, setRoads] = useState<Record<string, unknown>[]>([]);
+  1452→  const [owners, setOwners] = useState<Record<string, unknown>[]>([]);
+  1453→  const [taxMasters, setTaxMasters] = useState<TaxMasterItem[]>([]);
+  1454→
+  1455→  const c = tabColors.property;
+  1456→
+  1457→  const [formData, setFormData] = useState<Record<string, unknown>>({
+  1458→    propertyNumber: '',
+  1459→    wardId: '',
+  1460→    roadId: '',
+  1461→    citySurveyNo: '',
+  1462→    area: '',
+  1463→    builtUpArea: '',
+  1464→    boundaries: '',
+  1465→    constructionType: '',
+  1466→    usageType: '',
+  1467→    floorInfo: '',
+  1468→    yearBuilt: '',
+  1469→    propertyStatus: 'Active',
+  1470→    waterConnectionId: '',
+  1471→    boundaryEast: '',
+  1472→    boundaryWest: '',
+  1473→    boundaryNorth: '',
+  1474→    boundarySouth: '',
+  1475→    lengthEast: '',
+  1476→    widthEast: '',
+  1477→    lengthWest: '',
+  1478→    widthWest: '',
+  1479→    lengthSouth: '',
+  1480→    widthSouth: '',
+  1481→    lengthNorth: '',
+  1482→    widthNorth: '',
+  1483→    totalLength: '',
+  1484→    totalWidth: '',
+  1485→    depreciationRate: '',
+  1486→    usageFactor: '',
+  1487→    taxRate: '',
+  1488→    houseTax: '',
+  1489→    lightTax: '',
+  1490→    healthTax: '',
+  1491→    waterTax: '',
+  1492→  });
+  1493→  const [selectedOwners, setSelectedOwners] = useState<{ ownerId: string; ownershipType: string }[]>([]);
+  1494→  const [selectedTaxRates, setSelectedTaxRates] = useState<{ taxMasterId: string; rate: number }[]>([]);
+  1495→
+  1496→  const fetchProperty = useCallback(async () => {
+  1497→    setLoading(true);
+  1498→    try {
+  1499→      let result = await apiGet('property', search || undefined);
+  1500→      if (!Array.isArray(result)) result = result ? [result] : [];
+  1501→      setItems(result as PropertyItem[]);
+  1502→    } catch {
+  1503→      toast({ title: 'त्रुटी', description: 'मालमत्ता डेटा लोड करण्यात अयशस्वी', variant: 'destructive' });
+  1504→    } finally {
+  1505→      setLoading(false);
+  1506→    }
+  1507→  }, [search]);
+  1508→
+  1509→  const fetchMasters = useCallback(async () => {
+  1510→    try {
+  1511→      const [w, r, o, t] = await Promise.all([apiGet('ward'), apiGet('road'), apiGet('owner'), apiGet('tax')]);
+  1512→      setWards(Array.isArray(w) ? w : []);
+  1513→      setRoads(Array.isArray(r) ? r : []);
+  1514→      setOwners(Array.isArray(o) ? o : []);
+  1515→      setTaxMasters(Array.isArray(t) ? (t as TaxMasterItem[]).filter((tx) => tx.isEnabled) : []);
+  1516→    } catch {
+  1517→      // ignore
+  1518→    }
+  1519→  }, []);
+  1520→
+  1521→  useEffect(() => { fetchProperty(); fetchMasters(); }, [fetchProperty, fetchMasters]);
+  1522→
+  1523→  const handleAdd = () => {
+  1524→    setEditItem(null);
+  1525→    setFormData({
+  1526→      propertyNumber: '', wardId: '', roadId: '', citySurveyNo: '',
+  1527→      area: '', builtUpArea: '', boundaries: '', constructionType: '',
+  1528→      usageType: '', floorInfo: '', yearBuilt: '', propertyStatus: 'Active',
+  1529→      waterConnectionId: '', boundaryEast: '', boundaryWest: '', boundaryNorth: '', boundarySouth: '',
+  1530→      lengthEast: '', widthEast: '', lengthWest: '', widthWest: '',
+  1531→      lengthSouth: '', widthSouth: '', lengthNorth: '', widthNorth: '',
+  1532→      totalLength: '', totalWidth: '', depreciationRate: '', usageFactor: '1',
+  1533→      taxRate: '', houseTax: '', lightTax: '', healthTax: '', waterTax: '',
+  1534→    });
+  1535→    setSelectedOwners([]);
+  1536→    setSelectedTaxRates(taxMasters.map((t) => ({ taxMasterId: t.id, rate: t.rate })));
+  1537→    setDialogOpen(true);
+  1538→  };
+  1539→
+  1540→  const handleEdit = (item: PropertyItem) => {
+  1541→    setEditItem(item);
+  1542→    // Parse boundaries if it's JSON
+  1543→    let boundaryEast = '';
+  1544→    let boundaryWest = '';
+  1545→    let boundaryNorth = '';
+  1546→    let boundarySouth = '';
+  1547→    try {
+  1548→      if (item.boundaries) {
+  1549→        const b = typeof item.boundaries === 'string' ? JSON.parse(item.boundaries) : item.boundaries;
+  1550→        boundaryEast = b.east || b.purv || '';
+  1551→        boundaryWest = b.west || b.paschim || '';
+  1552→        boundaryNorth = b.north || b.uttar || '';
+  1553→        boundarySouth = b.south || b.dakshin || '';
+  1554→      }
+  1555→    } catch {
+  1556→      // boundaries is plain text
+  1557→    }
+  1558→
+  1559→    setFormData({
+  1560→      propertyNumber: item.propertyNumber || '',
+  1561→      wardId: item.wardId || '',
+  1562→      roadId: item.roadId || '',
+  1563→      citySurveyNo: item.citySurveyNo || '',
+  1564→      area: item.area ?? '',
+  1565→      builtUpArea: item.builtUpArea ?? '',
+  1566→      boundaries: item.boundaries || '',
+  1567→      constructionType: item.constructionType || '',
+  1568→      usageType: item.usageType || '',
+  1569→      floorInfo: item.floorInfo || '',
+  1570→      yearBuilt: item.yearBuilt || '',
+  1571→      propertyStatus: item.propertyStatus || 'Active',
+  1572→      waterConnectionId: item.waterConnectionId || '',
+  1573→      boundaryEast: item.boundaryEast || boundaryEast,
+  1574→      boundaryWest: item.boundaryWest || boundaryWest,
+  1575→      boundaryNorth: item.boundaryNorth || boundaryNorth,
+  1576→      boundarySouth: item.boundarySouth || boundarySouth,
+  1577→      lengthEast: (item as Record<string, unknown>).lengthEast ?? '',
+  1578→      widthEast: (item as Record<string, unknown>).widthEast ?? '',
+  1579→      lengthWest: (item as Record<string, unknown>).lengthWest ?? '',
+  1580→      widthWest: (item as Record<string, unknown>).widthWest ?? '',
+  1581→      lengthSouth: (item as Record<string, unknown>).lengthSouth ?? '',
+  1582→      widthSouth: (item as Record<string, unknown>).widthSouth ?? '',
+  1583→      lengthNorth: (item as Record<string, unknown>).lengthNorth ?? '',
+  1584→      widthNorth: (item as Record<string, unknown>).widthNorth ?? '',
+  1585→      totalLength: (item as Record<string, unknown>).totalLength ?? '',
+  1586→      totalWidth: (item as Record<string, unknown>).totalWidth ?? '',
+  1587→      depreciationRate: (item as Record<string, unknown>).depreciationRate ?? '',
+  1588→      usageFactor: (item as Record<string, unknown>).usageFactor ?? '1',
+  1589→      taxRate: (item as Record<string, unknown>).taxRate ?? '',
+  1590→      houseTax: (item as Record<string, unknown>).houseTax ?? '',
+  1591→      lightTax: (item as Record<string, unknown>).lightTax ?? '',
+  1592→      healthTax: (item as Record<string, unknown>).healthTax ?? '',
+  1593→      waterTax: (item as Record<string, unknown>).waterTax ?? '',
+  1594→    });
+  1595→    setSelectedOwners(
+  1596→      item.owners?.map((o) => ({ ownerId: o.ownerId, ownershipType: o.ownershipType })) || []
+  1597→    );
+  1598→    setSelectedTaxRates(
+  1599→      item.taxRates?.map((tr) => ({ taxMasterId: tr.taxMasterId, rate: tr.rate })) ||
+  1600→      taxMasters.map((t) => ({ taxMasterId: t.id, rate: t.rate }))
+  1601→    );
+  1602→    setDialogOpen(true);
+  1603→  };
+  1604→
+  1605→  const handleSave = async () => {
+  1606→    setSaving(true);
+  1607→    try {
+  1608→      const saveData: Record<string, unknown> = { ...formData };
+  1609→      if (editItem?.id) saveData.id = editItem.id;
+  1610→      // Convert numeric
+  1611→      if (saveData.area !== undefined && saveData.area !== '') saveData.area = parseFloat(String(saveData.area)) || null;
+  1612→      else saveData.area = null;
+  1613→      if (saveData.builtUpArea !== undefined && saveData.builtUpArea !== '') saveData.builtUpArea = parseFloat(String(saveData.builtUpArea)) || null;
+  1614→      else saveData.builtUpArea = null;
+  1615→      // Empty strings to null for foreign keys
+  1616→      if (!saveData.wardId) saveData.wardId = null;
+  1617→      if (!saveData.roadId) saveData.roadId = null;
+  1618→      if (!saveData.waterConnectionId) saveData.waterConnectionId = null;
+  1619→
+  1620→      // Combine boundary fields into JSON
+  1621→      const boundaryObj = {
+  1622→        east: saveData.boundaryEast || '',
+  1623→        west: saveData.boundaryWest || '',
+  1624→        north: saveData.boundaryNorth || '',
+  1625→        south: saveData.boundarySouth || '',
+  1626→      };
+  1627→      saveData.boundaries = JSON.stringify(boundaryObj);
+  1628→      delete saveData.boundaryEast;
+  1629→      delete saveData.boundaryWest;
+  1630→      delete saveData.boundaryNorth;
+  1631→      delete saveData.boundarySouth;
+  1632→
+  1633→      saveData.owners = selectedOwners;
+  1634→      saveData.taxRates = selectedTaxRates.filter((tr) => tr.rate > 0);
+  1635→
+  1636→      await (editItem?.id ? apiUpdate('property', saveData) : apiCreate('property', saveData));
+  1637→      toast({ title: 'यशस्वी', description: editItem?.id ? 'मालमत्ता अपडेट झाली' : 'नवीन मालमत्ता जोडली' });
+  1638→      setDialogOpen(false);
+  1639→      fetchProperty();
+  1640→    } catch (err: unknown) {
+  1641→      toast({ title: 'त्रुटी', description: err instanceof Error ? err.message : 'जतन अयशस्वी', variant: 'destructive' });
+  1642→    } finally {
+  1643→      setSaving(false);
+  1644→    }
+  1645→  };
+  1646→
+  1647→  const handleDelete = async (id: string) => {
+  1648→    if (!confirm('ही मालमत्ता हटवायची आहे का?')) return;
+  1649→    setDeleting(id);
+  1650→    try {
+  1651→      await apiDelete('property', id);
+  1652→      toast({ title: 'यशस्वी', description: 'मालमत्ता हटवली' });
+  1653→      fetchProperty();
+  1654→    } catch (err: unknown) {
+  1655→      toast({ title: 'त्रुटी', description: err instanceof Error ? err.message : 'हटवणे अयशस्वी', variant: 'destructive' });
+  1656→    } finally {
+  1657→      setDeleting(null);
+  1658→    }
+  1659→  };
+  1660→
+  1661→  const addOwnerRow = () => {
+  1662→    setSelectedOwners((prev) => [...prev, { ownerId: '', ownershipType: 'मालक' }]);
+  1663→  };
+  1664→
+  1665→  const removeOwnerRow = (idx: number) => {
+  1666→    setSelectedOwners((prev) => prev.filter((_, i) => i !== idx));
+  1667→  };
+  1668→
+  1669→  const updateOwnerRow = (idx: number, field: 'ownerId' | 'ownershipType', value: string) => {
+  1670→    setSelectedOwners((prev) => prev.map((o, i) => (i === idx ? { ...o, [field]: value } : o)));
+  1671→  };
+  1672→
+  1673→  const updateTaxRate = (taxMasterId: string, rate: number) => {
+  1674→    setSelectedTaxRates((prev) => {
+  1675→      const exists = prev.find((t) => t.taxMasterId === taxMasterId);
+  1676→      if (exists) return prev.map((t) => (t.taxMasterId === taxMasterId ? { ...t, rate } : t));
+  1677→      return [...prev, { taxMasterId, rate }];
+  1678→    });
+  1679→  };
+  1680→
+  1681→  return (
+  1682→    <Card className="overflow-hidden">
+  1683→      {/* Header */}
+  1684→      <div className={`bg-gradient-to-r ${c.header} p-4`}>
+  1685→        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+  1686→          <div className="flex items-center gap-3">
+  1687→            <div className={`${c.icon} p-2 rounded-lg text-white`}>
+  1688→              <Building2 className="h-5 w-5" />
+  1689→            </div>
+  1690→            <div>
+  1691→              <h3 className="text-lg font-bold text-white">मालमत्ता</h3>
+  1692→              <p className="text-xs text-white/70">मालक जोडणी, कर दर, सीमा माहिती</p>
+  1693→            </div>
+  1694→            <Badge className={`${c.badge} border-0 font-bold text-sm`}>{items.length}</Badge>
+  1695→          </div>
+  1696→          <div className="flex items-center gap-2">
+  1697→            <div className="relative">
+  1698→              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-white/60" />
+  1699→              <Input className="pl-9 w-48 bg-white/20 border-white/30 text-white placeholder:text-white/60 focus:bg-white/30" placeholder="शोधा..." value={search} onChange={(e) => setSearch(e.target.value)} />
+  1700→            </div>
+  1701→            <Button variant="outline" size="sm" onClick={fetchProperty} disabled={loading} className="bg-white/20 border-white/30 text-white hover:bg-white/30">
+  1702→              <RefreshCw className="h-4 w-4" />
+  1703→            </Button>
+  1704→            <Button size="sm" onClick={handleAdd} className={`bg-gradient-to-r ${c.header} text-white shadow-lg hover:opacity-90 border-0`}>
+  1705→              <Plus className="h-4 w-4 mr-1" /> नवीन
+  1706→            </Button>
+  1707→          </div>
+  1708→        </div>
+  1709→      </div>
+  1710→
+  1711→      <CardContent className={`${c.bg} p-4`}>
+  1712→        {loading ? (
+  1713→          <div className="text-center py-8 text-muted-foreground animate-pulse">लोड होत आहे...</div>
+  1714→        ) : items.length === 0 ? (
+  1715→          <div className="text-center py-8 text-muted-foreground">कोणतीही मालमत्ता नाही</div>
+  1716→        ) : (
+  1717→          <div className="max-h-96 overflow-y-auto border rounded-lg border-white/50 shadow-sm">
+  1718→            <Table>
+  1719→              <ColoredTableHeader colorKey="property">
+  1720→                <ColoredTableHead colorKey="property" className="w-12">क्र.</ColoredTableHead>
+  1721→                <ColoredTableHead colorKey="property">मालमत्ता क्र.</ColoredTableHead>
+  1722→                <ColoredTableHead colorKey="property">मालक</ColoredTableHead>
+  1723→                <ColoredTableHead colorKey="property">वार्ड</ColoredTableHead>
+  1724→                <ColoredTableHead colorKey="property">रस्ता</ColoredTableHead>
+  1725→                <ColoredTableHead colorKey="property">वापर</ColoredTableHead>
+  1726→                <ColoredTableHead colorKey="property">क्षेत्रफळ</ColoredTableHead>
+  1727→                <ColoredTableHead colorKey="property">स्थिती</ColoredTableHead>
+  1728→                <ColoredTableHead colorKey="property" className="w-24 text-right">क्रिया</ColoredTableHead>
+  1729→              </ColoredTableHeader>
+  1730→              <TableBody>
+  1731→                {items.map((item, idx) => (
+  1732→                  <TableRow key={item.id} className="hover:bg-white/60">
+  1733→                    <TableCell className="font-medium">{idx + 1}</TableCell>
+  1734→                    <TableCell className="font-medium">{item.propertyNumber}</TableCell>
+  1735→                    <TableCell>
+  1736→                      {item.owners?.map((o) => `${o.owner.firstNameMr || o.owner.firstName} ${o.owner.lastNameMr || o.owner.lastName}`).join(', ') || '-'}
+  1737→                    </TableCell>
+  1738→                    <TableCell>{item.ward?.wardNameMr || item.ward?.wardName || '-'}</TableCell>
+  1739→                    <TableCell>{item.road?.roadNameMr || item.road?.roadName || '-'}</TableCell>
+  1740→                    <TableCell>{item.usageType || '-'}</TableCell>
+  1741→                    <TableCell>{item.area ? `${item.area} चौ.मी.` : '-'}</TableCell>
+  1742→                    <TableCell>
+  1743→                      <Badge variant={item.propertyStatus === 'Active' ? 'default' : 'destructive'}>
+  1744→                        {item.propertyStatus === 'Active' ? 'सक्रिय' : item.propertyStatus}
+  1745→                      </Badge>
+  1746→                    </TableCell>
+  1747→                    <TableCell className="text-right">
+  1748→                      <div className="flex justify-end gap-1">
+  1749→                        <Button variant="ghost" size="sm" onClick={() => handleEdit(item)} className="hover:bg-white/60">
+  1750→                          <Pencil className="h-4 w-4" />
+  1751→                        </Button>
+  1752→                        <Button variant="ghost" size="sm" onClick={() => handleDelete(item.id)} disabled={deleting === item.id} className="hover:bg-white/60">
+  1753→                          {deleting === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 text-red-500" />}
+  1754→                        </Button>
+  1755→                      </div>
+  1756→                    </TableCell>
+  1757→                  </TableRow>
+  1758→                ))}
+  1759→              </TableBody>
+  1760→            </Table>
+  1761→          </div>
+  1762→        )}
+  1763→      </CardContent>
+  1764→
+  1765→      {/* Property Dialog */}
+  1766→      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+  1767→        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+  1768→          <DialogHeader>
+  1769→            <DialogTitle className={`flex items-center gap-2 ${c.text}`}>
+  1770→              <div className={`${c.icon} p-1.5 rounded text-white`}><Building2 className="h-4 w-4" /></div>
+  1771→              {editItem ? 'मालमत्ता संपादा' : 'नवीन मालमत्ता'}
+  1772→            </DialogTitle>
+  1773→          </DialogHeader>
+  1774→
+  1775→          <div className="space-y-6 py-4">
+  1776→            {/* Basic Property Info */}
+  1777→            <div>
+  1778→              <h4 className={`font-semibold mb-3 flex items-center gap-2 ${c.text}`}>
+  1779→                <div className={`${c.icon} p-1 rounded text-white`}><Home className="h-3.5 w-3.5" /></div>
+  1780→                मालमत्ता माहिती
+  1781→              </h4>
+  1782→              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  1783→                <div className="space-y-1">
+  1784→                  <Label className="text-sm">मालमत्ता क्रमांक <span className="text-red-500">*</span></Label>
+  1785→                  <Input value={String(formData.propertyNumber || '')} onChange={(e) => setFormData((p) => ({ ...p, propertyNumber: e.target.value }))} />
+  1786→                </div>
+  1787→                <div className="space-y-1">
+  1788→                  <Label className="text-sm">वार्ड</Label>
+  1789→                  <Select value={String(formData.wardId || '__none__')} onValueChange={(v) => setFormData((p) => ({ ...p, wardId: v === '__none__' ? '' : v }))}>
+  1790→                    <SelectTrigger><SelectValue placeholder="वार्ड निवडा" /></SelectTrigger>
+  1791→                    <SelectContent>
+  1792→                      <SelectItem value="__none__">कोणताही नाही</SelectItem>
+  1793→                      {wards.map((w) => (
+  1794→                        <SelectItem key={String(w.id)} value={String(w.id)}>
+  1795→                          {String(w.wardNumber)} - {String(w.wardNameMr || w.wardName)}
+  1796→                        </SelectItem>
+  1797→                      ))}
+  1798→                    </SelectContent>
+  1799→                  </Select>
+  1800→                </div>
+  1801→                <div className="space-y-1">
+  1802→                  <Label className="text-sm">रस्ता</Label>
+  1803→                  <Select value={String(formData.roadId || '__none__')} onValueChange={(v) => setFormData((p) => ({ ...p, roadId: v === '__none__' ? '' : v }))}>
+  1804→                    <SelectTrigger><SelectValue placeholder="रस्ता निवडा" /></SelectTrigger>
+  1805→                    <SelectContent>
+  1806→                      <SelectItem value="__none__">कोणताही नाही</SelectItem>
+  1807→                      {roads.map((r) => (
+  1808→                        <SelectItem key={String(r.id)} value={String(r.id)}>
+  1809→                          {String(r.roadNumber)} - {String(r.roadNameMr || r.roadName)}
+  1810→                        </SelectItem>
+  1811→                      ))}
+  1812→                    </SelectContent>
+  1813→                  </Select>
+  1814→                </div>
+  1815→                <div className="space-y-1">
+  1816→                  <Label className="text-sm">शहर सर्वेक्षण क्र.</Label>
+  1817→                  <Input value={String(formData.citySurveyNo || '')} onChange={(e) => setFormData((p) => ({ ...p, citySurveyNo: e.target.value }))} />
+  1818→                </div>
+  1819→                <div className="space-y-1">
+  1820→                  <Label className="text-sm">क्षेत्रफळ (चौ.मी.)</Label>
+  1821→                  <Input type="number" value={String(formData.area ?? '')} onChange={(e) => setFormData((p) => ({ ...p, area: e.target.value }))} />
+  1822→                </div>
+  1823→                <div className="space-y-1">
+  1824→                  <Label className="text-sm">बांधलेले क्षेत्रफळ (चौ.मी.)</Label>
+  1825→                  <Input type="number" value={String(formData.builtUpArea ?? '')} onChange={(e) => setFormData((p) => ({ ...p, builtUpArea: e.target.value }))} />
+  1826→                </div>
+  1827→                <div className="space-y-1">
+  1828→                  <Label className="text-sm">बांधकाम प्रकार</Label>
+  1829→                  <Select value={String(formData.constructionType || '__none__')} onValueChange={(v) => setFormData((p) => ({ ...p, constructionType: v === '__none__' ? '' : v }))}>
+  1830→                    <SelectTrigger><SelectValue placeholder="निवडा" /></SelectTrigger>
+  1831→                    <SelectContent>
+  1832→                      <SelectItem value="__none__">कोणताही नाही</SelectItem>
+  1833→                      <SelectItem value="झोपडी किंवा मातीचे घर">झोपडी किंवा मातीचे घर</SelectItem>
+  1834→                      <SelectItem value="दगड विटा/मातीचे बांधकाम">दगड विटा/मातीचे बांधकाम</SelectItem>
+  1835→                      <SelectItem value="दगड विट/सिमेंटचे बांधकाम">दगड विट/सिमेंटचे बांधकाम</SelectItem>
+  1836→                      <SelectItem value="आर.सि.सि. बांधकाम">आर.सि.सि. बांधकाम</SelectItem>
+  1837→                      <SelectItem value="पहिला मजला">पहिला मजला</SelectItem>
+  1838→                      <SelectItem value="जमीन/खुली जागा">जमीन/खुली जागा</SelectItem>
+  1839→                      <SelectItem value="पक्के">पक्के</SelectItem>
+  1840→                      <SelectItem value="अर्धपक्के">अर्धपक्के</SelectItem>
+  1841→                      <SelectItem value="कच्चे">कच्चे</SelectItem>
+  1842→                      <SelectItem value="इतर">इतर</SelectItem>
+  1843→                    </SelectContent>
+  1844→                  </Select>
+  1845→                </div>
+  1846→                <div className="space-y-1">
+  1847→                  <Label className="text-sm">वापर प्रकार</Label>
+  1848→                  <Select value={String(formData.usageType || '__none__')} onValueChange={(v) => setFormData((p) => ({ ...p, usageType: v === '__none__' ? '' : v }))}>
+  1849→                    <SelectTrigger><SelectValue placeholder="निवडा" /></SelectTrigger>
+  1850→                    <SelectContent>
+  1851→                      <SelectItem value="__none__">कोणताही नाही</SelectItem>
+  1852→                      <SelectItem value="राहणीमान">राहणीमान</SelectItem>
+  1853→                      <SelectItem value="व्यावसायिक">व्यावसायिक</SelectItem>
+  1854→                      <SelectItem value="औद्योगिक">औद्योगिक</SelectItem>
+  1855→                      <SelectItem value="शेती">शेती</SelectItem>
+  1856→                    </SelectContent>
+  1857→                  </Select>
+  1858→                </div>
+  1859→                <div className="space-y-1">
+  1860→                  <Label className="text-sm">मजला माहिती</Label>
+  1861→                  <Input value={String(formData.floorInfo || '')} onChange={(e) => setFormData((p) => ({ ...p, floorInfo: e.target.value }))} />
+  1862→                </div>
+  1863→                <div className="space-y-1">
+  1864→                  <Label className="text-sm">बांधणी वर्ष</Label>
+  1865→                  <Input value={String(formData.yearBuilt || '')} onChange={(e) => setFormData((p) => ({ ...p, yearBuilt: e.target.value }))} placeholder="उदा. 2020" />
+  1866→                </div>
+  1867→                <div className="space-y-1">
+  1868→                  <Label className="text-sm">स्थिती</Label>
+  1869→                  <Select value={String(formData.propertyStatus || 'Active')} onValueChange={(v) => setFormData((p) => ({ ...p, propertyStatus: v }))}>
+  1870→                    <SelectTrigger><SelectValue /></SelectTrigger>
+  1871→                    <SelectContent>
+  1872→                      <SelectItem value="Active">सक्रिय</SelectItem>
+  1873→                      <SelectItem value="Inactive">निष्क्रिय</SelectItem>
+  1874→                      <SelectItem value="Demolished">विध्वंस</SelectItem>
+  1875→                    </SelectContent>
+  1876→                  </Select>
+  1877→                </div>
+  1878→              </div>
+  1879→            </div>
+  1880→
+  1881→            <Separator />
+  1882→
+  1883→            {/* Boundaries (चतु:सीमा) */}
+  1884→            <div>
+  1885→              <h4 className={`font-semibold mb-3 flex items-center gap-2 ${c.text}`}>
+  1886→                <div className={`${c.icon} p-1 rounded text-white`}><Compass className="h-3.5 w-3.5" /></div>
+  1887→                चतु:सीमा (Boundaries) - नमुना ८
+  1888→              </h4>
+  1889→              <div className="space-y-4">
+  1890→                {[
+  1891→                  { dir: 'East', label: 'पूर्व', bKey: 'boundaryEast', lKey: 'lengthEast', wKey: 'widthEast' },
+  1892→                  { dir: 'West', label: 'पश्चिम', bKey: 'boundaryWest', lKey: 'lengthWest', wKey: 'widthWest' },
+  1893→                  { dir: 'South', label: 'दक्षिण', bKey: 'boundarySouth', lKey: 'lengthSouth', wKey: 'widthSouth' },
+  1894→                  { dir: 'North', label: 'उत्तर', bKey: 'boundaryNorth', lKey: 'lengthNorth', wKey: 'widthNorth' },
+  1895→                ].map((b) => (
+  1896→                  <div key={b.dir} className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-lg border bg-white/50">
+  1897→                    <div className="space-y-1">
+  1898→                      <Label className="text-sm font-semibold">{b.label} ({b.dir}) सीमा नाव</Label>
+  1899→                      <Input value={String(formData[b.bKey] || '')} onChange={(e) => setFormData((p) => ({ ...p, [b.bKey]: e.target.value }))} placeholder={`${b.label}ेकडील सीमा`} />
+  1900→                    </div>
+  1901→                    <div className="space-y-1">
+  1902→                      <Label className="text-sm">लांबी (मी./फूट)</Label>
+  1903→                      <Input type="number" value={String(formData[b.lKey] ?? '')} onChange={(e) => setFormData((p) => ({ ...p, [b.lKey]: e.target.value }))} placeholder="लांबी" />
+  1904→                    </div>
+  1905→                    <div className="space-y-1">
+  1906→                      <Label className="text-sm">रुंदी (मी./फूट)</Label>
+  1907→                      <Input type="number" value={String(formData[b.wKey] ?? '')} onChange={(e) => setFormData((p) => ({ ...p, [b.wKey]: e.target.value }))} placeholder="रुंदी" />
+  1908→                    </div>
+  1909→                  </div>
+  1910→                ))}
+  1911→              </div>
+  1912→            </div>
+  1913→
+  1914→            <Separator />
+  1915→
+  1916→            {/* Namuna 8 Tax Calculation Fields */}
+  1917→            <div>
+  1918→              <h4 className={`font-semibold mb-3 flex items-center gap-2 ${c.text}`}>
+  1919→                <div className={`${c.icon} p-1 rounded text-white`}><Calculator className="h-3.5 w-3.5" /></div>
+  1920→                नमुना ८ कर गणना (Tax Calculation)
+  1921→              </h4>
+  1922→              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  1923→                <div className="space-y-1">
+  1924→                  <Label className="text-sm">घसारा दर (Depreciation)</Label>
+  1925→                  <Input type="number" step="0.1" value={String(formData.depreciationRate ?? '')} onChange={(e) => setFormData((p) => ({ ...p, depreciationRate: e.target.value }))} placeholder="उदा. 0.7" />
+  1926→                </div>
+  1927→                <div className="space-y-1">
+  1928→                  <Label className="text-sm">वापरानुसार भारांक (Usage Factor)</Label>
+  1929→                  <Input type="number" step="0.1" value={String(formData.usageFactor ?? '1')} onChange={(e) => setFormData((p) => ({ ...p, usageFactor: e.target.value }))} placeholder="उदा. 1.0" />
+  1930→                </div>
+  1931→                <div className="space-y-1">
+  1932→                  <Label className="text-sm">कर दर % (Tax Rate)</Label>
+  1933→                  <Input type="number" step="0.1" value={String(formData.taxRate ?? '')} onChange={(e) => setFormData((p) => ({ ...p, taxRate: e.target.value }))} placeholder="उदा. 1.2" />
+  1934→                </div>
+  1935→              </div>
+  1936→              <div className="mt-4 p-3 rounded-lg border bg-gradient-to-r from-amber-50 to-orange-50">
+  1937→                <p className="text-xs font-semibold text-amber-800 mb-2">कर रक्कम (Tax Amounts in ₹)</p>
+  1938→                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+  1939→                  <div className="space-y-1">
+  1940→                    <Label className="text-xs">घरपट्टी (House Tax)</Label>
+  1941→                    <Input type="number" value={String(formData.houseTax ?? '')} onChange={(e) => setFormData((p) => ({ ...p, houseTax: e.target.value }))} placeholder="₹" />
+  1942→                  </div>
+  1943→                  <div className="space-y-1">
+  1944→                    <Label className="text-xs">दिवाबत्ती कर (Light Tax)</Label>
+  1945→                    <Input type="number" value={String(formData.lightTax ?? '')} onChange={(e) => setFormData((p) => ({ ...p, lightTax: e.target.value }))} placeholder="₹" />
+  1946→                  </div>
+  1947→                  <div className="space-y-1">
+  1948→                    <Label className="text-xs">आरोग्यरक्षण कर (Health Tax)</Label>
+  1949→                    <Input type="number" value={String(formData.healthTax ?? '')} onChange={(e) => setFormData((p) => ({ ...p, healthTax: e.target.value }))} placeholder="₹" />
+  1950→                  </div>
+  1951→                  <div className="space-y-1">
+  1952→                    <Label className="text-xs">सा. पाणीपट्टी (Water Tax)</Label>
+  1953→                    <Input type="number" value={String(formData.waterTax ?? '')} onChange={(e) => setFormData((p) => ({ ...p, waterTax: e.target.value }))} placeholder="₹" />
+  1954→                  </div>
+  1955→                </div>
+  1956→              </div>
+  1957→            </div>
+  1958→
+  1959→            <Separator />
+  1960→
+  1961→            {/* Owner Selection */}
+  1962→            <div>
+  1963→              <div className="flex items-center justify-between mb-3">
+  1964→                <h4 className={`font-semibold flex items-center gap-2 ${c.text}`}>
+  1965→                  <div className={`${c.icon} p-1 rounded text-white`}><User className="h-3.5 w-3.5" /></div>
+  1966→                  मालक माहिती
+  1967→                </h4>
+  1968→                <Button variant="outline" size="sm" onClick={addOwnerRow} className={`${c.text} border-current`}>
+  1969→                  <Plus className="h-4 w-4 mr-1" /> मालक जोडा
+  1970→                </Button>
+  1971→              </div>
+  1972→              {selectedOwners.length === 0 ? (
+  1973→                <div className="text-center text-muted-foreground py-4 border rounded-lg border-dashed">
+  1974→                  कोणताही मालक जोडलेला नाही. &quot;मालक जोडा&quot; बटण क्लिक करा.
+  1975→                </div>
+  1976→              ) : (
+  1977→                <div className="space-y-3">
+  1978→                  {selectedOwners.map((o, idx) => (
+  1979→                    <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-end gap-3 p-3 border rounded-lg bg-white/50">
+  1980→                      <div className="space-y-1 flex-1 w-full sm:w-auto">
+  1981→                        <Label className="text-sm">मालक</Label>
+  1982→                        <Select value={o.ownerId} onValueChange={(v) => updateOwnerRow(idx, 'ownerId', v)}>
+  1983→                          <SelectTrigger><SelectValue placeholder="मालक निवडा" /></SelectTrigger>
+  1984→                          <SelectContent>
+  1985→                            {owners.map((ow) => (
+  1986→                              <SelectItem key={String(ow.id)} value={String(ow.id)}>
+  1987→                                {String(ow.ownerNumber)} - {String(ow.firstNameMr || ow.firstName)} {String(ow.lastNameMr || ow.lastName)}
+  1988→                              </SelectItem>
+  1989→                            ))}
+  1990→                          </SelectContent>
+  1991→                        </Select>
+  1992→                      </div>
+  1993→                      <div className="space-y-1 w-full sm:w-40">
+  1994→                        <Label className="text-sm">मालकी प्रकार</Label>
+  1995→                        <Select value={o.ownershipType} onValueChange={(v) => updateOwnerRow(idx, 'ownershipType', v)}>
+  1996→                          <SelectTrigger><SelectValue /></SelectTrigger>
+  1997→                          <SelectContent>
+  1998→                            <SelectItem value="मालक">मालक</SelectItem>
+  1999→                            <SelectItem value="भोगवटादार">भोगवटादार</SelectItem>
+  2000→                            <SelectItem value="कर्ता">कर्ता</SelectItem>
+
+[showing lines 1-2000 of 2898; use offset=2001 with limit to continue reading]

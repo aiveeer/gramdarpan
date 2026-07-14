@@ -1,0 +1,917 @@
+     1→     1→'use client';
+     2→     2→
+     3→     3→import React, { useState, useEffect, useCallback } from 'react';
+     4→     4→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+     5→     5→import { Badge } from '@/components/ui/badge';
+     6→     6→import { Button } from '@/components/ui/button';
+     7→     7→import { Input } from '@/components/ui/input';
+     8→     8→import { Label } from '@/components/ui/label';
+     9→     9→import { Textarea } from '@/components/ui/textarea';
+    10→    10→import {
+    11→    11→  Select,
+    12→    12→  SelectContent,
+    13→    13→  SelectItem,
+    14→    14→  SelectTrigger,
+    15→    15→  SelectValue,
+    16→    16→} from '@/components/ui/select';
+    17→    17→import {
+    18→    18→  Table,
+    19→    19→  TableBody,
+    20→    20→  TableCell,
+    21→    21→  TableHead,
+    22→    22→  TableHeader,
+    23→    23→  TableRow,
+    24→    24→} from '@/components/ui/table';
+    25→    25→import {
+    26→    26→  Dialog,
+    27→    27→  DialogContent,
+    28→    28→  DialogHeader,
+    29→    29→  DialogTitle,
+    30→    30→  DialogFooter,
+    31→    31→} from '@/components/ui/dialog';
+    32→    32→import { Skeleton } from '@/components/ui/skeleton';
+    33→    33→import {
+    34→    34→  Receipt,
+    35→    35→  CreditCard,
+    36→    36→  NotebookPen,
+    37→    37→  Warehouse,
+    38→    38→  Package,
+    39→    39→  HandCoins,
+    40→    40→  Droplets,
+    41→    41→  Banknote,
+    42→    42→  ClipboardList,
+    43→    43→  HardHat,
+    44→    44→  IndianRupee,
+    45→    45→  Plus,
+    46→    46→  Search,
+    47→    47→  Trash2,
+    48→    48→  Edit3,
+    49→    49→  CheckCircle2,
+    50→    50→  X,
+    51→    51→  Calculator,
+    52→    52→} from 'lucide-react';
+    53→    53→
+    54→    54→// ─── Tab Configuration ────────────────────────────────────────────────
+    55→    55→
+    56→    56→interface TabConfig {
+    57→    57→  id: string;
+    58→    58→  label: string;
+    59→    59→  labelEn: string;
+    60→    60→  icon: React.ElementType;
+    61→    61→  color: string;
+    62→    62→  bgColor: string;
+    63→    63→  borderColor: string;
+    64→    64→  gradientFrom: string;
+    65→    65→  gradientTo: string;
+    66→    66→}
+    67→    67→
+    68→    68→const TABS: TabConfig[] = [
+    69→    69→  { id: 'receipt', label: 'पावती एंट्री', labelEn: 'Receipt Entry', icon: Receipt, color: '#27ae60', bgColor: 'bg-green-50', borderColor: 'border-green-200', gradientFrom: '#27ae60', gradientTo: '#2ecc71' },
+    70→    70→  { id: 'payment', label: 'पेमेंट एंट्री', labelEn: 'Payment Entry', icon: CreditCard, color: '#e74c3c', bgColor: 'bg-red-50', borderColor: 'border-red-200', gradientFrom: '#e74c3c', gradientTo: '#c0392b' },
+    71→    71→  { id: 'journal', label: 'जर्नल एंट्री', labelEn: 'Journal Entry', icon: NotebookPen, color: '#8e44ad', bgColor: 'bg-purple-50', borderColor: 'border-purple-200', gradientFrom: '#8e44ad', gradientTo: '#9b59b6' },
+    72→    72→  { id: 'asset', label: 'मालमत्ता एंट्री', labelEn: 'Asset Entry', icon: Warehouse, color: '#ea580c', bgColor: 'bg-orange-50', borderColor: 'border-orange-200', gradientFrom: '#ea580c', gradientTo: '#f97316' },
+    73→    73→  { id: 'stock', label: 'साठा एंट्री', labelEn: 'Stock Entry', icon: Package, color: '#6366f1', bgColor: 'bg-indigo-50', borderColor: 'border-indigo-200', gradientFrom: '#6366f1', gradientTo: '#818cf8' },
+    74→    74→  { id: 'collection', label: 'वसूल एंट्री', labelEn: 'Collection Entry', icon: HandCoins, color: '#0d9488', bgColor: 'bg-teal-50', borderColor: 'border-teal-200', gradientFrom: '#0d9488', gradientTo: '#14b8a6' },
+    75→    75→  { id: 'water-bill', label: 'पाणी बिल', labelEn: 'Water Bill', icon: Droplets, color: '#0ea5e9', bgColor: 'bg-sky-50', borderColor: 'border-sky-200', gradientFrom: '#0ea5e9', gradientTo: '#38bdf8' },
+    76→    76→  { id: 'scheme-fund', label: 'योजना निधी', labelEn: 'Scheme Fund', icon: Banknote, color: '#e11d48', bgColor: 'bg-rose-50', borderColor: 'border-rose-200', gradientFrom: '#e11d48', gradientTo: '#f43f5e' },
+    77→    77→  { id: 'budget', label: 'अंदाजपत्रक एंट्री', labelEn: 'Budget Entry', icon: ClipboardList, color: '#0891b2', bgColor: 'bg-cyan-50', borderColor: 'border-cyan-200', gradientFrom: '#0891b2', gradientTo: '#06b6d4' },
+    78→    78→  { id: 'work', label: 'विकासकाम एंट्री', labelEn: 'Work Entry', icon: HardHat, color: '#65a30d', bgColor: 'bg-lime-50', borderColor: 'border-lime-200', gradientFrom: '#65a30d', gradientTo: '#84cc16' },
+    79→    79→  { id: 'salary', label: 'वेतन एंट्री', labelEn: 'Salary Entry', icon: IndianRupee, color: '#059669', bgColor: 'bg-emerald-50', borderColor: 'border-emerald-200', gradientFrom: '#059669', gradientTo: '#10b981' },
+    80→    80→];
+    81→    81→
+    82→    82→// ─── Form Field Types ─────────────────────────────────────────────────
+    83→    83→
+    84→    84→interface FormField {
+    85→    85→  name: string;
+    86→    86→  label: string;
+    87→    87→  type: 'text' | 'number' | 'date' | 'textarea' | 'select' | 'employee-select' | 'contractor-select';
+    88→    88→  required?: boolean;
+    89→    89→  options?: string[];
+    90→    90→  readOnly?: boolean;
+    91→    91→  sectionHeader?: string;
+    92→    92→  sectionColor?: string;
+    93→    93→}
+    94→    94→
+    95→    95→// ─── Main Component ───────────────────────────────────────────────────
+    96→    96→
+    97→    97→interface DailyTransactionsProps {
+    98→    98→  initialTab?: string;
+    99→    99→}
+   100→   100→
+   101→   101→export default function DailyTransactions({ initialTab }: DailyTransactionsProps) {
+   102→   102→  const [activeTab, setActiveTab] = useState(initialTab || 'receipt');
+   103→   103→  const [entries, setEntries] = useState<Record<string, unknown[]>>({});
+   104→   104→  const [loading, setLoading] = useState(false);
+   105→   105→  const [searchTerm, setSearchTerm] = useState('');
+   106→   106→  const [showForm, setShowForm] = useState(false);
+   107→   107→  const [editingId, setEditingId] = useState<string | null>(null);
+   108→   108→  const [formData, setFormData] = useState<Record<string, unknown>>({});
+   109→   109→  const [properties, setProperties] = useState<Array<{ id: string; propertyNumber: string }>>([]);
+   110→   110→  const [schemes, setSchemes] = useState<Array<{ id: string; schemeName: string; schemeNameMr: string }>>([]);
+   111→   111→  const [employees, setEmployees] = useState<Array<{ id: string; employeeId: string; firstName: string; lastName: string; firstNameMr?: string; lastNameMr?: string; designation?: string }>>([]);
+   112→   112→  const [contractors, setContractors] = useState<Array<{ id: string; contractorId: string; firstName: string; lastName: string; firmName?: string }>>([]);
+   113→   113→
+   114→   114→  const currentTab = TABS.find(t => t.id === activeTab) || TABS[0];
+   115→   115→
+   116→   116→  // Fetch entries for active tab
+   117→   117→  useEffect(() => {
+   118→   118→    const controller = new AbortController();
+   119→   119→    const load = async () => {
+   120→   120→      try {
+   121→   121→        const res = await fetch(`/api/transactions?type=${activeTab}`, { signal: controller.signal });
+   122→   122→        if (res.ok) {
+   123→   123→          const data = await res.json();
+   124→   124→          const result = Array.isArray(data) ? data : (data as Record<string, unknown>)?.data || [];
+   125→   125→          setEntries(prev => ({ ...prev, [activeTab]: result as unknown[] }));
+   126→   126→        }
+   127→   127→      } catch { /* ignore */ }
+   128→   128→      setLoading(false);
+   129→   129→    };
+   130→   130→    void load();
+   131→   131→    setLoading(true); // eslint-disable-line react-hooks/set-state-in-effect
+   132→   132→    return () => controller.abort();
+   133→   133→  }, [activeTab]);
+   134→   134→
+   135→   135→  // Fetch properties, schemes, employees, contractors for dropdowns
+   136→   136→  useEffect(() => {
+   137→   137→    const fetchMasters = async () => {
+   138→   138→      try {
+   139→   139→        const propRes = await fetch('/api/master?table=property');
+   140→   140→        if (propRes.ok) {
+   141→   141→          const propData = await propRes.json();
+   142→   142→          setProperties((propData.data || []).map((p: { id: string; propertyNumber: string }) => ({ id: p.id, propertyNumber: p.propertyNumber })));
+   143→   143→        }
+   144→   144→      } catch { /* ignore */ }
+   145→   145→      try {
+   146→   146→        const schRes = await fetch('/api/master?table=schemeInfo');
+   147→   147→        if (schRes.ok) {
+   148→   148→          const schData = await schRes.json();
+   149→   149→          setSchemes((Array.isArray(schData) ? schData : []).map((s: { id: string; schemeName: string; schemeNameMr: string }) => ({ id: s.id, schemeName: s.schemeName, schemeNameMr: s.schemeNameMr })));
+   150→   150→        }
+   151→   151→      } catch { /* ignore */ }
+   152→   152→      try {
+   153→   153→        const empRes = await fetch('/api/master?table=employee');
+   154→   154→        if (empRes.ok) {
+   155→   155→          const empData = await empRes.json();
+   156→   156→          setEmployees((Array.isArray(empData) ? empData : []).map((e: { id: string; employeeId: string; firstName: string; lastName: string; firstNameMr?: string; lastNameMr?: string; designation?: string }) => ({
+   157→   157→            id: e.id, employeeId: e.employeeId, firstName: e.firstName, lastName: e.lastName,
+   158→   158→            firstNameMr: e.firstNameMr, lastNameMr: e.lastNameMr, designation: e.designation,
+   159→   159→          })));
+   160→   160→        }
+   161→   161→      } catch { /* ignore */ }
+   162→   162→      try {
+   163→   163→        const conRes = await fetch('/api/master?table=contractor');
+   164→   164→        if (conRes.ok) {
+   165→   165→          const conData = await conRes.json();
+   166→   166→          setContractors((Array.isArray(conData) ? conData : []).map((c: { id: string; contractorId: string; firstName: string; lastName: string; firmName?: string }) => ({
+   167→   167→            id: c.id, contractorId: c.contractorId, firstName: c.firstName, lastName: c.lastName, firmName: c.firmName,
+   168→   168→          })));
+   169→   169→        }
+   170→   170→      } catch { /* ignore */ }
+   171→   171→    };
+   172→   172→    fetchMasters();
+   173→   173→  }, []);
+   174→   174→
+   175→   175→  // Reset form state when tab changes
+   176→   176→  const handleTabChange = (tabId: string) => {
+   177→   177→    setActiveTab(tabId);
+   178→   178→    setShowForm(false);
+   179→   179→    setEditingId(null);
+   180→   180→    setFormData({});
+   181→   181→    setSearchTerm('');
+   182→   182→  };
+   183→   183→
+   184→   184→  // Salary auto-calculation handler
+   185→   185→  const handleSalaryFieldChange = useCallback((name: string, value: number) => {
+   186→   186→    setFormData(prev => {
+   187→   187→      const newData = { ...prev, [name]: value };
+   188→   188→      const bp = Number(newData.basicPay) || 0;
+   189→   189→      const da = Number(newData.da) || 0;
+   190→   190→      const hra = Number(newData.hra) || 0;
+   191→   191→      const ta = Number(newData.ta) || 0;
+   192→   192→      const ma = Number(newData.ma) || 0;
+   193→   193→      const oa = Number(newData.otherAllowance) || 0;
+   194→   194→      const pf = Number(newData.pf) || 0;
+   195→   195→      const esi = Number(newData.esi) || 0;
+   196→   196→      const tds = Number(newData.tds) || 0;
+   197→   197→      const pt = Number(newData.professionalTax) || 0;
+   198→   198→      const od = Number(newData.otherDeduction) || 0;
+   199→   199→
+   200→   200→      const grossSalary = bp + da + hra + ta + ma + oa;
+   201→   201→      const totalDeduction = pf + esi + tds + pt + od;
+   202→   202→      const netSalary = grossSalary - totalDeduction;
+   203→   203→
+   204→   204→      return { ...newData, grossSalary, totalDeduction, netSalary };
+   205→   205→    });
+   206→   206→  }, []);
+   207→   207→
+   208→   208→  // Form field configurations per tab
+   209→   209→  const getFormFields = (): FormField[] => {
+   210→   210→    switch (activeTab) {
+   211→   211→      case 'receipt':
+   212→   212→        return [
+   213→   213→          { name: 'receiptDate', label: 'पावती तारीख / Date', type: 'date', required: true },
+   214→   214→          { name: 'receivedFrom', label: 'कोणाकडून मिळाले / Received From', type: 'text', required: true },
+   215→   215→          { name: 'amount', label: 'रक्कम / Amount', type: 'number', required: true },
+   216→   216→          { name: 'headOfAccount', label: 'लेखाशिर्ष / Head of Account', type: 'text' },
+   217→   217→          { name: 'description', label: 'वर्णन / Description', type: 'textarea' },
+   218→   218→          { name: 'paymentMethod', label: 'पेमेंट पद्धत / Payment Method', type: 'select', options: ['Cash', 'Bank'] },
+   219→   219→          { name: 'financialYear', label: 'वित्तीय वर्ष / Financial Year', type: 'select', options: ['2024-25', '2023-24', '2025-26'] },
+   220→   220→        ];
+   221→   221→      case 'payment':
+   222→   222→        return [
+   223→   223→          { name: 'paymentDate', label: 'पेमेंट तारीख / Date', type: 'date', required: true },
+   224→   224→          { name: 'paidTo', label: 'कोणाला दिले / Paid To', type: 'text', required: true },
+   225→   225→          { name: 'amount', label: 'रक्कम / Amount', type: 'number', required: true },
+   226→   226→          { name: 'headOfAccount', label: 'लेखाशिर्ष / Head of Account', type: 'text' },
+   227→   227→          { name: 'description', label: 'वर्णन / Description', type: 'textarea' },
+   228→   228→          { name: 'paymentMethod', label: 'पेमेंट पद्धत / Payment Method', type: 'select', options: ['Cash', 'Bank', 'Cheque', 'DD'] },
+   229→   229→          { name: 'financialYear', label: 'वित्तीय वर्ष / Financial Year', type: 'select', options: ['2024-25', '2023-24', '2025-26'] },
+   230→   230→        ];
+   231→   231→      case 'journal':
+   232→   232→        return [
+   233→   233→          { name: 'entryDate', label: 'तारीख / Date', type: 'date', required: true },
+   234→   234→          { name: 'debitAccount', label: 'डेबिट खाते / Debit Account', type: 'text', required: true },
+   235→   235→          { name: 'creditAccount', label: 'क्रेडिट खाते / Credit Account', type: 'text', required: true },
+   236→   236→          { name: 'amount', label: 'रक्कम / Amount', type: 'number', required: true },
+   237→   237→          { name: 'description', label: 'वर्णन / Description', type: 'textarea' },
+   238→   238→          { name: 'financialYear', label: 'वित्तीय वर्ष / Financial Year', type: 'select', options: ['2024-25', '2023-24', '2025-26'] },
+   239→   239→        ];
+   240→   240→      case 'asset':
+   241→   241→        return [
+   242→   242→          { name: 'assetName', label: 'मालमत्ता नाव / Asset Name', type: 'text', required: true },
+   243→   243→          { name: 'assetNameMr', label: 'मालमत्ता नाव (मराठी)', type: 'text', required: true },
+   244→   244→          { name: 'assetType', label: 'मालमत्ता प्रकार / Asset Type', type: 'select', options: ['Building', 'Vehicle', 'Equipment', 'Furniture', 'Land', 'Other'] },
+   245→   245→          { name: 'purchaseDate', label: 'खरेदी तारीख / Purchase Date', type: 'date' },
+   246→   246→          { name: 'purchaseCost', label: 'खरेदी किंमत / Purchase Cost', type: 'number' },
+   247→   247→          { name: 'currentValue', label: 'सध्याची किंमत / Current Value', type: 'number' },
+   248→   248→          { name: 'depreciationRate', label: 'घसरण दर / Depreciation Rate %', type: 'number' },
+   249→   249→          { name: 'location', label: 'ठिकाण / Location', type: 'text' },
+   250→   250→          { name: 'status', label: 'स्थिती / Status', type: 'select', options: ['Active', 'Disposed', 'Under Maintenance'] },
+   251→   251→        ];
+   252→   252→      case 'stock':
+   253→   253→        return [
+   254→   254→          { name: 'itemName', label: 'वस्तूचे नाव / Item Name', type: 'text', required: true },
+   255→   255→          { name: 'itemNameMr', label: 'वस्तूचे नाव (मराठी)', type: 'text', required: true },
+   256→   256→          { name: 'category', label: 'वर्ग / Category', type: 'text' },
+   257→   257→          { name: 'quantity', label: 'संख्या / Quantity', type: 'number', required: true },
+   258→   258→          { name: 'unit', label: 'एकक / Unit', type: 'select', options: ['Pieces', 'Kg', 'Liter', 'Meter', 'Box', 'Set'] },
+   259→   259→          { name: 'unitPrice', label: 'एकक किंमत / Unit Price', type: 'number' },
+   260→   260→          { name: 'status', label: 'स्थिती / Status', type: 'select', options: ['In Stock', 'Issued', 'Low Stock'] },
+   261→   261→        ];
+   262→   262→      case 'collection':
+   263→   263→        return [
+   264→   264→          { name: 'collectionDate', label: 'वसूल तारीख / Date', type: 'date', required: true },
+   265→   265→          { name: 'amount', label: 'रक्कम / Amount', type: 'number', required: true },
+   266→   266→          { name: 'collectionType', label: 'वसूल प्रकार / Collection Type', type: 'select', options: ['Tax', 'Water', 'Light', 'Health', 'Other'] },
+   267→   267→          { name: 'paymentMethod', label: 'पेमेंट पद्धत / Payment Method', type: 'select', options: ['Cash', 'Bank', 'Cheque', 'Online'] },
+   268→   268→          { name: 'financialYear', label: 'वित्तीय वर्ष / Financial Year', type: 'select', options: ['2024-25', '2023-24', '2025-26'] },
+   269→   269→          { name: 'description', label: 'वर्णन / Description', type: 'textarea' },
+   270→   270→        ];
+   271→   271→      case 'water-bill':
+   272→   272→        return [
+   273→   273→          { name: 'billNumber', label: 'बिल क्रमांक / Bill Number', type: 'text', required: true },
+   274→   274→          { name: 'billDate', label: 'बिल तारीख / Bill Date', type: 'date', required: true },
+   275→   275→          { name: 'amount', label: 'रक्कम / Amount', type: 'number', required: true },
+   276→   276→          { name: 'penalty', label: 'दंड / Penalty', type: 'number' },
+   277→   277→          { name: 'financialYear', label: 'वित्तीय वर्ष / Financial Year', type: 'select', options: ['2024-25', '2023-24', '2025-26'] },
+   278→   278→        ];
+   279→   279→      case 'scheme-fund':
+   280→   280→        return [
+   281→   281→          { name: 'entryDate', label: 'तारीख / Date', type: 'date', required: true },
+   282→   282→          { name: 'amount', label: 'रक्कम / Amount', type: 'number', required: true },
+   283→   283→          { name: 'entryType', label: 'एंट्री प्रकार / Entry Type', type: 'select', options: ['Receipt', 'Payment'] },
+   284→   284→          { name: 'description', label: 'वर्णन / Description', type: 'textarea' },
+   285→   285→          { name: 'financialYear', label: 'वित्तीय वर्ष / Financial Year', type: 'select', options: ['2024-25', '2023-24', '2025-26'] },
+   286→   286→        ];
+   287→   287→      case 'budget':
+   288→   288→        return [
+   289→   289→          { name: 'financialYear', label: 'वित्तीय वर्ष / Financial Year', type: 'select', options: ['2024-25', '2023-24', '2025-26'], required: true },
+   290→   290→          { name: 'budgetHeadCode', label: 'अंदाज शिर्ष कोड / Budget Head Code', type: 'text', required: true },
+   291→   291→          { name: 'budgetHeadName', label: 'अंदाज शिर्ष नाव / Budget Head Name', type: 'text' },
+   292→   292→          { name: 'budgetHeadNameMr', label: 'अंदाज शिर्ष नाव (मराठी)', type: 'text' },
+   293→   293→          { name: 'category', label: 'वर्ग / Category', type: 'select', options: ['income', 'expenditure'] },
+   294→   294→          { name: 'type', label: 'प्रकार / Type', type: 'select', options: ['revenue', 'capital'] },
+   295→   295→          { name: 'originalBudget', label: 'मूळ अंदाज / Original Budget', type: 'number', required: true },
+   296→   296→          { name: 'revisedBudget', label: 'दुरुस्ती अंदाज / Revised Budget', type: 'number' },
+   297→   297→          { name: 'description', label: 'वर्णन / Description', type: 'textarea' },
+   298→   298→        ];
+   299→   299→      case 'work':
+   300→   300→        return [
+   301→   301→          { name: 'workNumber', label: 'काम क्रमांक / Work Number', type: 'text', required: true },
+   302→   302→          { name: 'workName', label: 'कामाचे नाव / Work Name', type: 'text', required: true },
+   303→   303→          { name: 'workNameMr', label: 'कामाचे नाव (मराठी)', type: 'text' },
+   304→   304→          { name: 'workType', label: 'कामाचा प्रकार / Work Type', type: 'select', options: ['New', 'Repair', 'Maintenance'] },
+   305→   305→          { name: 'contractorId', label: 'कंत्राटदार / Contractor', type: 'contractor-select' },
+   306→   306→          { name: 'sanctionDate', label: 'मंजुरी तारीख / Sanction Date', type: 'date' },
+   307→   307→          { name: 'sanctionAmount', label: 'मंजुरी रक्कम / Sanction Amount', type: 'number', required: true },
+   308→   308→          { name: 'workOrderDate', label: 'कामाचा आदेश तारीख / Work Order Date', type: 'date' },
+   309→   309→          { name: 'completionDate', label: 'पूर्णता तारीख / Completion Date', type: 'date' },
+   310→   310→          { name: 'progressPercent', label: 'प्रगती % / Progress %', type: 'number' },
+   311→   311→          { name: 'totalExpenditure', label: 'एकूण खर्च / Total Expenditure', type: 'number' },
+   312→   312→          { name: 'status', label: 'स्थिती / Status', type: 'select', options: ['Sanctioned', 'InProgress', 'Completed', 'Billed'] },
+   313→   313→          { name: 'financialYear', label: 'वित्तीय वर्ष / Financial Year', type: 'select', options: ['2024-25', '2023-24', '2025-26'] },
+   314→   314→          { name: 'description', label: 'वर्णन / Description', type: 'textarea' },
+   315→   315→        ];
+   316→   316→      case 'salary':
+   317→   317→        return [
+   318→   318→          { name: 'employeeId', label: 'कर्मचारी / Employee', type: 'employee-select', required: true, sectionHeader: 'कर्मचारी माहिती', sectionColor: '#059669' },
+   319→   319→          { name: 'financialYear', label: 'वित्तीय वर्ष / Financial Year', type: 'select', options: ['2024-25', '2023-24', '2025-26'] },
+   320→   320→          { name: 'month', label: 'महिना / Month', type: 'select', options: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] },
+   321→   321→          { name: 'basicPay', label: 'मूल वेतन / Basic Pay', type: 'number', required: true, sectionHeader: 'मिळकत / Earnings', sectionColor: '#059669' },
+   322→   322→          { name: 'da', label: 'महागाई भत्ता / DA', type: 'number' },
+   323→   323→          { name: 'hra', label: 'घरभाडा भत्ता / HRA', type: 'number' },
+   324→   324→          { name: 'ta', label: 'प्रवास भत्ता / TA', type: 'number' },
+   325→   325→          { name: 'ma', label: 'वैद्यक भत्ता / MA', type: 'number' },
+   326→   326→          { name: 'otherAllowance', label: 'इतर भत्ता / Other Allowance', type: 'number' },
+   327→   327→          { name: 'grossSalary', label: 'सकल वेतन / Gross Salary', type: 'number', readOnly: true },
+   328→   328→          { name: 'pf', label: 'भविष्यनिर्वाह निधी / PF', type: 'number', sectionHeader: 'कपात / Deductions', sectionColor: '#dc2626' },
+   329→   329→          { name: 'esi', label: 'ESI', type: 'number' },
+   330→   330→          { name: 'tds', label: 'TDS', type: 'number' },
+   331→   331→          { name: 'professionalTax', label: 'व्यावसायिक कर / Professional Tax', type: 'number' },
+   332→   332→          { name: 'otherDeduction', label: 'इतर कपात / Other Deduction', type: 'number' },
+   333→   333→          { name: 'totalDeduction', label: 'एकूण कपात / Total Deduction', type: 'number', readOnly: true },
+   334→   334→          { name: 'netSalary', label: 'निव्वळ वेतन / Net Salary', type: 'number', readOnly: true, sectionHeader: 'निव्वळ / Net', sectionColor: '#059669' },
+   335→   335→          { name: 'paymentDate', label: 'पेमेंट तारीख / Payment Date', type: 'date', sectionHeader: 'पेमेंट माहिती', sectionColor: '#0891b2' },
+   336→   336→          { name: 'paymentMethod', label: 'पेमेंट पद्धत / Payment Method', type: 'select', options: ['Cash', 'Bank', 'Cheque'] },
+   337→   337→          { name: 'status', label: 'स्थिती / Status', type: 'select', options: ['Pending', 'Paid'] },
+   338→   338→        ];
+   339→   339→      default:
+   340→   340→        return [];
+   341→   341→    }
+   342→   342→  };
+   343→   343→
+   344→   344→  // Table columns per tab
+   345→   345→  const getTableColumns = () => {
+   346→   346→    switch (activeTab) {
+   347→   347→      case 'receipt':
+   348→   348→        return [
+   349→   349→          { key: 'voucherNumber', label: 'वाउचर क्र.' },
+   350→   350→          { key: 'receiptDate', label: 'तारीख' },
+   351→   351→          { key: 'receivedFrom', label: 'कोणाकडून' },
+   352→   352→          { key: 'amount', label: 'रक्कम', isAmount: true },
+   353→   353→          { key: 'headOfAccount', label: 'लेखाशिर्ष' },
+   354→   354→          { key: 'paymentMethod', label: 'पद्धत' },
+   355→   355→        ];
+   356→   356→      case 'payment':
+   357→   357→        return [
+   358→   358→          { key: 'voucherNumber', label: 'वाउचर क्र.' },
+   359→   359→          { key: 'paymentDate', label: 'तारीख' },
+   360→   360→          { key: 'paidTo', label: 'कोणाला' },
+   361→   361→          { key: 'amount', label: 'रक्कम', isAmount: true },
+   362→   362→          { key: 'headOfAccount', label: 'लेखाशिर्ष' },
+   363→   363→          { key: 'paymentMethod', label: 'पद्धत' },
+   364→   364→        ];
+   365→   365→      case 'journal':
+   366→   366→        return [
+   367→   367→          { key: 'voucherNumber', label: 'वाउचर क्र.' },
+   368→   368→          { key: 'entryDate', label: 'तारीख' },
+   369→   369→          { key: 'debitAccount', label: 'डेबिट' },
+   370→   370→          { key: 'creditAccount', label: 'क्रेडिट' },
+   371→   371→          { key: 'amount', label: 'रक्कम', isAmount: true },
+   372→   372→        ];
+   373→   373→      case 'asset':
+   374→   374→        return [
+   375→   375→          { key: 'assetNumber', label: 'मालमत्ता क्र.' },
+   376→   376→          { key: 'assetName', label: 'नाव' },
+   377→   377→          { key: 'assetType', label: 'प्रकार' },
+   378→   378→          { key: 'purchaseCost', label: 'खरेदी किंमत', isAmount: true },
+   379→   379→          { key: 'currentValue', label: 'सध्याची किंमत', isAmount: true },
+   380→   380→          { key: 'status', label: 'स्थिती' },
+   381→   381→        ];
+   382→   382→      case 'stock':
+   383→   383→        return [
+   384→   384→          { key: 'stockNumber', label: 'साठा क्र.' },
+   385→   385→          { key: 'itemName', label: 'वस्तू' },
+   386→   386→          { key: 'category', label: 'वर्ग' },
+   387→   387→          { key: 'quantity', label: 'संख्या' },
+   388→   388→          { key: 'unitPrice', label: 'एकक किंमत', isAmount: true },
+   389→   389→          { key: 'totalValue', label: 'एकूण मूल्य', isAmount: true },
+   390→   390→          { key: 'status', label: 'स्थिती' },
+   391→   391→        ];
+   392→   392→      case 'collection':
+   393→   393→        return [
+   394→   394→          { key: 'collectionNumber', label: 'वसूल क्र.' },
+   395→   395→          { key: 'collectionDate', label: 'तारीख' },
+   396→   396→          { key: 'amount', label: 'रक्कम', isAmount: true },
+   397→   397→          { key: 'collectionType', label: 'प्रकार' },
+   398→   398→          { key: 'paymentMethod', label: 'पद्धत' },
+   399→   399→        ];
+   400→   400→      case 'water-bill':
+   401→   401→        return [
+   402→   402→          { key: 'billNumber', label: 'बिल क्र.' },
+   403→   403→          { key: 'billDate', label: 'तारीख' },
+   404→   404→          { key: 'amount', label: 'रक्कम', isAmount: true },
+   405→   405→          { key: 'penalty', label: 'दंड', isAmount: true },
+   406→   406→          { key: 'totalAmount', label: 'एकूण', isAmount: true },
+   407→   407→          { key: 'status', label: 'स्थिती' },
+   408→   408→        ];
+   409→   409→      case 'scheme-fund':
+   410→   410→        return [
+   411→   411→          { key: 'voucherNumber', label: 'वाउचर क्र.' },
+   412→   412→          { key: 'entryDate', label: 'तारीख' },
+   413→   413→          { key: 'amount', label: 'रक्कम', isAmount: true },
+   414→   414→          { key: 'entryType', label: 'प्रकार' },
+   415→   415→          { key: 'description', label: 'वर्णन' },
+   416→   416→        ];
+   417→   417→      case 'budget':
+   418→   418→        return [
+   419→   419→          { key: 'budgetHeadCode', label: 'शिर्ष कोड' },
+   420→   420→          { key: 'budgetHeadName', label: 'शिर्ष नाव' },
+   421→   421→          { key: 'financialYear', label: 'वित्तीय वर्ष' },
+   422→   422→          { key: 'category', label: 'वर्ग' },
+   423→   423→          { key: 'type', label: 'प्रकार' },
+   424→   424→          { key: 'originalBudget', label: 'मूळ अंदाज', isAmount: true },
+   425→   425→          { key: 'revisedBudget', label: 'दुरुस्ती अंदाज', isAmount: true },
+   426→   426→        ];
+   427→   427→      case 'work':
+   428→   428→        return [
+   429→   429→          { key: 'workNumber', label: 'काम क्र.' },
+   430→   430→          { key: 'workName', label: 'कामाचे नाव' },
+   431→   431→          { key: 'workType', label: 'प्रकार' },
+   432→   432→          { key: 'sanctionDate', label: 'मंजुरी तारीख' },
+   433→   433→          { key: 'sanctionAmount', label: 'मंजुरी रक्कम', isAmount: true },
+   434→   434→          { key: 'progressPercent', label: 'प्रगती %' },
+   435→   435→          { key: 'status', label: 'स्थिती' },
+   436→   436→        ];
+   437→   437→      case 'salary':
+   438→   438→        return [
+   439→   439→          { key: 'employeeId', label: 'कर्मचारी' },
+   440→   440→          { key: 'financialYear', label: 'वित्तीय वर्ष' },
+   441→   441→          { key: 'month', label: 'महिना' },
+   442→   442→          { key: 'grossSalary', label: 'सकल वेतन', isAmount: true },
+   443→   443→          { key: 'totalDeduction', label: 'एकूण कपात', isAmount: true },
+   444→   444→          { key: 'netSalary', label: 'निव्वळ वेतन', isAmount: true },
+   445→   445→          { key: 'status', label: 'स्थिती' },
+   446→   446→        ];
+   447→   447→      default:
+   448→   448→        return [];
+   449→   449→    }
+   450→   450→  };
+   451→   451→
+   452→   452→  const refreshEntries = () => {
+   453→   453→    setLoading(true);
+   454→   454→    fetch(`/api/transactions?type=${activeTab}`)
+   455→   455→      .then(res => res.ok ? res.json() : [])
+   456→   456→      .then(data => {
+   457→   457→        const result = Array.isArray(data) ? data : (data as Record<string, unknown[]>).data || [];
+   458→   458→        setEntries(prev => ({ ...prev, [activeTab]: result }));
+   459→   459→        setLoading(false);
+   460→   460→      })
+   461→   461→      .catch(() => setLoading(false));
+   462→   462→  };
+   463→   463→
+   464→   464→  const handleSubmit = async () => {
+   465→   465→    try {
+   466→   466→      // Use _type for transaction type to avoid conflict with budget 'type' field
+   467→   467→      const payload = { ...formData, _type: activeTab };
+   468→   468→      if (editingId) {
+   469→   469→        payload.id = editingId;
+   470→   470→      }
+   471→   471→      await fetch('/api/transactions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+   472→   472→      setShowForm(false);
+   473→   473→      setEditingId(null);
+   474→   474→      setFormData({});
+   475→   475→      refreshEntries();
+   476→   476→    } catch { /* ignore */ }
+   477→   477→  };
+   478→   478→
+   479→   479→  const handleEdit = (entry: Record<string, unknown>) => {
+   480→   480→    setEditingId(entry.id as string);
+   481→   481→    setFormData(entry);
+   482→   482→    setShowForm(true);
+   483→   483→  };
+   484→   484→
+   485→   485→  const handleDelete = async (id: string) => {
+   486→   486→    try {
+   487→   487→      await fetch(`/api/transactions?type=${activeTab}&id=${id}`, { method: 'DELETE' });
+   488→   488→      refreshEntries();
+   489→   489→    } catch { /* ignore */ }
+   490→   490→  };
+   491→   491→
+   492→   492→  // Helper: get employee display name
+   493→   493→  const getEmployeeName = (empId: string) => {
+   494→   494→    const emp = employees.find(e => e.id === empId || e.employeeId === empId);
+   495→   495→    if (emp) {
+   496→   496→      return `${emp.firstNameMr || emp.firstName} ${emp.lastNameMr || emp.lastName}`;
+   497→   497→    }
+   498→   498→    return empId;
+   499→   499→  };
+   500→   500→
+   501→   501→  // Helper: get contractor display name
+   502→   502→  const getContractorName = (conId: string) => {
+   503→   503→    const con = contractors.find(c => c.id === conId || c.contractorId === conId);
+   504→   504→    if (con) {
+   505→   505→      return con.firmName || `${con.firstName} ${con.lastName}`;
+   506→   506→    }
+   507→   507→    return conId;
+   508→   508→  };
+   509→   509→
+   510→   510→  const filteredEntries = (entries[activeTab] || []) as Record<string, unknown>[];
+   511→   511→  const displayEntries = searchTerm
+   512→   512→    ? filteredEntries.filter(e => JSON.stringify(e).toLowerCase().includes(searchTerm.toLowerCase()))
+   513→   513→    : filteredEntries;
+   514→   514→
+   515→   515→  // Calculate total
+   516→   516→  const totalAmount = displayEntries.reduce((sum, e) => {
+   517→   517→    let amtKey = 'amount';
+   518→   518→    if (activeTab === 'asset') amtKey = 'purchaseCost';
+   519→   519→    else if (activeTab === 'stock') amtKey = 'totalValue';
+   520→   520→    else if (activeTab === 'budget') amtKey = 'originalBudget';
+   521→   521→    else if (activeTab === 'work') amtKey = 'sanctionAmount';
+   522→   522→    else if (activeTab === 'salary') amtKey = 'netSalary';
+   523→   523→    return sum + (Number(e[amtKey]) || 0);
+   524→   524→  }, 0);
+   525→   525→
+   526→   526→  const formatCurrency = (val: unknown) => {
+   527→   527→    const num = Number(val) || 0;
+   528→   528→    return `₹${num.toLocaleString('mr-IN')}`;
+   529→   529→  };
+   530→   530→
+   531→   531→  const StatusBadge = ({ status }: { status: string }) => {
+   532→   532→    const colors: Record<string, string> = {
+   533→   533→      'Active': 'bg-green-100 text-green-800',
+   534→   534→      'In Stock': 'bg-green-100 text-green-800',
+   535→   535→      'Disposed': 'bg-red-100 text-red-800',
+   536→   536→      'Under Maintenance': 'bg-amber-100 text-amber-800',
+   537→   537→      'Issued': 'bg-blue-100 text-blue-800',
+   538→   538→      'Low Stock': 'bg-orange-100 text-orange-800',
+   539→   539→      'Pending': 'bg-amber-100 text-amber-800',
+   540→   540→      'Paid': 'bg-green-100 text-green-800',
+   541→   541→      'Cash': 'bg-emerald-100 text-emerald-800',
+   542→   542→      'Bank': 'bg-blue-100 text-blue-800',
+   543→   543→      'Cheque': 'bg-purple-100 text-purple-800',
+   544→   544→      'Online': 'bg-sky-100 text-sky-800',
+   545→   545→      'DD': 'bg-indigo-100 text-indigo-800',
+   546→   546→      'Receipt': 'bg-green-100 text-green-800',
+   547→   547→      'Payment': 'bg-red-100 text-red-800',
+   548→   548→      'Sanctioned': 'bg-blue-100 text-blue-800',
+   549→   549→      'InProgress': 'bg-amber-100 text-amber-800',
+   550→   550→      'Completed': 'bg-green-100 text-green-800',
+   551→   551→      'Billed': 'bg-purple-100 text-purple-800',
+   552→   552→      'income': 'bg-emerald-100 text-emerald-800',
+   553→   553→      'expenditure': 'bg-red-100 text-red-800',
+   554→   554→      'revenue': 'bg-sky-100 text-sky-800',
+   555→   555→      'capital': 'bg-violet-100 text-violet-800',
+   556→   556→      'New': 'bg-blue-100 text-blue-800',
+   557→   557→      'Repair': 'bg-amber-100 text-amber-800',
+   558→   558→      'Maintenance': 'bg-purple-100 text-purple-800',
+   559→   559→    };
+   560→   560→    return <Badge className={`text-xs border-0 ${colors[status] || 'bg-gray-100 text-gray-800'}`}>{status}</Badge>;
+   561→   561→  };
+   562→   562→
+   563→   563→  // Render a table cell value
+   564→   564→  const renderCellValue = (entry: Record<string, unknown>, col: { key: string; isAmount?: boolean }) => {
+   565→   565→    const val = entry[col.key];
+   566→   566→    if (col.isAmount) return formatCurrency(val);
+   567→   567→
+   568→   568→    // Special rendering for employeeId in salary table
+   569→   569→    if (col.key === 'employeeId' && activeTab === 'salary') {
+   570→   570→      return getEmployeeName(String(val || ''));
+   571→   571→    }
+   572→   572→
+   573→   573→    // Special rendering for status and payment method columns
+   574→   574→    if (col.key === 'status' || col.key === 'paymentMethod' || col.key === 'entryType' ||
+   575→   575→        col.key === 'collectionType' || col.key === 'category' || col.key === 'type' ||
+   576→   576→        col.key === 'workType') {
+   577→   577→      return <StatusBadge status={String(val || '')} />;
+   578→   578→    }
+   579→   579→
+   580→   580→    // Special rendering for progressPercent
+   581→   581→    if (col.key === 'progressPercent') {
+   582→   582→      const pct = Number(val) || 0;
+   583→   583→      return (
+   584→   584→        <div className="flex items-center gap-1.5">
+   585→   585→          <div className="w-12 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+   586→   586→            <div className="h-full rounded-full" style={{ width: `${Math.min(pct, 100)}%`, background: pct >= 100 ? '#059669' : '#f59e0b' }} />
+   587→   587→          </div>
+   588→   588→          <span className="text-xs">{pct}%</span>
+   589→   589→        </div>
+   590→   590→      );
+   591→   591→    }
+   592→   592→
+   593→   593→    return String(val || '-');
+   594→   594→  };
+   595→   595→
+   596→   596→  return (
+   597→   597→    <div className="space-y-4">
+   598→   598→      {/* Header */}
+   599→   599→      <Card className="border-0 shadow-lg overflow-hidden">
+   600→   600→        <div className="h-2" style={{ background: `linear-gradient(90deg, ${currentTab.gradientFrom}, ${currentTab.gradientTo})` }} />
+   601→   601→        <CardContent className="p-4">
+   602→   602→          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+   603→   603→            <div className="flex items-center gap-3">
+   604→   604→              <div className="h-12 w-12 rounded-xl flex items-center justify-center shadow-md" style={{ background: `linear-gradient(135deg, ${currentTab.gradientFrom}, ${currentTab.gradientTo})` }}>
+   605→   605→                <currentTab.icon className="h-6 w-6 text-white" />
+   606→   606→              </div>
+   607→   607→              <div>
+   608→   608→                <h2 className="text-xl font-bold" style={{ color: currentTab.color }}>{currentTab.label}</h2>
+   609→   609→                <p className="text-sm text-muted-foreground">{currentTab.labelEn}</p>
+   610→   610→              </div>
+   611→   611→            </div>
+   612→   612→            <div className="flex items-center gap-2">
+   613→   613→              <Badge className="text-xs border-0 shadow-sm" style={{ background: currentTab.color + '20', color: currentTab.color }}>
+   614→   614→                {displayEntries.length} नोंदी
+   615→   615→              </Badge>
+   616→   616→              <Badge className="text-xs border-0 bg-amber-50 text-amber-800">
+   617→   617→                <IndianRupee className="h-3 w-3 mr-1" />
+   618→   618→                {formatCurrency(totalAmount)}
+   619→   619→              </Badge>
+   620→   620→            </div>
+   621→   621→          </div>
+   622→   622→        </CardContent>
+   623→   623→      </Card>
+   624→   624→
+   625→   625→      {/* Tab Navigation */}
+   626→   626→      <div className="flex gap-1.5 overflow-x-auto pb-1">
+   627→   627→        {TABS.map(tab => (
+   628→   628→          <button
+   629→   629→            key={tab.id}
+   630→   630→            onClick={() => handleTabChange(tab.id)}
+   631→   631→            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+   632→   632→              activeTab === tab.id
+   633→   633→                ? 'text-white shadow-md'
+   634→   634→                : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+   635→   635→            }`}
+   636→   636→            style={activeTab === tab.id ? { background: `linear-gradient(135deg, ${tab.gradientFrom}, ${tab.gradientTo})` } : {}}
+   637→   637→          >
+   638→   638→            <tab.icon className="h-3.5 w-3.5" />
+   639→   639→            {tab.label}
+   640→   640→          </button>
+   641→   641→        ))}
+   642→   642→      </div>
+   643→   643→
+   644→   644→      {/* Controls */}
+   645→   645→      <Card className="border-0 shadow-sm">
+   646→   646→        <CardContent className="p-3">
+   647→   647→          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+   648→   648→            <div className="relative flex-1">
+   649→   649→              <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+   650→   650→              <Input
+   651→   651→                placeholder="शोधा..."
+   652→   652→                value={searchTerm}
+   653→   653→                onChange={e => setSearchTerm(e.target.value)}
+   654→   654→                className="pl-9 h-9 text-sm"
+   655→   655→              />
+   656→   656→              {searchTerm && (
+   657→   657→                <button onClick={() => setSearchTerm('')} className="absolute right-2 top-1/2 -translate-y-1/2">
+   658→   658→                  <X className="h-3.5 w-3.5 text-gray-400" />
+   659→   659→                </button>
+   660→   660→              )}
+   661→   661→            </div>
+   662→   662→            <Button
+   663→   663→              onClick={() => { setShowForm(true); setEditingId(null); setFormData({}); }}
+   664→   664→              className="h-9 text-white"
+   665→   665→              style={{ background: `linear-gradient(135deg, ${currentTab.gradientFrom}, ${currentTab.gradientTo})` }}
+   666→   666→            >
+   667→   667→              <Plus className="h-4 w-4 mr-1" />
+   668→   668→              नवीन एंट्री
+   669→   669→            </Button>
+   670→   670→          </div>
+   671→   671→        </CardContent>
+   672→   672→      </Card>
+   673→   673→
+   674→   674→      {/* Data Table */}
+   675→   675→      <Card className="border-0 shadow-sm overflow-hidden">
+   676→   676→        <div className="h-1" style={{ background: `linear-gradient(90deg, ${currentTab.gradientFrom}, ${currentTab.gradientTo})` }} />
+   677→   677→        {loading ? (
+   678→   678→          <CardContent className="p-4 space-y-2">
+   679→   679→            {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-10 w-full" />)}
+   680→   680→          </CardContent>
+   681→   681→        ) : displayEntries.length === 0 ? (
+   682→   682→          <CardContent className="p-12 text-center">
+   683→   683→            <currentTab.icon className="h-16 w-16 mx-auto mb-4 opacity-20" style={{ color: currentTab.color }} />
+   684→   684→            <p className="text-lg font-medium text-muted-foreground">कोणतीही नोंद नाही</p>
+   685→   685→            <p className="text-sm text-muted-foreground mt-1">नवीन एंट्री जोडण्यासाठी वरील बटण वापरा</p>
+   686→   686→          </CardContent>
+   687→   687→        ) : (
+   688→   688→          <div className="max-h-96 overflow-y-auto">
+   689→   689→            <Table>
+   690→   690→              <TableHeader>
+   691→   691→                <TableRow style={{ background: currentTab.color + '10' }}>
+   692→   692→                  <TableHead className="text-xs font-semibold" style={{ color: currentTab.color }}>क्र.</TableHead>
+   693→   693→                  {getTableColumns().map(col => (
+   694→   694→                    <TableHead key={col.key} className="text-xs font-semibold" style={{ color: currentTab.color }}>
+   695→   695→                      {col.label}
+   696→   696→                    </TableHead>
+   697→   697→                  ))}
+   698→   698→                  <TableHead className="text-xs font-semibold text-right" style={{ color: currentTab.color }}>क्रिया</TableHead>
+   699→   699→                </TableRow>
+   700→   700→              </TableHeader>
+   701→   701→              <TableBody>
+   702→   702→                {displayEntries.map((entry, idx) => (
+   703→   703→                  <TableRow key={entry.id as string} className="hover:bg-gray-50/50">
+   704→   704→                    <TableCell className="text-xs text-muted-foreground">{idx + 1}</TableCell>
+   705→   705→                    {getTableColumns().map(col => (
+   706→   706→                      <TableCell key={col.key} className="text-sm">
+   707→   707→                        {renderCellValue(entry, col)}
+   708→   708→                      </TableCell>
+   709→   709→                    ))}
+   710→   710→                    <TableCell className="text-right">
+   711→   711→                      <div className="flex items-center justify-end gap-1">
+   712→   712→                        <button onClick={() => handleEdit(entry)} className="p-1 rounded hover:bg-blue-50">
+   713→   713→                          <Edit3 className="h-3.5 w-3.5 text-blue-600" />
+   714→   714→                        </button>
+   715→   715→                        <button onClick={() => handleDelete(entry.id as string)} className="p-1 rounded hover:bg-red-50">
+   716→   716→                          <Trash2 className="h-3.5 w-3.5 text-red-500" />
+   717→   717→                        </button>
+   718→   718→                      </div>
+   719→   719→                    </TableCell>
+   720→   720→                  </TableRow>
+   721→   721→                ))}
+   722→   722→              </TableBody>
+   723→   723→            </Table>
+   724→   724→          </div>
+   725→   725→        )}
+   726→   726→        {displayEntries.length > 0 && (
+   727→   727→          <div className="p-3 border-t flex items-center justify-between" style={{ background: currentTab.color + '08' }}>
+   728→   728→            <span className="text-sm font-medium" style={{ color: currentTab.color }}>
+   729→   729→              एकूण: {displayEntries.length} नोंदी
+   730→   730→            </span>
+   731→   731→            <span className="text-sm font-bold" style={{ color: currentTab.color }}>
+   732→   732→              {formatCurrency(totalAmount)}
+   733→   733→            </span>
+   734→   734→          </div>
+   735→   735→        )}
+   736→   736→      </Card>
+   737→   737→
+   738→   738→      {/* Add/Edit Form Dialog */}
+   739→   739→      <Dialog open={showForm} onOpenChange={setShowForm}>
+   740→   740→        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+   741→   741→          <DialogHeader>
+   742→   742→            <DialogTitle className="flex items-center gap-2">
+   743→   743→              <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${currentTab.gradientFrom}, ${currentTab.gradientTo})` }}>
+   744→   744→                {editingId ? <Edit3 className="h-4 w-4 text-white" /> : <Plus className="h-4 w-4 text-white" />}
+   745→   745→              </div>
+   746→   746→              {editingId ? 'एंट्री संपादा' : 'नवीन एंट्री'} - {currentTab.label}
+   747→   747→            </DialogTitle>
+   748→   748→          </DialogHeader>
+   749→   749→          <div className="space-y-3 py-2">
+   750→   750→            {getFormFields().map((field, fieldIdx) => (
+   751→   751→              <React.Fragment key={field.name}>
+   752→   752→                {/* Section header */}
+   753→   753→                {field.sectionHeader && (
+   754→   754→                  <div className="flex items-center gap-2 pt-2 pb-1 border-b" style={{ borderColor: field.sectionColor + '40' }}>
+   755→   755→                    <div className="h-5 w-1.5 rounded-full" style={{ background: field.sectionColor }} />
+   756→   756→                    <span className="text-sm font-semibold" style={{ color: field.sectionColor }}>{field.sectionHeader}</span>
+   757→   757→                  </div>
+   758→   758→                )}
+   759→   759→                <div className="space-y-1">
+   760→   760→                  <Label className="text-sm">
+   761→   761→                    {field.label}
+   762→   762→                    {field.required && <span className="text-red-500 ml-1">*</span>}
+   763→   763→                    {field.readOnly && (
+   764→   764→                      <span className="ml-2 text-xs text-emerald-600 flex items-center gap-0.5 inline-flex">
+   765→   765→                        <Calculator className="h-3 w-3" />
+   766→   766→                        स्वयं-गणना
+   767→   767→                      </span>
+   768→   768→                    )}
+   769→   769→                  </Label>
+   770→   770→                  {field.type === 'textarea' ? (
+   771→   771→                    <Textarea
+   772→   772→                      value={String(formData[field.name] || '')}
+   773→   773→                      onChange={e => setFormData(prev => ({ ...prev, [field.name]: e.target.value }))}
+   774→   774→                      className="text-sm"
+   775→   775→                      rows={2}
+   776→   776→                    />
+   777→   777→                  ) : field.type === 'select' ? (
+   778→   778→                    <Select
+   779→   779→                      value={String(formData[field.name] || '')}
+   780→   780→                      onValueChange={val => setFormData(prev => ({ ...prev, [field.name]: val }))}
+   781→   781→                    >
+   782→   782→                      <SelectTrigger className="text-sm">
+   783→   783→                        <SelectValue placeholder="निवडा..." />
+   784→   784→                      </SelectTrigger>
+   785→   785→                      <SelectContent>
+   786→   786→                        {field.options?.map(opt => (
+   787→   787→                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+   788→   788→                        ))}
+   789→   789→                      </SelectContent>
+   790→   790→                    </Select>
+   791→   791→                  ) : field.type === 'employee-select' ? (
+   792→   792→                    <Select
+   793→   793→                      value={String(formData[field.name] || '')}
+   794→   794→                      onValueChange={val => setFormData(prev => ({ ...prev, [field.name]: val }))}
+   795→   795→                    >
+   796→   796→                      <SelectTrigger className="text-sm">
+   797→   797→                        <SelectValue placeholder="कर्मचारी निवडा..." />
+   798→   798→                      </SelectTrigger>
+   799→   799→                      <SelectContent>
+   800→   800→                        {employees.map(emp => (
+   801→   801→                          <SelectItem key={emp.id} value={emp.id}>
+   802→   802→                            {emp.firstNameMr || emp.firstName} {emp.lastNameMr || emp.lastName} ({emp.employeeId})
+   803→   803→                          </SelectItem>
+   804→   804→                        ))}
+   805→   805→                      </SelectContent>
+   806→   806→                    </Select>
+   807→   807→                  ) : field.type === 'contractor-select' ? (
+   808→   808→                    <Select
+   809→   809→                      value={String(formData[field.name] || '')}
+   810→   810→                      onValueChange={val => setFormData(prev => ({ ...prev, [field.name]: val }))}
+   811→   811→                    >
+   812→   812→                      <SelectTrigger className="text-sm">
+   813→   813→                        <SelectValue placeholder="कंत्राटदार निवडा..." />
+   814→   814→                      </SelectTrigger>
+   815→   815→                      <SelectContent>
+   816→   816→                        {contractors.map(con => (
+   817→   817→                          <SelectItem key={con.id} value={con.id}>
+   818→   818→                            {con.firmName || `${con.firstName} ${con.lastName}`} ({con.contractorId})
+   819→   819→                          </SelectItem>
+   820→   820→                        ))}
+   821→   821→                      </SelectContent>
+   822→   822→                    </Select>
+   823→   823→                  ) : (
+   824→   824→                    <Input
+   825→   825→                      type={field.type}
+   826→   826→                      value={String(formData[field.name] || '')}
+   827→   827→                      onChange={e => {
+   828→   828→                        const value = field.type === 'number' ? Number(e.target.value) : e.target.value;
+   829→   829→                        if (activeTab === 'salary' && field.type === 'number' && !field.readOnly) {
+   830→   830→                          handleSalaryFieldChange(field.name, value as number);
+   831→   831→                        } else {
+   832→   832→                          setFormData(prev => ({ ...prev, [field.name]: value }));
+   833→   833→                        }
+   834→   834→                      }}
+   835→   835→                      className={`text-sm ${field.readOnly ? 'bg-emerald-50 border-emerald-200 font-semibold' : ''}`}
+   836→   836→                      readOnly={field.readOnly}
+   837→   837→                    />
+   838→   838→                  )}
+   839→   839→                </div>
+   840→   840→              </React.Fragment>
+   841→   841→            ))}
+   842→   842→            {/* Property selector for collection and water-bill */}
+   843→   843→            {(activeTab === 'collection' || activeTab === 'water-bill') && properties.length > 0 && (
+   844→   844→              <div className="space-y-1">
+   845→   845→                <Label className="text-sm">मालमत्ता / Property</Label>
+   846→   846→                <Select
+   847→   847→                  value={String(formData.propertyId || '')}
+   848→   848→                  onValueChange={val => setFormData(prev => ({ ...prev, propertyId: val }))}
+   849→   849→                >
+   850→   850→                  <SelectTrigger className="text-sm">
+   851→   851→                    <SelectValue placeholder="मालमत्ता निवडा..." />
+   852→   852→                  </SelectTrigger>
+   853→   853→                  <SelectContent>
+   854→   854→                    {properties.map(p => (
+   855→   855→                      <SelectItem key={p.id} value={p.id}>{p.propertyNumber}</SelectItem>
+   856→   856→                    ))}
+   857→   857→                  </SelectContent>
+   858→   858→                </Select>
+   859→   859→              </div>
+   860→   860→            )}
+   861→   861→            {/* Scheme selector for scheme-fund */}
+   862→   862→            {activeTab === 'scheme-fund' && schemes.length > 0 && (
+   863→   863→              <div className="space-y-1">
+   864→   864→                <Label className="text-sm">योजना / Scheme</Label>
+   865→   865→                <Select
+   866→   866→                  value={String(formData.schemeId || '')}
+   867→   867→                  onValueChange={val => setFormData(prev => ({ ...prev, schemeId: val }))}
+   868→   868→                >
+   869→   869→                  <SelectTrigger className="text-sm">
+   870→   870→                    <SelectValue placeholder="योजना निवडा..." />
+   871→   871→                  </SelectTrigger>
+   872→   872→                  <SelectContent>
+   873→   873→                    {schemes.map(s => (
+   874→   874→                      <SelectItem key={s.id} value={s.id}>{s.schemeNameMr || s.schemeName}</SelectItem>
+   875→   875→                    ))}
+   876→   876→                  </SelectContent>
+   877→   877→                </Select>
+   878→   878→              </div>
+   879→   879→            )}
+   880→   880→
+   881→   881→            {/* Salary calculation summary */}
+   882→   882→            {activeTab === 'salary' && (Number(formData.grossSalary) > 0 || Number(formData.totalDeduction) > 0) && (
+   883→   883→              <div className="mt-3 p-3 rounded-lg border border-emerald-200 bg-emerald-50/50 space-y-2">
+   884→   884→                <div className="flex items-center gap-1.5 text-emerald-700 font-semibold text-sm mb-2">
+   885→   885→                  <Calculator className="h-4 w-4" />
+   886→   886→                  वेतन गणना सारांश
+   887→   887→                </div>
+   888→   888→                <div className="grid grid-cols-3 gap-2 text-center">
+   889→   889→                  <div className="p-2 rounded bg-emerald-100/70">
+   890→   890→                    <div className="text-xs text-emerald-600">सकल वेतन</div>
+   891→   891→                    <div className="text-sm font-bold text-emerald-800">{formatCurrency(formData.grossSalary)}</div>
+   892→   892→                  </div>
+   893→   893→                  <div className="p-2 rounded bg-red-100/70">
+   894→   894→                    <div className="text-xs text-red-600">एकूण कपात</div>
+   895→   895→                    <div className="text-sm font-bold text-red-800">{formatCurrency(formData.totalDeduction)}</div>
+   896→   896→                  </div>
+   897→   897→                  <div className="p-2 rounded bg-blue-100/70">
+   898→   898→                    <div className="text-xs text-blue-600">निव्वळ वेतन</div>
+   899→   899→                    <div className="text-sm font-bold text-blue-800">{formatCurrency(formData.netSalary)}</div>
+   900→   900→                  </div>
+   901→   901→                </div>
+   902→   902→              </div>
+   903→   903→            )}
+   904→   904→          </div>
+   905→   905→          <DialogFooter className="gap-2">
+   906→   906→            <Button variant="outline" onClick={() => setShowForm(false)} className="text-sm">रद्द करा</Button>
+   907→   907→            <Button onClick={handleSubmit} className="text-white text-sm" style={{ background: `linear-gradient(135deg, ${currentTab.gradientFrom}, ${currentTab.gradientTo})` }}>
+   908→   908→              <CheckCircle2 className="h-4 w-4 mr-1" />
+   909→   909→              {editingId ? 'अपडेट करा' : 'जतन करा'}
+   910→   910→            </Button>
+   911→   911→          </DialogFooter>
+   912→   912→        </DialogContent>
+   913→   913→      </Dialog>
+   914→   914→    </div>
+   915→   915→  );
+   916→   916→}
+   917→   917→

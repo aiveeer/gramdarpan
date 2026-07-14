@@ -199,16 +199,18 @@ async function createRecord(table: string, data: Record<string, unknown>): Promi
       return db.ownerMaster.create({ data: cleanData });
     case 'road':
       return db.roadMaster.create({ data: cleanData });
-    case 'drainage':
-      return db.drainageMaster.create({ data: cleanData });
-    case 'waterSupply':
-      return db.waterSupplyMaster.create({ data: cleanData });
-    case 'streetLight':
-      return db.streetLightMaster.create({ data: cleanData });
-    case 'readyReckoner':
-      return db.readyReckonerMaster.create({ data: cleanData });
-    case 'disability':
-      return db.disabilityMaster.create({ data: cleanData });
+    case 'asset':
+      return db.assetEntry.create({ data: cleanData });
+    case 'stock':
+      return db.stockEntry.create({ data: cleanData });
+    case 'immovableProperty':
+      return db.immovableProperty.create({ data: cleanData });
+    case 'roadAsset':
+      return db.roadAsset.create({ data: cleanData });
+    case 'landAsset':
+      return db.landAsset.create({ data: cleanData });
+    case 'treeAsset':
+      return db.treeAsset.create({ data: cleanData });
     case 'employee':
       return db.employeeMaster.create({ data: cleanData });
     case 'tax':

@@ -1,29 +1,38 @@
 ---
-Task ID: 1
-Agent: Main Developer
-Task: Fix all Namuna data errors and auto-generate Namuna 1-33 logic
+Task ID: 1-11
+Agent: main
+Task: Complete rebuild of Gram Panchayat ERP - Remove Lekha Sanhita 2011 Namuna structure
 
 Work Log:
-- Analyzed the root cause: Prisma schema missing critical relations (PropertyOwnerMaster, PropertyTaxRate, SchemeFundEntry, CollectionEntry) and fields that the API routes and components expected
-- Updated prisma/schema.prisma with all missing models, relations, and fields
-- Ran db:push to sync the database
-- Rewrote /api/namuna-reports/route.ts with all 33+ Namuna generators using safeQuery wrappers
-- Fixed Namuna8 component: records.filter error by adding Array.isArray checks, normalizeProperty/normalizeRecord functions
-- Fixed Namuna8 API route: proper includes, GET returns [] on error instead of error object
-- Fixed Namuna9 component: Array.isArray validation, correct relation names (demands vs namuna9s)
-- Fixed Namuna9 API route: proper includes, GET returns [] on error
-- Fixed Namuna1 component: Array.isArray validation for search results
-- Fixed NamunaReports component: correct API endpoint, proper response format handling, Marathi error messages
-- Fixed registers API route: removed invalid includes, correct field names, safeQuery wrappers
-- Fixed auto-registers component: Array.isArray guards on all data access
-- Fixed login cookie Secure flag (set to false for HTTP)
-- Added dynamic imports with ssr:false for all heavy components to reduce SSR memory
-- Removed output:"standalone" from next.config.ts
-- Verified all API endpoints work correctly via curl (page loads, login works, Namuna 1-33 all return proper JSON)
+- Updated prisma/schema.prisma: Renamed Namuna8→TaxAssessment, Namuna9→DemandRegister, Namuna22→ImmovableProperty, Namuna23→RoadAsset, Namuna24→LandAsset, Namuna33→TreeAsset, Payment→TaxPayment
+- Rewrote src/app/layout.tsx: Updated title to "ग्रामदर्पण — ग्रामपंचायत ERP" (removed Lekha Sanhita 2011 reference)
+- Rewrote src/app/page.tsx: Clean SPA shell with sidebar navigation, no Namuna/Lekha Sanhita references, 10 modules
+- Created src/components/login-form.tsx: Marathi login form with Landmark icon
+- Created src/components/dashboard.tsx: Dashboard with financial metrics, info cards, tax collection summary
+- Created src/components/masters.tsx: 8-tab master data (Village, Ward, Owner, Property, Road, Tax, Employee, Contractor)
+- Created src/components/tax-management.tsx: 3-tab tax management (Assessment, Demand, Collection)
+- Created src/components/financial.tsx: 3-tab financial (Receipts, Payments, Journal Vouchers)
+- Created src/components/budget-works.tsx: Budget heads & works management
+- Created src/components/salary.tsx: Employee & salary management
+- Created src/components/assets.tsx: 5-tab assets (Fixed, Inventory, Land, Roads, Trees)
+- Created src/components/bank-accounts.tsx: Bank account management
+- Created src/components/schemes.tsx: Government schemes & fund entries
+- Created src/components/reports.tsx: 8 report types with table views
+- Updated API routes: dashboard, master, tax-assessment, demand, tax-payment, transactions, budget, works, salary, assets, bank, schemes
+- Deleted old component files: namuna1, namuna8, namuna9, namuna9ka, namuna-reports, erp-dashboard, master-data, property-master, tax-master, daily-transactions, auto-registers, global-search, auth-logs, excel-import-export
+- Deleted old API routes: namuna8, namuna9, payment
+- Ran db:push successfully
+- Lint passes cleanly
+- All 13 API endpoints verified working via curl
+- Login form renders correctly in browser with Marathi text
+- Browser testing limited by sandbox memory constraints (3.9GB RAM, Next.js + Chromium exceed limit)
 
 Stage Summary:
-- All 33 Namuna report generators are implemented and working
-- All components have proper error handling with Array.isArray checks
-- The main data error "records.filter is not a function" is fixed
-- Server stability issue in sandbox environment: browser requests cause server crash (likely resource limitation)
-- All code changes verified via curl testing
+- Complete ERP rebuild without Lekha Sanhita 2011 / Namuna references
+- 11 new components created, 14 old components removed
+- 13 API routes created/updated
+- Prisma schema updated with renamed models
+- All APIs return consistent {success: true, data: ...} format
+- Safe API response handling throughout (Array.isArray guards)
+- All text in Marathi
+- Login: gpo/gpo123

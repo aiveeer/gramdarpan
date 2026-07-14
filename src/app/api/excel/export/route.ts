@@ -71,28 +71,30 @@ function escapeCSV(value: unknown): string {
 async function fetchTableData(table: string): Promise<Record<string, unknown>[]> {
   switch (table) {
     case 'ward':
-      return db.wardMaster.findMany({ orderBy: { wardNumber: 'asc' } });
+      return db.wardMaster.findMany({ orderBy: { wardNo: 'asc' } });
     case 'owner':
-      return db.ownerMaster.findMany({ orderBy: { ownerNumber: 'asc' } });
+      return db.ownerMaster.findMany({ orderBy: { createdAt: 'desc' } });
     case 'road':
-      return db.roadMaster.findMany({ orderBy: { roadNumber: 'asc' } });
-    case 'drainage':
-      return db.drainageMaster.findMany({ orderBy: { drainageNumber: 'asc' } });
-    case 'waterSupply':
-      return db.waterSupplyMaster.findMany({ orderBy: { connectionNumber: 'asc' } });
-    case 'streetLight':
-      return db.streetLightMaster.findMany({ orderBy: { lightNumber: 'asc' } });
-    case 'readyReckoner':
-      return db.readyReckonerMaster.findMany({ orderBy: { year: 'desc' } });
-    case 'disability':
-      return db.disabilityMaster.findMany();
+      return db.roadMaster.findMany({ orderBy: { roadNo: 'asc' } });
+    case 'asset':
+      return db.assetEntry.findMany({ orderBy: { createdAt: 'desc' } });
+    case 'stock':
+      return db.stockEntry.findMany({ orderBy: { createdAt: 'desc' } });
+    case 'immovableProperty':
+      return db.immovableProperty.findMany({ orderBy: { createdAt: 'desc' } });
+    case 'roadAsset':
+      return db.roadAsset.findMany({ orderBy: { createdAt: 'desc' } });
+    case 'landAsset':
+      return db.landAsset.findMany({ orderBy: { createdAt: 'desc' } });
+    case 'treeAsset':
+      return db.treeAsset.findMany({ orderBy: { createdAt: 'desc' } });
     case 'employee':
-      return db.employeeMaster.findMany({ orderBy: { employeeId: 'asc' } });
+      return db.employeeMaster.findMany({ orderBy: { createdAt: 'desc' } });
     case 'tax':
       return db.taxMaster.findMany({ orderBy: { order: 'asc' } });
     case 'property':
       return db.propertyMaster.findMany({
-        orderBy: { propertyNumber: 'asc' },
+        orderBy: { propertyNo: 'asc' },
         include: { ward: true, road: true },
       });
     default:

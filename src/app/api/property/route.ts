@@ -9,9 +9,13 @@ export async function GET(request: NextRequest) {
     const id = searchParams.get('id');
 
     if (id) {
-      const property = await db.property.findUnique({
+      const property = await db.propertyMaster.findUnique({
         where: { id },
         include: {
+          ward: true,
+          road: true,
+          owner: true,
+          owners: { include: { owner: true } },
           taxRates: {
             include: { taxMaster: true },
             orderBy: { taxMaster: { order: 'asc' } },
@@ -19,33 +23,27 @@ export async function GET(request: NextRequest) {
         },
       });
       if (!property) {
-        return NextResponse.json({ error: 'Property not found' }, { status: 404 });
+        return NextResponse.json({ success: false, error: 'Property not found' }, { status: 404 });
       }
-      return NextResponse.json(property);
+      return NextResponse.json({ success: true, data: property });
     }
 
+    const where: Record<string, unknown> = {};
     if (search) {
-      const properties = await db.property.findMany({
-        where: {
-          OR: [
-            { propertyNumber: { contains: search } },
-            { ownerName: { contains: search } },
-            { mobileNumber: { contains: search } },
-          ],
-        },
-        include: {
-          taxRates: {
-            include: { taxMaster: true },
-            orderBy: { taxMaster: { order: 'asc' } },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-      });
-      return NextResponse.json(properties);
+      where.OR = [
+        { propertyNo: { contains: search } },
+        { ownerName: { contains: search } },
+        { citySurveyNo: { contains: search } },
+      ];
     }
 
-    const properties = await db.property.findMany({
+    const properties = await db.propertyMaster.findMany({
+      where,
       include: {
+        ward: true,
+        road: true,
+        owner: true,
+        owners: { include: { owner: true } },
         taxRates: {
           include: { taxMaster: true },
           orderBy: { taxMaster: { order: 'asc' } },
@@ -53,10 +51,11 @@ export async function GET(request: NextRequest) {
       },
       orderBy: { createdAt: 'desc' },
     });
-    return NextResponse.json(properties);
+
+    return NextResponse.json({ success: true, data: properties });
   } catch (error) {
     console.error('Error fetching properties:', error);
-    return NextResponse.json({ error: 'Failed to fetch properties' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Failed to fetch properties' }, { status: 500 });
   }
 }
 
@@ -64,24 +63,31 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { taxRates, ...propertyData } = body;
+    const { owners, taxRates, ...propertyData } = body;
 
-    const property = await db.property.create({
-      data: {
-        propertyNumber: propertyData.propertyNumber,
-        ownerName: propertyData.ownerName,
-        occupantName: propertyData.occupantName || null,
-        mobileNumber: propertyData.mobileNumber || null,
-        ward: propertyData.ward || null,
-        road: propertyData.road || null,
-        citySurveyNo: propertyData.citySurveyNo || null,
-        area: propertyData.area ? parseFloat(propertyData.area) : null,
-        boundaries: propertyData.boundaries || null,
-        constructionType: propertyData.constructionType || null,
-        usageType: propertyData.usageType || null,
-        floorInfo: propertyData.floorInfo || null,
-      },
+    const numericFields = ['areaSqFt', 'builtUpArea', 'houseTax', 'lightTax', 'healthTax', 'waterTax', 'taxRate', 'depreciationRate', 'usageFactor'];
+    const cleanData: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(propertyData)) {
+      if (key === 'id') continue;
+      if (numericFields.includes(key)) {
+        cleanData[key] = value ? parseFloat(String(value)) : null;
+      } else {
+        cleanData[key] = value || null;
+      }
+    }
+
+    const property = await db.propertyMaster.create({
+      data: cleanData as Parameters<typeof db.propertyMaster.create>[0]['data'],
     });
+
+    // Create owner links
+    if (owners && Array.isArray(owners)) {
+      for (const o of owners) {
+        await db.propertyOwnerMaster.create({
+          data: { propertyId: property.id, ownerId: o.ownerId, ownershipType: o.ownershipType || 'मालक' },
+        });
+      }
+    }
 
     // Create tax rates for this property
     if (taxRates && Array.isArray(taxRates)) {
@@ -98,23 +104,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const result = await db.property.findUnique({
+    const result = await db.propertyMaster.findUnique({
       where: { id: property.id },
       include: {
-        taxRates: {
-          include: { taxMaster: true },
-          orderBy: { taxMaster: { order: 'asc' } },
-        },
+        ward: true,
+        road: true,
+        owner: true,
+        owners: { include: { owner: true } },
+        taxRates: { include: { taxMaster: true }, orderBy: { taxMaster: { order: 'asc' } } },
       },
     });
 
-    return NextResponse.json(result, { status: 201 });
+    return NextResponse.json({ success: true, data: result });
   } catch (error: unknown) {
     console.error('Error creating property:', error);
     if (error && typeof error === 'object' && 'code' in error && (error as { code: string }).code === 'P2002') {
-      return NextResponse.json({ error: 'मालमत्ता क्रमांक आधीच अस्तित्वात आहे' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'मालमत्ता क्रमांक आधीच अस्तित्वात आहे' }, { status: 400 });
     }
-    return NextResponse.json({ error: 'Failed to create property' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Failed to create property' }, { status: 500 });
   }
 }
 
@@ -122,59 +129,61 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { taxRates, ...propertyData } = body;
+    const { owners, taxRates, ...propertyData } = body;
 
-    const property = await db.property.update({
+    const numericFields = ['areaSqFt', 'builtUpArea', 'houseTax', 'lightTax', 'healthTax', 'waterTax', 'taxRate', 'depreciationRate', 'usageFactor'];
+    const cleanData: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(propertyData)) {
+      if (key === 'id') continue;
+      if (numericFields.includes(key)) {
+        cleanData[key] = value ? parseFloat(String(value)) : null;
+      } else {
+        cleanData[key] = value || null;
+      }
+    }
+
+    const property = await db.propertyMaster.update({
       where: { id: propertyData.id },
-      data: {
-        propertyNumber: propertyData.propertyNumber,
-        ownerName: propertyData.ownerName,
-        occupantName: propertyData.occupantName || null,
-        mobileNumber: propertyData.mobileNumber || null,
-        ward: propertyData.ward || null,
-        road: propertyData.road || null,
-        citySurveyNo: propertyData.citySurveyNo || null,
-        area: propertyData.area ? parseFloat(propertyData.area) : null,
-        boundaries: propertyData.boundaries || null,
-        constructionType: propertyData.constructionType || null,
-        usageType: propertyData.usageType || null,
-        floorInfo: propertyData.floorInfo || null,
-      },
+      data: cleanData as Parameters<typeof db.propertyMaster.update>[0]['data'],
     });
+
+    // Update owner links
+    if (owners && Array.isArray(owners)) {
+      await db.propertyOwnerMaster.deleteMany({ where: { propertyId: property.id } });
+      for (const o of owners) {
+        await db.propertyOwnerMaster.create({
+          data: { propertyId: property.id, ownerId: o.ownerId, ownershipType: o.ownershipType || 'मालक' },
+        });
+      }
+    }
 
     // Update tax rates - delete existing and recreate
     if (taxRates && Array.isArray(taxRates)) {
-      await db.propertyTaxRate.deleteMany({
-        where: { propertyId: property.id },
-      });
-
+      await db.propertyTaxRate.deleteMany({ where: { propertyId: property.id } });
       for (const tr of taxRates) {
         if (tr.rate > 0) {
           await db.propertyTaxRate.create({
-            data: {
-              propertyId: property.id,
-              taxMasterId: tr.taxMasterId,
-              rate: parseFloat(tr.rate),
-            },
+            data: { propertyId: property.id, taxMasterId: tr.taxMasterId, rate: parseFloat(tr.rate) },
           });
         }
       }
     }
 
-    const result = await db.property.findUnique({
+    const result = await db.propertyMaster.findUnique({
       where: { id: property.id },
       include: {
-        taxRates: {
-          include: { taxMaster: true },
-          orderBy: { taxMaster: { order: 'asc' } },
-        },
+        ward: true,
+        road: true,
+        owner: true,
+        owners: { include: { owner: true } },
+        taxRates: { include: { taxMaster: true }, orderBy: { taxMaster: { order: 'asc' } } },
       },
     });
 
-    return NextResponse.json(result);
+    return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error('Error updating property:', error);
-    return NextResponse.json({ error: 'Failed to update property' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Failed to update property' }, { status: 500 });
   }
 }
 
@@ -184,12 +193,12 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     if (!id) {
-      return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'ID is required' }, { status: 400 });
     }
-    await db.property.delete({ where: { id } });
-    return NextResponse.json({ message: 'Property deleted' });
+    await db.propertyMaster.delete({ where: { id } });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting property:', error);
-    return NextResponse.json({ error: 'Failed to delete property' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Failed to delete property' }, { status: 500 });
   }
 }
