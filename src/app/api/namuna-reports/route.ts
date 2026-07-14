@@ -106,6 +106,7 @@ export async function GET(request: NextRequest) {
       case 23: data = await generateNamuna23(fy, village); break;
       case 24: data = await generateNamuna24(fy, village); break;
       case 25: data = await generateNamuna25(fy, village); break;
+      case 26: data = await generateNamuna26(fy, village); break;
       case 26.1: data = await generateNamuna26ka(fy, village); break;
       case 26.2: data = await generateNamuna26kha(fy, village); break;
       case 27: data = await generateNamuna27(fy, village); break;
@@ -195,7 +196,7 @@ async function generateNamuna1(fy: string, village: VillageInfoType | null) {
   }));
 
   return {
-    ...makeBase(1, 'नमुना १ - अर्थसंकल्प/अंदाजपत्रक', 'Namuna 1 - Budget Estimate', fy, village),
+    ...makeBase(1, 'नमुना १ - अंदाजपत्रक', 'Namuna 1 - Budget Estimate', fy, village),
     headers: ['अ.क्र.', 'खाते कोड', 'खाते नाव', 'श्रेणी', 'प्रकार', 'मूळ अंदाज (₹)', 'दुरुस्तीत अंदाज (₹)', 'वास्तव रक्कम (₹)', 'फरक (₹)'],
     rows,
     totals: {
@@ -250,7 +251,7 @@ async function generateNamuna2(fy: string, village: VillageInfoType | null) {
   ];
 
   return {
-    ...makeBase(2, 'नमुना २ - पुनर्विनियोजन व नियत वाटप', 'Namuna 2 - Re-appropriation', fy, village),
+    ...makeBase(2, 'नमुना २ - पुनर्विनियोजित नियतवाटप', 'Namuna 2 - Re-appropriation & Revised Allocation', fy, village),
     headers: ['अ.क्र.', 'खाते कोड', 'खाते नाव', 'प्रकार', 'मूळ अंदाज (₹)', 'दुरुस्तीत अंदाज (₹)', 'वास्तव (₹)', 'पुनर्विनियोजन (₹)'],
     rows: allRows,
     totals: {
@@ -268,7 +269,7 @@ async function generateNamuna2(fy: string, village: VillageInfoType | null) {
 async function generateNamuna3(fy: string, village: VillageInfoType | null) {
   const [receipts, payments] = await Promise.all([
     safeQuery(() => db.receiptEntry.findMany({ where: { financialYear: fy }, orderBy: { receiptDate: 'asc' } })),
-    safeQuery(() => db.paymentEntry.findMany({ where: { financialYear: fy }, orderBy: { paymentDate: 'asc' } })),
+    safeQuery(() => db.paymentEntry.findMany({ where: { financialYear: fy }, orderBy: { voucherDate: 'asc' } })),
   ]);
 
   const rows = [
@@ -284,7 +285,7 @@ async function generateNamuna3(fy: string, village: VillageInfoType | null) {
     })),
     ...payments.map((p, i) => ({
       _sr: receipts.length + i + 1,
-      date: p.paymentDate ? new Date(p.paymentDate).toLocaleDateString('en-IN') : '',
+      date: p.voucherDate ? new Date(p.voucherDate).toLocaleDateString('en-IN') : '',
       voucher: p.voucherNumber || p.voucherNo,
       type: 'नामे',
       particulars: p.paidTo || p.payeeName || '',
@@ -298,7 +299,7 @@ async function generateNamuna3(fy: string, village: VillageInfoType | null) {
   const totalCredit = r2(payments.reduce((s, p) => s + p.amount, 0));
 
   return {
-    ...makeBase(3, 'नमुना ३ - जमा खर्च विवरण', 'Namuna 3 - Income & Expenditure', fy, village),
+    ...makeBase(3, 'नमुना ३ - ग्रामपंचायत जमा खर्चाचे विवरण', 'Namuna 3 - Income & Expenditure Statement', fy, village),
     headers: ['अ.क्र.', 'दिनांक', 'वाउचर क्र.', 'प्रकार', 'विवरण', 'खाते शीर्ष', 'जमा (₹)', 'नामे (₹)'],
     rows,
     totals: {
@@ -345,7 +346,7 @@ async function generateNamuna4(fy: string, village: VillageInfoType | null) {
   const totalLiabilityValue = r2(totalDemand - totalCollection);
 
   return {
-    ...makeBase(4, 'नमुना ४ - मत्ता व दायित्वे', 'Namuna 4 - Assets & Liabilities', fy, village),
+    ...makeBase(4, 'नमुना ४ - ग्रामपंचायत मत्ता व दायित्वे', 'Namuna 4 - Assets & Liabilities', fy, village),
     headers: ['अ.क्र.', 'प्रकार', 'विवरण', 'रक्कम (₹)'],
     rows: assetRows,
     totals: {
@@ -364,7 +365,7 @@ async function generateNamuna4(fy: string, village: VillageInfoType | null) {
 async function generateNamuna5(fy: string, village: VillageInfoType | null) {
   const [receipts, payments] = await Promise.all([
     safeQuery(() => db.receiptEntry.findMany({ where: { financialYear: fy }, orderBy: { receiptDate: 'asc' } })),
-    safeQuery(() => db.paymentEntry.findMany({ where: { financialYear: fy }, orderBy: { paymentDate: 'asc' } })),
+    safeQuery(() => db.paymentEntry.findMany({ where: { financialYear: fy }, orderBy: { voucherDate: 'asc' } })),
   ]);
 
   const allEntries = [
@@ -378,7 +379,7 @@ async function generateNamuna5(fy: string, village: VillageInfoType | null) {
       head: r.headOfAccountMr || r.headOfAccount || '',
     })),
     ...payments.map(p => ({
-      date: p.paymentDate ? new Date(p.paymentDate).toISOString() : '',
+      date: p.voucherDate ? new Date(p.voucherDate).toISOString() : '',
       voucher: p.voucherNumber || p.voucherNo,
       type: 'नामे' as const,
       particulars: p.paidTo || p.payeeName || '',
@@ -428,7 +429,7 @@ async function generateNamuna5(fy: string, village: VillageInfoType | null) {
 async function generateNamuna5ka(fy: string, village: VillageInfoType | null) {
   const [receipts, payments] = await Promise.all([
     safeQuery(() => db.receiptEntry.findMany({ where: { financialYear: fy }, orderBy: { receiptDate: 'asc' } })),
-    safeQuery(() => db.paymentEntry.findMany({ where: { financialYear: fy }, orderBy: { paymentDate: 'asc' } })),
+    safeQuery(() => db.paymentEntry.findMany({ where: { financialYear: fy }, orderBy: { voucherDate: 'asc' } })),
   ]);
 
   const dateMap = new Map<string, { date: string; totalReceipt: number; totalPayment: number; receiptCount: number; paymentCount: number }>();
@@ -443,7 +444,7 @@ async function generateNamuna5ka(fy: string, village: VillageInfoType | null) {
   }
 
   for (const p of payments) {
-    const key = p.paymentDate ? new Date(p.paymentDate).toLocaleDateString('en-IN') : '';
+    const key = p.voucherDate ? new Date(p.voucherDate).toLocaleDateString('en-IN') : '';
     if (!key) continue;
     if (!dateMap.has(key)) dateMap.set(key, { date: key, totalReceipt: 0, totalPayment: 0, receiptCount: 0, paymentCount: 0 });
     const entry = dateMap.get(key)!;
@@ -510,7 +511,7 @@ async function generateNamuna6(fy: string, village: VillageInfoType | null) {
   }));
 
   return {
-    ...makeBase(6, 'नमुना ६ - वर्गीकृत नोंदवही', 'Namuna 6 - Classified Receipt Register', fy, village),
+    ...makeBase(6, 'नमुना ६ - मासिक जमा-खर्चाची नोंदवही', 'Namuna 6 - Monthly Income-Expenditure Register', fy, village),
     headers: ['अ.क्र.', 'खाते कोड', 'खाते नाव', 'एंट्री संख्या', 'एकूण रक्कम (₹)'],
     rows,
     totals: {
@@ -537,7 +538,7 @@ async function generateNamuna7(fy: string, village: VillageInfoType | null) {
     payerName: r.payerNameMr || r.payerName,
     amount: r.amount,
     taxType: r.taxType,
-    paymentMode: r.paymentMode || r.paymentMethod,
+    paymentMode: r.paymentMode || r.paymentMode,
     headOfAccount: r.headOfAccountMr || r.headOfAccount || '',
     description: r.description || '',
   }));
@@ -701,7 +702,7 @@ async function generateNamuna10(fy: string, village: VillageInfoType | null) {
       db.taxPayment.findMany({
         where: { financialYear: fy },
         include: { property: { include: { ward: true, owners: { include: { owner: true } } } } },
-        orderBy: { paymentDate: 'desc' },
+        orderBy: { voucherDate: 'desc' },
       })
     ),
     safeQuery(() => db.collectionEntry.findMany({ where: { financialYear: fy }, orderBy: { collectionDate: 'desc' } })),
@@ -712,7 +713,7 @@ async function generateNamuna10(fy: string, village: VillageInfoType | null) {
     return {
       _sr: i + 1,
       receiptNo: p.receiptNo,
-      date: p.paymentDate ? new Date(p.paymentDate).toLocaleDateString('en-IN') : '',
+      date: p.voucherDate ? new Date(p.voucherDate).toLocaleDateString('en-IN') : '',
       propertyNumber: p.property?.propertyNo || '',
       ownerName: primaryOwner?.owner ? `${primaryOwner.owner.firstNameMr || primaryOwner.owner.firstName} ${primaryOwner.owner.lastNameMr || primaryOwner.owner.lastName}` : p.property?.ownerName || '',
       amount: p.amount,
@@ -722,7 +723,7 @@ async function generateNamuna10(fy: string, village: VillageInfoType | null) {
   });
 
   return {
-    ...makeBase(10, 'नमुना १० - कर व फी पावती', 'Namuna 10 - Tax & Fee Receipt', fy, village),
+    ...makeBase(10, 'नमुना १० - कर व फी वसुली बाबत पावती', 'Namuna 10 - Tax & Fee Collection Receipt', fy, village),
     headers: ['अ.क्र.', 'पावती क्र.', 'दिनांक', 'मालमत्ता क्र.', 'मालक', 'मागणी (₹)', 'भरलेले (₹)', 'देयक पद्धत'],
     rows,
     totals: {
@@ -755,7 +756,7 @@ async function generateNamuna11(fy: string, village: VillageInfoType | null) {
     taxType: r.taxType,
     amount: r.amount,
     headOfAccount: r.headOfAccountMr || r.headOfAccount || '',
-    paymentMode: r.paymentMode || r.paymentMethod,
+    paymentMode: r.paymentMode || r.paymentMode,
   }));
 
   const groupedByTax = new Map<string, number>();
@@ -765,7 +766,7 @@ async function generateNamuna11(fy: string, village: VillageInfoType | null) {
   }
 
   return {
-    ...makeBase(11, 'नमुना ११ - किरकोळ कर व फी आकारणी', 'Namuna 11 - Misc Tax Assessment', fy, village),
+    ...makeBase(11, 'नमुना ११ - किरकोळ मागणी नोंदवही', 'Namuna 11 - Miscellaneous Demand Register', fy, village),
     headers: ['अ.क्र.', 'पावती क्र.', 'दिनांक', 'देणारा', 'कर प्रकार', 'रक्कम (₹)', 'खाते शीर्ष', 'देयक पद्धत'],
     rows,
     totals: {
@@ -782,24 +783,24 @@ async function generateNamuna11(fy: string, village: VillageInfoType | null) {
 // ============================================================
 async function generateNamuna12(fy: string, village: VillageInfoType | null) {
   const paymentEntries = await safeQuery(() =>
-    db.paymentEntry.findMany({ where: { financialYear: fy }, orderBy: { paymentDate: 'desc' } })
+    db.paymentEntry.findMany({ where: { financialYear: fy }, orderBy: { voucherDate: 'desc' } })
   );
 
   const rows = paymentEntries.map((p, i) => ({
     _sr: i + 1,
     voucherNo: p.voucherNo,
     voucherNumber: p.voucherNumber || p.voucherNo,
-    date: p.paymentDate ? new Date(p.paymentDate).toLocaleDateString('en-IN') : '',
+    date: p.voucherDate ? new Date(p.voucherDate).toLocaleDateString('en-IN') : '',
     payeeName: p.payeeNameMr || p.payeeName,
     amount: p.amount,
     headOfAccount: p.headOfAccountMr || p.headOfAccount,
-    paymentMode: p.paymentMode || p.paymentMethod,
+    paymentMode: p.paymentMode || p.paymentMode,
     description: p.description || '',
     paidTo: p.paidTo || '',
   }));
 
   return {
-    ...makeBase(12, 'नमुना १२ - अकस्मात खर्च प्रमाणक', 'Namuna 12 - Contingent Voucher', fy, village),
+    ...makeBase(12, 'नमुना १२ - आकस्मिक खर्चाचे प्रमाण', 'Namuna 12 - Contingent Expenditure Voucher', fy, village),
     headers: ['अ.क्र.', 'वाउचर क्र.', 'वाउचर नंबर', 'दिनांक', 'प्राप्तकर्ता', 'रक्कम (₹)', 'खाते शीर्ष', 'देयक पद्धत', 'विवरण', 'कोणास दिले'],
     rows,
     totals: {
@@ -832,7 +833,7 @@ async function generateNamuna13(fy: string, village: VillageInfoType | null) {
   }));
 
   return {
-    ...makeBase(13, 'नमुना १३ - कर्मचारी नोंदवही', 'Namuna 13 - Employee Register', fy, village),
+    ...makeBase(13, 'नमुना १३ - कर्मचारी वर्गाची सूची व वेतनश्रेणी नोंदवही', 'Namuna 13 - Employee List & Pay Scale Register', fy, village),
     headers: ['अ.क्र.', 'नाव', 'पद', 'विभाग', 'वेतनमान', 'मूळ वेतन (₹)', 'महागाई (₹)', 'घरभाडे (₹)', 'एकूण वेतन (₹)', 'रुजू दिनांक', 'निवृत्ती दिनांक', 'स्थिती'],
     rows,
     totals: {
@@ -872,7 +873,7 @@ async function generateNamuna14(fy: string, village: VillageInfoType | null) {
   }));
 
   return {
-    ...makeBase(14, 'नमुना १४ - मुद्रांक हिशोब', 'Namuna 14 - Stamp Account', fy, village),
+    ...makeBase(14, 'नमुना १४ - मुद्रांक हिशोब नोंदवही', 'Namuna 14 - Stamp Account Register', fy, village),
     headers: ['अ.क्र.', 'खाते शीर्ष', 'एंट्री संख्या', 'एकूण रक्कम (₹)'],
     rows,
     totals: {
@@ -909,7 +910,7 @@ async function generateNamuna15(fy: string, village: VillageInfoType | null) {
   }));
 
   return {
-    ...makeBase(15, 'नमुना १५ - उपभोग्य वस्तू साठा', 'Namuna 15 - Consumable Stock Register', fy, village),
+    ...makeBase(15, 'नमुना १५ - उपभोग्य वस्तू साठा लेखा नोंदवही', 'Namuna 15 - Consumable Stock Account Register', fy, village),
     headers: ['अ.क्र.', 'साठा क्र.', 'वस्तूचे नाव', 'वर्ग', 'एकक', 'प्रमाण', 'दर प्रति एकक (₹)', 'एकूण मूल्य (₹)', 'किमान साठा', 'कमाल साठा', 'शेवटची खरेदी', 'पुरवठादार', 'स्थिती'],
     rows,
     totals: {
@@ -948,7 +949,7 @@ async function generateNamuna16(fy: string, village: VillageInfoType | null) {
   }));
 
   return {
-    ...makeBase(16, 'नमुना १६ - जडवस्तू संग्रह व जंगम मालमत्ता', 'Namuna 16 - Dead Stock & Movable Property', fy, village),
+    ...makeBase(16, 'नमुना १६ - जड वस्तू संग्रह / जंगम मालमत्ता नोंदवही', 'Namuna 16 - Fixed Asset / Dead Stock Register', fy, village),
     headers: ['अ.क्र.', 'मालमत्ता क्र.', 'नाव', 'प्रकार', 'वर्ग', 'क्रमांक', 'खरेदी दिनांक', 'खरेदी किंमत (₹)', 'सध्याची किंमत (₹)', 'घसरण (₹)', 'स्थान', 'स्थिती', 'दर्जा'],
     rows,
     totals: {
@@ -968,7 +969,7 @@ async function generateNamuna16(fy: string, village: VillageInfoType | null) {
 async function generateNamuna17(fy: string, village: VillageInfoType | null) {
   const [receipts, payments] = await Promise.all([
     safeQuery(() => db.receiptEntry.findMany({ where: { financialYear: fy }, orderBy: { receiptDate: 'asc' } })),
-    safeQuery(() => db.paymentEntry.findMany({ where: { financialYear: fy }, orderBy: { paymentDate: 'asc' } })),
+    safeQuery(() => db.paymentEntry.findMany({ where: { financialYear: fy }, orderBy: { voucherDate: 'asc' } })),
   ]);
 
   // Deposits = receipts with advance/deposit keywords; Advances = payments with advance keywords
@@ -993,7 +994,7 @@ async function generateNamuna17(fy: string, village: VillageInfoType | null) {
     })),
     ...advances.map((p, i) => ({
       _sr: deposits.length + i + 1,
-      date: p.paymentDate ? new Date(p.paymentDate).toLocaleDateString('en-IN') : '',
+      date: p.voucherDate ? new Date(p.voucherDate).toLocaleDateString('en-IN') : '',
       type: 'अग्रीम',
       voucher: p.voucherNumber || p.voucherNo,
       particulars: p.paidTo || p.payeeName || '',
@@ -1003,7 +1004,7 @@ async function generateNamuna17(fy: string, village: VillageInfoType | null) {
   ];
 
   return {
-    ...makeBase(17, 'नमुना १७ - अग्रीम/अनामत रक्कम नोंदवही', 'Namuna 17 - Advance & Deposit Register', fy, village),
+    ...makeBase(17, 'नमुना १७ - अग्रीम दिलेल्या/अनामत ठेवलेल्या रकमांची नोंदवही', 'Namuna 17 - Advance & Deposit Register', fy, village),
     headers: ['अ.क्र.', 'दिनांक', 'प्रकार', 'वाउचर क्र.', 'विवरण', 'रक्कम (₹)', 'खाते शीर्ष'],
     rows,
     totals: {
@@ -1021,8 +1022,8 @@ async function generateNamuna17(fy: string, village: VillageInfoType | null) {
 // ============================================================
 async function generateNamuna18(fy: string, village: VillageInfoType | null) {
   const [receipts, payments] = await Promise.all([
-    safeQuery(() => db.receiptEntry.findMany({ where: { financialYear: fy, paymentMethod: 'cash' }, orderBy: { receiptDate: 'asc' } })),
-    safeQuery(() => db.paymentEntry.findMany({ where: { financialYear: fy, paymentMethod: 'cash' }, orderBy: { paymentDate: 'asc' } })),
+    safeQuery(() => db.receiptEntry.findMany({ where: { financialYear: fy, paymentMode: 'cash' }, orderBy: { receiptDate: 'asc' } })),
+    safeQuery(() => db.paymentEntry.findMany({ where: { financialYear: fy, paymentMode: 'cash' }, orderBy: { voucherDate: 'asc' } })),
   ]);
 
   const allEntries = [
@@ -1036,7 +1037,7 @@ async function generateNamuna18(fy: string, village: VillageInfoType | null) {
       head: r.headOfAccountMr || r.headOfAccount || '',
     })),
     ...payments.map(p => ({
-      date: p.paymentDate ? new Date(p.paymentDate).toISOString() : '',
+      date: p.voucherDate ? new Date(p.voucherDate).toISOString() : '',
       voucher: p.voucherNumber || p.voucherNo,
       type: 'नामे' as const,
       particulars: p.paidTo || p.payeeName || '',
@@ -1063,7 +1064,7 @@ async function generateNamuna18(fy: string, village: VillageInfoType | null) {
   });
 
   return {
-    ...makeBase(18, 'नमुना १८ - किरकोळ रोकडवही', 'Namuna 18 - Petty Cash Book', fy, village),
+    ...makeBase(18, 'नमुना १८ - किरकोळ रोकड वही', 'Namuna 18 - Petty Cash Book', fy, village),
     headers: ['अ.क्र.', 'दिनांक', 'वाउचर क्र.', 'प्रकार', 'विवरण', 'खाते शीर्ष', 'जमा (₹)', 'नामे (₹)', 'शिल्लक (₹)'],
     rows,
     totals: {
@@ -1097,7 +1098,7 @@ async function generateNamuna19(fy: string, village: VillageInfoType | null) {
   }));
 
   return {
-    ...makeBase(19, 'नमुना १९ - हजेरीपट', 'Namuna 19 - Muster Roll', fy, village),
+    ...makeBase(19, 'नमुना १९ - कामावर असलेल्या व्यक्तींचा हजेरीपट', 'Namuna 19 - Labour Attendance Register', fy, village),
     headers: ['अ.क्र.', 'कामाचे नाव', 'योजना', 'अंदाजित खर्च (₹)', 'मंजूर खर्च (₹)', 'कंत्राटदार', 'सुरू दिनांक', 'समाप्ती दिनांक', 'प्रगती %', 'स्थिती'],
     rows,
     totals: {
@@ -1193,7 +1194,7 @@ async function generateNamuna20ka(fy: string, village: VillageInfoType | null) {
 async function generateNamuna20kha(fy: string, village: VillageInfoType | null) {
   const [workEntries, paymentEntries] = await Promise.all([
     safeQuery(() => db.workEntry.findMany({ where: { financialYear: fy }, orderBy: { workName: 'asc' } })),
-    safeQuery(() => db.paymentEntry.findMany({ where: { financialYear: fy }, orderBy: { paymentDate: 'desc' } })),
+    safeQuery(() => db.paymentEntry.findMany({ where: { financialYear: fy }, orderBy: { voucherDate: 'desc' } })),
   ]);
 
   const rows = workEntries.map((w, i) => ({
@@ -1250,7 +1251,7 @@ async function generateNamuna21(fy: string, village: VillageInfoType | null) {
   }));
 
   return {
-    ...makeBase(21, 'नमुना २१ - कर्मचाऱ्याच्या देयकाची नोंदवही', 'Namuna 21 - Employee Bill Register', fy, village),
+    ...makeBase(21, 'नमुना २१ - कर्मचाऱ्यांच्या वेतन देयकाची नोंदवही', 'Namuna 21 - Salary Bill Register', fy, village),
     headers: ['अ.क्र.', 'कर्मचारी', 'पद', 'महिना', 'वर्ष', 'मूळ वेतन (₹)', 'महागाई (₹)', 'घरभाडे (₹)', 'भत्ता (₹)', 'कपाती (₹)', 'निव्वळ वेतन (₹)', 'देयक दिनांक', 'देयक पद्धत'],
     rows,
     totals: {
@@ -1288,7 +1289,7 @@ async function generateNamuna22(fy: string, village: VillageInfoType | null) {
   }));
 
   return {
-    ...makeBase(22, 'नमुना २२ - स्थावर मालमत्ता नोंदवही', 'Namuna 22 - Immovable Property Register', fy, village),
+    ...makeBase(22, 'नमुना २२ - स्थावर मालमत्ता नोंदवही (रस्ते व जमिनी व्यतिरिक्त)', 'Namuna 22 - Immovable Property Register (Excl. Roads & Land)', fy, village),
     headers: ['अ.क्र.', 'मालमत्ता नाव', 'वर्णन', 'संपादन दिनांक', 'संपादन पद्धत', 'मूळ मूल्य (₹)', 'बांधकाम खर्च (₹)', 'सध्याचे मूल्य (₹)', 'स्थान', 'क्षेत्रफळ (चौ.फूट)', 'नकाशा क्र.', 'प्लॉट क्र.', 'वापर', 'दर्जा'],
     rows,
     totals: {
@@ -1326,7 +1327,7 @@ async function generateNamuna23(fy: string, village: VillageInfoType | null) {
   }));
 
   return {
-    ...makeBase(23, 'नमुना २३ - ताब्यातील रस्त्यांची नोंदवही', 'Namuna 23 - Road Register', fy, village),
+    ...makeBase(23, 'नमुना २३ - रस्त्याची नोंदवही', 'Namuna 23 - Road Register', fy, village),
     headers: ['अ.क्र.', 'रस्ता नाव', 'प्रकार', 'लांबी (मी)', 'रुंदी (मी)', 'पृष्ठभाग', 'बांधकाम वर्ष', 'दुरुस्ती वर्ष', 'अंदाजित खर्च (₹)', 'स्थान', 'येथून', 'येथपर्यंत', 'दर्जा'],
     rows,
     totals: {
@@ -1422,6 +1423,71 @@ async function generateNamuna25(fy: string, village: VillageInfoType | null) {
 }
 
 // ============================================================
+// NAMUNA 26 - मासिक विवरण (Combined Monthly Statement)
+// ============================================================
+async function generateNamuna26(fy: string, village: VillageInfoType | null) {
+  const [receipts, payments] = await Promise.all([
+    safeQuery(() => db.receiptEntry.findMany({ where: { financialYear: fy }, orderBy: { receiptDate: 'asc' } })),
+    safeQuery(() => db.paymentEntry.findMany({ where: { financialYear: fy }, orderBy: { voucherDate: 'asc' } })),
+  ]);
+
+  const monthNames = ['जानेवारी', 'फेब्रुवारी', 'मार्च', 'एप्रिल', 'मे', 'जून', 'जुलै', 'ऑगस्ट', 'सप्टेंबर', 'ऑक्टोबर', 'नोव्हेंबर', 'डिसेंबर'];
+  const monthMap = new Map<string, { month: string; income: number; expenditure: number; incomeCount: number; expenditureCount: number }>();
+
+  for (const r of receipts) {
+    if (!r.receiptDate) continue;
+    const d = new Date(r.receiptDate);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const label = monthNames[d.getMonth()] + ' ' + d.getFullYear();
+    if (!monthMap.has(key)) monthMap.set(key, { month: label, income: 0, expenditure: 0, incomeCount: 0, expenditureCount: 0 });
+    const entry = monthMap.get(key)!;
+    entry.income += r.amount;
+    entry.incomeCount++;
+  }
+
+  for (const p of payments) {
+    if (!p.voucherDate) continue;
+    const d = new Date(p.voucherDate);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const label = monthNames[d.getMonth()] + ' ' + d.getFullYear();
+    if (!monthMap.has(key)) monthMap.set(key, { month: label, income: 0, expenditure: 0, incomeCount: 0, expenditureCount: 0 });
+    const entry = monthMap.get(key)!;
+    entry.expenditure += p.amount;
+    entry.expenditureCount++;
+  }
+
+  const rows = Array.from(monthMap.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([, v], i) => ({
+      _sr: i + 1,
+      month: v.month,
+      incomeCount: v.incomeCount,
+      income: r2(v.income),
+      expenditureCount: v.expenditureCount,
+      expenditure: r2(v.expenditure),
+      surplus: r2(v.income - v.expenditure),
+    }));
+
+  const totalIncome = r2(receipts.reduce((s, r) => s + r.amount, 0));
+  const totalExpenditure = r2(payments.reduce((s, p) => s + p.amount, 0));
+
+  return {
+    ...makeBase(26, 'नमुना २६ - मासिक विवरण (जमा-खर्च)', 'Namuna 26 - Monthly Statement', fy, village),
+    headers: ['अ.क्र.', 'महिना', 'जमा नोंदी', 'जमा रक्कम (₹)', 'खर्च नोंदी', 'खर्च रक्कम (₹)', 'शिल्लक (₹)'],
+    rows,
+    totals: {
+      totalMonths: rows.length,
+      totalIncome,
+      totalExpenditure,
+      totalSurplus: r2(totalIncome - totalExpenditure),
+      totalReceipts: receipts.length,
+      totalPayments: payments.length,
+    },
+    meta: { financialYear: fy, note: 'उप-नमुने: २६क (जमा), २६ख (खर्च)' },
+  };
+}
+
+// ============================================================
 // NAMUNA 26क - जमा मासिक विवरण (Monthly Income Statement)
 // ============================================================
 async function generateNamuna26ka(fy: string, village: VillageInfoType | null) {
@@ -1470,15 +1536,15 @@ async function generateNamuna26ka(fy: string, village: VillageInfoType | null) {
 // ============================================================
 async function generateNamuna26kha(fy: string, village: VillageInfoType | null) {
   const payments = await safeQuery(() =>
-    db.paymentEntry.findMany({ where: { financialYear: fy }, orderBy: { paymentDate: 'asc' } })
+    db.paymentEntry.findMany({ where: { financialYear: fy }, orderBy: { voucherDate: 'asc' } })
   );
 
   const monthMap = new Map<string, { month: string; total: number; count: number }>();
   const monthNames = ['जानेवारी', 'फेब्रुवारी', 'मार्च', 'एप्रिल', 'मे', 'जून', 'जुलै', 'ऑगस्ट', 'सप्टेंबर', 'ऑक्टोबर', 'नोव्हेंबर', 'डिसेंबर'];
 
   for (const p of payments) {
-    if (!p.paymentDate) continue;
-    const d = new Date(p.paymentDate);
+    if (!p.voucherDate) continue;
+    const d = new Date(p.voucherDate);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     const label = monthNames[d.getMonth()] + ' ' + d.getFullYear();
     if (!monthMap.has(key)) monthMap.set(key, { month: label, total: 0, count: 0 });
@@ -1529,7 +1595,7 @@ async function generateNamuna27(fy: string, village: VillageInfoType | null) {
   }));
 
   return {
-    ...makeBase(27, 'नमुना २७ - लेखापरीक्षण आक्षेप', 'Namuna 27 - Audit Objection', fy, village),
+    ...makeBase(27, 'नमुना २७ - लेखा परीक्षणातील आक्षेपांच्या पूर्ततेचे मासिक विवरण', 'Namuna 27 - Audit Objection Compliance Statement', fy, village),
     headers: ['अ.क्र.', 'वाउचर क्र.', 'दिनांक', 'वाउचर प्रकार', 'रक्कम (₹)', 'नामे खाते', 'जमा खाते', 'निवेदन'],
     rows,
     totals: {
@@ -1563,7 +1629,7 @@ async function generateNamuna28(fy: string, village: VillageInfoType | null) {
   ];
 
   return {
-    ...makeBase(28, 'नमुना २८ - मागासवर्गीय 15% व महिला बालकल्याण 10%', 'Namuna 28 - SC/Women Welfare', fy, village),
+    ...makeBase(28, 'नमुना २८ - मागासवर्गीय १५% खर्च / महिला बालकल्याण १०% खर्चाचे मासिक विवरण', 'Namuna 28 - SC 15% / Women & Child Welfare 10% Expenditure', fy, village),
     headers: ['अ.क्र.', 'श्रेणी', 'अंदाज टक्के', 'अंदाज रक्कम (₹)', 'वास्तव खर्च (₹)', 'तूट (₹)'],
     rows,
     totals: {
@@ -1636,7 +1702,7 @@ async function generateNamuna30(fy: string, village: VillageInfoType | null) {
   }));
 
   return {
-    ...makeBase(30, 'नमुना ३० - लेखापरीक्षण पूर्तता', 'Namuna 30 - Audit Compliance', fy, village),
+    ...makeBase(30, 'नमुना ३० - ग्रामपंचायत लेखापरीक्षण आक्षेप पूर्तता नोंदवही', 'Namuna 30 - Audit Objection Compliance Register', fy, village),
     headers: ['अ.क्र.', 'वाउचर क्र.', 'दिनांक', 'प्रकार', 'रक्कम (₹)', 'नामे खाते', 'जमा खाते', 'निवेदन', 'पूर्तता स्थिती'],
     rows,
     totals: {
@@ -1687,7 +1753,7 @@ async function generateNamuna32(fy: string, village: VillageInfoType | null) {
     db.taxPayment.findMany({
       where: { financialYear: fy },
       include: { property: { include: { ward: true, owners: { include: { owner: true } } } } },
-      orderBy: { paymentDate: 'desc' },
+      orderBy: { voucherDate: 'desc' },
     })
   );
 
@@ -1696,7 +1762,7 @@ async function generateNamuna32(fy: string, village: VillageInfoType | null) {
     return {
       _sr: i + 1,
       receiptNo: p.receiptNo,
-      date: p.paymentDate ? new Date(p.paymentDate).toLocaleDateString('en-IN') : '',
+      date: p.voucherDate ? new Date(p.voucherDate).toLocaleDateString('en-IN') : '',
       propertyNumber: p.property?.propertyNo || '',
       ownerName: primaryOwner?.owner ? `${primaryOwner.owner.firstNameMr || primaryOwner.owner.firstName} ${primaryOwner.owner.lastNameMr || primaryOwner.owner.lastName}` : p.property?.ownerName || '',
       amountPaid: p.amountPaid,

@@ -129,3 +129,31 @@ Stage Summary:
 - API integration working with /api/namuna-reports endpoint
 - All 33 Namuna register cards with unique colors and Marathi labels
 - Detail view with summary cards and data table
+
+---
+Task ID: 5
+Agent: Main Agent
+Task: Update Namuna 1-33 with correct official names from msdhulap.com website
+
+Work Log:
+- Read website content from https://www.msdhulap.com/complete-information-about-gram-panchayat-namuna-1-to-33-records/ using web-reader skill
+- Completely rewrote NAMUNA_LIST in namuna.tsx with correct official Marathi names from Lekha Sanhita 2011
+- Added descriptions for all 33 namunas based on website content
+- Added sub-namuna support: 5क (दैनिक रोकडवही), 20क (मोजमाप नोंदवही), 20ख (कामाचे दयक), 26क (जमा मासिक विवरण), 26ख (खर्चाचे मासिक विवरण)
+- Added new icons: TreePine, Route, MapPin, Scale, HandCoins, Stamp, UserCheck, PiggyBank, ScrollText, ShieldCheck, Bus, RotateCcw, Coins, BadgeIndianRupee
+- Fixed Road icon → Route (Road doesn't exist in lucide-react)
+- Added generateNamuna26() function to API route for combined monthly statement (was missing, causing 400 error)
+- Updated all API title strings to match official names from the website
+- Fixed Prisma field references: paymentDate → voucherDate, paymentMethod → paymentMode
+- Enhanced detail view: shows description card, village info card, sub-namuna tabs, proper table headers from API
+- All 33 API endpoints verified working
+- Lint clean, no errors
+- Browser verified: all 33 namuna cards with proper names, description cards, sub-namuna tabs, Namuna 26 loads without error
+
+Stage Summary:
+- All 33 namuna names now match the official Lekha Sanhita 2011 from msdhulap.com
+- Descriptions added from website for each namuna
+- Sub-namuna tabs working for Namuna 5, 20, 26
+- Namuna 26 API fixed (was returning error before)
+- Prisma field reference errors fixed across all namuna API functions
+- Detail view enhanced with village info, description, and proper table rendering

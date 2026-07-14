@@ -1,0 +1,717 @@
+     1→'use client';
+     2→
+     3→import React, { useState, useCallback, useEffect } from 'react';
+     4→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+     5→import { Button } from '@/components/ui/button';
+     6→import { Badge } from '@/components/ui/badge';
+     7→import { Skeleton } from '@/components/ui/skeleton';
+     8→import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+     9→import {
+    10→  BookOpen, ArrowLeft, RefreshCw, AlertCircle, FileText,
+    11→  Calculator, Receipt, Landmark, Warehouse, Users, Building2,
+    12→  Wallet, ClipboardList, TrendingUp, CreditCard, Package,
+    13→  TreePine, Road, MapPin, Scale, HandCoins, Stamp, UserCheck,
+    14→  PiggyBank, ScrollText, ShieldCheck, Bus, RotateCcw, Trees,
+    15→  CircleDollarSign, Coins, BadgeIndianRupee,
+    16→} from 'lucide-react';
+    17→
+    18→interface NamunaProps {
+    19→  financialYear: string;
+    20→}
+    21→
+    22→interface NamunaInfo {
+    23→  number: number;
+    24→  name: string;
+    25→  nameMr: string;
+    26→  description: string;
+    27→  icon: React.ElementType;
+    28→  gradient: string;
+    29→  subNamunas?: { key: string; nameMr: string; description: string }[];
+    30→}
+    31→
+    32→const NAMUNA_LIST: NamunaInfo[] = [
+    33→  {
+    34→    number: 1,
+    35→    name: 'Budget Estimate',
+    36→    nameMr: 'अंदाजपत्रक',
+    37→    description: 'कलम ६२ नुसार आर्थिक वर्षाकरिता जमाखर्चाचा अंदाजित अहवाल. सरपंच यांनी दि.३१ जानेवारी अखेर ग्रामपंचायतीस सादर करून मान्यता घेणे व २८ फेब्रुवारी अखेर ग्रामसभेची मान्यता घेऊन पंचायत समितीकडे सादर करणे बंधनकारक.',
+    38→    icon: Calculator,
+    39→    gradient: 'from-teal-500 to-teal-600',
+    40→  },
+    41→  {
+    42→    number: 2,
+    43→    name: 'Re-appropriation & Revised Allocation',
+    44→    nameMr: 'पुनर्विनियोजित नियतवाटप',
+    45→    description: 'ग्रामपंचायतीच्या मूळ मंजूर अंदाजपत्रकातील खर्चाचे पुनर्विनियोजित नियतवाटप करणे. मूळ अंदाजपत्रकात खर्चासाठी केलेल्या तरतुदीमध्ये त्या-त्या लेखा शिर्षकामध्ये घट किंवा वाढ होत असेल तर, अशा घट किंवा वाढीला बरोबरीत आणणे.',
+    46→    icon: Calculator,
+    47→    gradient: 'from-teal-600 to-teal-700',
+    48→  },
+    49→  {
+    50→    number: 3,
+    51→    name: 'Income & Expenditure Statement',
+    52→    nameMr: 'ग्रामपंचायत जमा खर्चाचे विवरण',
+    53→    description: 'ग्रामपंचायत जमा खर्च विवरण तयार करून आर्थिक वर्षातील पहिल्या ग्रामसभेस सादर करणे आवश्यक. वार्षिक जमा खर्चाचे विवरणपत्र दि.१ जून पूर्वी पंचायत समिती कार्यालयात सादर करणे आवश्यक.',
+    54→    icon: ClipboardList,
+    55→    gradient: 'from-orange-400 to-orange-600',
+    56→  },
+    57→  {
+    58→    number: 4,
+    59→    name: 'Assets & Liabilities',
+    60→    nameMr: 'ग्रामपंचायत मत्ता व दायित्वे',
+    61→    description: 'ग्रामपंचायतीकडून देय असलेल्या थकीत रकमा (दायित्व) आणि येणे असलेल्या रकमा यांचे वर्षाअखेरीस (दि.३१ मार्च पूर्वी) विवरणपत्र तयार केले पाहिजे. आर्थिक वर्षातील पहिल्या ग्रामसभेसमोर सरपंच ते सादर करावे.',
+    62→    icon: Scale,
+    63→    gradient: 'from-blue-500 to-blue-700',
+    64→  },
+    65→  {
+    66→    number: 5,
+    67→    name: 'General Cash Book',
+    68→    nameMr: 'सामान्य रोकड वही',
+    69→    description: 'नमुना ५ क-दैनिक रोकड वही मध्ये ज्या रकमा जमा झाल्या त्या रकमांची एकत्रित नोंद सामान्य रोकड वहीत लिहावी. धनादेशाद्वारे जमा होणाऱ्या रकमांची नोंद घ्यावी. खर्च बाजूला ₹५०० पेक्षा अधिकचा खर्च धनादेशानी अदा केलेल्यांच्या नोंदी घ्याव्यात.',
+    70→    icon: Wallet,
+    71→    gradient: 'from-emerald-400 to-emerald-600',
+    72→    subNamunas: [
+    73→      { key: '5ka', nameMr: 'दैनिक रोकडवही', description: 'नमुना १०, नमुना ७ अन्वये जमा रकमेची नोंद. दैनिक वसुलीची एकत्रित रक्कम बँक भरणा करून नमुना ५ मध्ये त्याची नोंद. या नमुन्यामध्ये खर्चाची रक्कम नोंदविता येणार नाही.' },
+    74→    ],
+    75→  },
+    76→  {
+    77→    number: 6,
+    78→    name: 'Monthly Income-Expenditure Register',
+    79→    nameMr: 'मासिक जमा-खर्चाची नोंदवही',
+    80→    description: 'सदरील नोंदवहीमध्ये मासिक जमा खर्चाचा तपशील दिनांकासह नोंदण्यात येतो. नमुना ५ सामान्य रोकड वहीतील सर्व रकमा यामध्ये समाविष्ट. प्रत्येक महिन्याचा हिशोब पूर्ण करून नमुना २६क व २६ख मध्ये जमा खर्चाचे विवरणपत्र तयार करून पंचायत समितीकडे सादर.',
+    81→    icon: ClipboardList,
+    82→    gradient: 'from-amber-400 to-amber-600',
+    83→  },
+    84→  {
+    85→    number: 7,
+    86→    name: 'General Receipt',
+    87→    nameMr: 'सामान्य पावती',
+    88→    description: 'ग्रामपंचायतीला प्राप्त झालेला विशिष्ठ रकमेसाठी — सर्व प्रकारची फी, अंशदान, देणगी व कर सोडून प्राप्त होणाऱ्या उत्पन्नाच्या रकमेची पोहोच. ₹५,००० पेक्षा अधिक रक्कम वसूल झाल्यास रेव्हेन्यू स्टॅम्प लावणे आवश्यक.',
+    89→    icon: Receipt,
+    90→    gradient: 'from-cyan-400 to-cyan-600',
+    91→  },
+    92→  {
+    93→    number: 8,
+    94→    name: 'Property Tax Assessment Register',
+    95→    nameMr: 'कर आकारणी नोंदवही',
+    96→    description: 'महाराष्ट्र ग्रामपंचायत अधिनियम १९५८ चे कलम १२४ नुसार ग्रामपंचायत हद्दीतील कर आकारणीस पात्र असलेल्या सर्व इमारती, जमिनीची नोंद. भांडवली मूल्यावर आधारित कर आकारणी करणे आवश्यक. नमुना ८ मधील एकूण मागणी नमुना ९ मधील चालू मागणीस जुळविणे आवश्यक.',
+    97→    icon: Building2,
+    98→    gradient: 'from-red-400 to-red-600',
+    99→  },
+   100→  {
+   101→    number: 9,
+   102→    name: 'Tax Demand Register',
+   103→    nameMr: 'कर मागणी नोंदवही',
+   104→    description: 'नमुना ८ प्रमाणे आकारणी केलेल्या कराच्या रकमेची नोंद वही. थकित कर, चालू मागणी व एकूण थकबाकी मागणी इत्यादींची नोंद व गोषवारा. एप्रिलच्या मासिक बैठकीत मान्यता घेण्यात यावी.',
+   105→    icon: ClipboardList,
+   106→    gradient: 'from-purple-500 to-purple-700',
+   107→  },
+   108→  {
+   109→    number: 10,
+   110→    name: 'Tax & Fee Collection Receipt',
+   111→    nameMr: 'कर व फी वसुली बाबत पावती',
+   112→    description: 'कर वसुली होणाऱ्या प्रत्येक रकमेसाठी करदात्यास नमुना १० कर वसुली पावती दिली जाते. प्रत्येक दिवशी जमा होणाऱ्या रकमांच्या नोंदी नमुना ५क मध्ये नोंद ठेवल्या जातात. पावती कार्बनचा दुहेरी वापर करून लिहिण्यात यावी.',
+   113→    icon: Receipt,
+   114→    gradient: 'from-pink-400 to-pink-600',
+   115→  },
+   116→  {
+   117→    number: 11,
+   118→    name: 'Miscellaneous Demand Register',
+   119→    nameMr: 'किरकोळ मागणी नोंदवही',
+   120→    description: 'शासनाकडून मिळालेले अनुदान — जमीन महसूल, मुद्रांक शुल्क, समानीकरण अनुदान, जिल्हा परिषद व पंचायत समितीकडून मिळालेल्या अनुदानाच्या नोंदी, गाळे भाडे, बाजार भाडे फी व इतर उत्पन्न इ. येणेबाकीच्या नोंदी. नमुना ७ पावतीने वसुली करण्यात येते.',
+   121→    icon: HandCoins,
+   122→    gradient: 'from-sky-400 to-sky-600',
+   123→  },
+   124→  {
+   125→    number: 12,
+   126→    name: 'Contingent Expenditure Voucher',
+   127→    nameMr: 'आकस्मिक खर्चाचे प्रमाण',
+   128→    description: 'ग्रामपंचायतीने खरेदी केलेल्या वस्तू किंवा दिलेल्या रकमांची नोंद. कोणतीही रक्कम काढावयाची असल्यास प्रमाणकाच्या आधारावर काढावी लागते. ₹५०० पेक्षा अधिक रक्कम धनादेशानेच काढण्यात येईल. नमुना १२ शाईच्या पेनाने लिहिण्यात यावा.',
+   129→    icon: CreditCard,
+   130→    gradient: 'from-yellow-400 to-yellow-600',
+   131→  },
+   132→  {
+   133→    number: 13,
+   134→    name: 'Employee List & Pay Scale Register',
+   135→    nameMr: 'कर्मचारी वर्गाची सूची व वेतनश्रेणी नोंदवही',
+   136→    description: 'ग्रामपंचायतीच्या कायम असलेल्या कर्मचाऱ्यांच्या नियुक्तीची नोंद. मंजूर पदे, कार्यरत कर्मचारी यामधील तफावत. ८.३३% रक्कम वेतनातून कपात करून भविष्य निर्वाह निधीत भरण्यात येईल.',
+   137→    icon: UserCheck,
+   138→    gradient: 'from-indigo-400 to-indigo-600',
+   139→  },
+   140→  {
+   141→    number: 14,
+   142→    name: 'Stamp Account Register',
+   143→    nameMr: 'मुद्रांक हिशोब नोंदवही',
+   144→    description: 'खरेदी केलेले मुद्रांक व वापर केलेल्या मुद्रांकांची नोंद. प्रत्येक महिन्यात सरपंच सदर साठा प्रमाणित करून साक्षांकीत करतील. ₹५,००० पुढची कोणतीही वसुली आल्यास महसूल मुद्रांक लावून पावती देणे बंधनकारक.',
+   145→    icon: Stamp,
+   146→    gradient: 'from-violet-400 to-violet-600',
+   147→  },
+   148→  {
+   149→    number: 15,
+   150→    name: 'Consumable Stock Account Register',
+   151→    nameMr: 'उपभोग्य वस्तू साठा लेखा नोंदवही',
+   152→    description: 'ग्रामपंचायतीने खरेदी केलेल्या उपभोग्य व आवश्यक वस्तूंची नोंद — पावती पुस्तके, नोंदवह्या, लेखन सामग्री, बांधकाम साहित्य. धनादेश पुस्तकांची नोंद या नमुन्यात घेणे बंधनकारक.',
+   153→    icon: Package,
+   154→    gradient: 'from-lime-500 to-lime-700',
+   155→  },
+   156→  {
+   157→    number: 16,
+   158→    name: 'Fixed Asset / Dead Stock Register',
+   159→    nameMr: 'जड वस्तू संग्रह / जंगम मालमत्ता नोंदवही',
+   160→    description: 'जड वस्तूंच्या नोंदी — टेबल, घड्याळ, खुर्ची, कपाट, विद्युत पंप, कायम टिकाऊ स्वरूपाच्या वस्तू. स्वतंत्र पानावर नोंद. आर्थिक वर्षातून दोन वेळा सरपंच सदर साठा पडताळणी करून दिनांकासह स्वाक्षरी करतील.',
+   161→    icon: Warehouse,
+   162→    gradient: 'from-stone-400 to-stone-600',
+   163→  },
+   164→  {
+   165→    number: 17,
+   166→    name: 'Advance & Deposit Register',
+   167→    nameMr: 'अग्रीम दिलेल्या/अनामत ठेवलेल्या रकमांची नोंदवही',
+   168→    description: 'ग्रामपंचायत वेगवेगळ्या कारणांसाठी कर्मचाऱ्यांना अग्रिम मंजूर करून नियमित वसुली करीत असते. अनामत रकमा जमा झाल्यास नमुना ५क मध्ये नोंद. मागील अग्रीम रक्कमेची पूर्ण वसुली झाल्याशिवाय पुढील अग्रीम रक्कम दिली जाऊ नये.',
+   169→    icon: HandCoins,
+   170→    gradient: 'from-rose-400 to-rose-600',
+   171→  },
+   172→  {
+   173→    number: 18,
+   174→    name: 'Petty Cash Book',
+   175→    nameMr: 'किरकोळ रोकड वही',
+   176→    description: 'नियम २४(२) अन्वये ₹५०० पेक्षा कमीचे प्रदान धनादेशानी करता येईल. नमुना ५ वरून सदरची जमा नमुना १८ च्या जमा बाजूस घेऊन केवळ नमुना १९ नुसार खर्च बाजूस खर्च नोंदविता येईल.',
+   177→    icon: Wallet,
+   178→    gradient: 'from-orange-500 to-orange-700',
+   179→  },
+   180→  {
+   181→    number: 19,
+   182→    name: 'Labour Attendance Register',
+   183→    nameMr: 'कामावर असलेल्या व्यक्तींचा हजेरीपट',
+   184→    description: 'नियम २४(२) नुसार ₹५०० पेक्षा कमी ची रक्कम नमुना १९ आधारे नमुना १८ मध्ये. नियम २४-ग नमुना १९ ची रक्कम वाटप करण्यासाठी प्रमाणका आधारेच काढता येईल. देयक नियम २४(५) नुसार नमुना १९ वरून काढण्यात येईल.',
+   185→    icon: Users,
+   186→    gradient: 'from-emerald-500 to-emerald-700',
+   187→  },
+   188→  {
+   189→    number: 20,
+   190→    name: 'Work Estimate Register',
+   191→    nameMr: 'कामाच्या अंदाजाची नोंदवही',
+   192→    description: 'ग्रामपंचायत प्रशासकीय मंजुरीसाठी प्रस्तावित असलेल्या कामाचा तपशीलवार मोजमापाचा आराखडा व अंदाजित खर्चाच्या तपशीलाची नोंद.',
+   193→    icon: ClipboardList,
+   194→    gradient: 'from-teal-400 to-teal-600',
+   195→    subNamunas: [
+   196→      { key: '20ka', nameMr: 'मोजमाप नोंदवही', description: 'ग्रामपंचायतीने केलेल्या किंवा कंत्राटदाराने केलेल्या कामाचे मोजमाप नोंदी पंचायत समितीच्या कनिष्ठ अभियंता/शाखा अभियंता यांचेकडून घेतल्या जातात.' },
+   197→      { key: '20kha', nameMr: 'कामाचे देयक', description: 'कामाचे मोजमाप करून नोंद केल्यानंतर कामाचे देयक नोंदवहीत करण्यात येईल. मोजमाप पुस्तिकेतील परिणाम व दर अचूक असल्याची खात्री करून सरपंच/ग्रामसेवक स्वाक्षरी करून प्रमाणित करतील.' },
+   198→    ],
+   199→  },
+   200→  {
+   201→    number: 21,
+   202→    name: 'Salary Bill Register',
+   203→    nameMr: 'कर्मचाऱ्यांच्या वेतन देयकाची नोंदवही',
+   204→    description: 'ग्रामपंचायतीने नेमलेल्या कायमस्वरूपी कर्मचाऱ्यांच्या वेतनाचे देयक. कर्मचाऱ्यांची वेतनश्रेणी, भत्ता, होणारी कपात, निव्वळ देय असणारी रक्कम यांचा हिशोब. सरपंचांची मंजुरी घेणे आवश्यक.',
+   205→    icon: BadgeIndianRupee,
+   206→    gradient: 'from-amber-500 to-amber-700',
+   207→  },
+   208→  {
+   209→    number: 22,
+   210→    name: 'Immovable Property Register (Excl. Roads & Land)',
+   211→    nameMr: 'स्थावर मालमत्ता नोंदवही (रस्ते व जमिनी व्यतिरिक्त)',
+   212→    description: 'ग्रामपंचायतीच्या मालकीच्या असलेल्या सर्व स्थावर मालमत्तेची नोंद. उदा. ग्रामपंचायत कार्यालय, विहीर, स्मशानभूमी, दुकान गाळे, इमारती, भूमिगत गटारे. प्रत्येक मालमत्तेसाठी स्वतंत्र पान.',
+   213→    icon: Building2,
+   214→    gradient: 'from-red-500 to-red-700',
+   215→  },
+   216→  {
+   217→    number: 23,
+   218→    name: 'Road Register',
+   219→    nameMr: 'रस्त्याची नोंदवही',
+   220→    description: 'ग्रामपंचायतीच्या ताब्यातील सर्व रस्त्यांच्या लांबी, रुंदी व इतर तपशिलासह नोंद. दरवर्षी एप्रिल मध्ये सरपंच/सचिव यांचेकडून प्रमाणित. नवीन रस्त्यांच्या नोंदी करताना सरपंच प्रत्यक्ष स्थळ पाहणी करून मोजमापे घ्यावीत.',
+   221→    icon: Road,
+   222→    gradient: 'from-sky-500 to-sky-700',
+   223→  },
+   224→  {
+   225→    number: 24,
+   226→    name: 'Land Register',
+   227→    nameMr: 'जमिनीची नोंदवही',
+   228→    description: 'पंचायतीने खरेदी, संपादित, शासनाकडून हस्तांतरीत केलेल्या सर्व जमिनी, मोकळ्या जागा, गाव, पडीक जमीन, गावरान इत्यादींच्या सविस्तर नोंदी. प्रत्येक जमिनीची नोंद स्वतंत्र पानावर. प्रतिवर्षी एप्रिल मध्ये प्रमाणित.',
+   229→    icon: MapPin,
+   230→    gradient: 'from-green-500 to-green-700',
+   231→  },
+   232→  {
+   233→    number: 25,
+   234→    name: 'Investment Register',
+   235→    nameMr: 'गुंतवणूक नोंदवही',
+   236→    description: 'महाराष्ट्र ग्रामपंचायत लेखा संहिता २०११ नियम १५ नुसार ग्रामपंचायतीने गुंतवणूक केलेल्या सर्व प्रकारच्या रकमा व त्यावर मिळणारे व्याज इत्यादींचा तपशिल. दरमहा नमुना ५ मध्ये ताळमेळ घालून प्रमाणित.',
+   237→    icon: PiggyBank,
+   238→    gradient: 'from-cyan-500 to-cyan-700',
+   239→  },
+   240→  {
+   241→    number: 26,
+   242→    name: 'Monthly Statement',
+   243→    nameMr: 'मासिक विवरण',
+   244→    description: 'प्रत्येक महिन्यात मासिक जमा/खर्च हिशोब पूर्ण केल्यानंतर मासिक विवरण तयार करून ग्रामसेवक प्रत्येक महिन्याचे १५ तारखेपर्यंत पंचायत समितीकडे सादर करतील.',
+   245→    icon: ClipboardList,
+   246→    gradient: 'from-fuchsia-400 to-fuchsia-600',
+   247→    subNamunas: [
+   248→      { key: '26ka', nameMr: 'जमा मासिक विवरण', description: 'प्रत्येक महिन्यात मासिक जमा हिशोब पूर्ण केल्यानंतर मासिक विवरण तयार करून ग्रामसेवक प्रत्येक महिन्याचे १५ तारखेपर्यंत पंचायत समितीकडे सादर करतील.' },
+   249→      { key: '26kha', nameMr: 'खर्चाचे मासिक विवरण', description: 'प्रत्येक महिन्यात मासिक खर्चाचा हिशोब पूर्ण केल्यानंतर मासिक विवरणपत्र तयार करून ग्रामसेवक प्रत्येक महिन्याच्या पंधरा तारखेपर्यंत पंचायत समितीकडे सादर करतील.' },
+   250→    ],
+   251→  },
+   252→  {
+   253→    number: 27,
+   254→    name: 'Audit Objection Compliance Statement',
+   255→    nameMr: 'लेखा परीक्षणातील आक्षेपांच्या पूर्ततेचे मासिक विवरण',
+   256→    description: 'ग्रामपंचायतीचा लेखा परीक्षणाचा अहवाल प्राप्त झाल्यानंतर तीन महिन्यात ग्रामसेवकांनी अनुपालन तयार करून पंचायत समितीकडे सादर करावा लागतो. पंचायत समितीच्या मान्यतेने मुख्य कार्यकारी अधिकारी, जिल्हा परिषद यांच्याकडे अनुपालन मान्यतेसाठी पाठविले जाते.',
+   257→    icon: ShieldCheck,
+   258→    gradient: 'from-emerald-400 to-teal-600',
+   259→  },
+   260→  {
+   261→    number: 28,
+   262→    name: 'SC 15% / Women & Child Welfare 10% Expenditure',
+   263→    nameMr: 'मागासवर्गीय १५% खर्च / महिला बालकल्याण १०% खर्चाचे मासिक विवरण',
+   264→    description: 'या नोंदवहीमध्ये १५ टक्के मागासवर्गीय खर्चाची व १० टक्के महिला बालकल्याण खर्चाचे मासिक विवरण असते. ग्रामसेवक पहिल्या आठवड्यात पंचायत समितीकडे सादर करतील.',
+   265→    icon: Users,
+   266→    gradient: 'from-orange-400 to-red-500',
+   267→  },
+   268→  {
+   269→    number: 29,
+   270→    name: 'Loan Register',
+   271→    nameMr: 'कर्जाची नोंदवही',
+   272→    description: 'ग्रामपंचायतीने घेतलेले कर्ज, त्याचे व्याज व कर्जाची केलेली परतफेड याचे विवरण. दर तीन महिन्यांने सरपंच यांनी प्रमाणित करणे आवश्यक.',
+   273→    icon: Coins,
+   274→    gradient: 'from-purple-400 to-purple-600',
+   275→  },
+   276→  {
+   277→    number: 30,
+   278→    name: 'Audit Objection Compliance Register',
+   279→    nameMr: 'ग्रामपंचायत लेखापरीक्षण आक्षेप पूर्तता नोंदवही',
+   280→    description: 'ग्रामपंचायतीने लेखा परीक्षकांच्या अहवाल प्राप्त झाल्यानंतर केलेली पूर्तता, झालेली वसुली पंचायतीच्या ठरावा सह पंचायत समितीकडे तीन महिन्याच्या आत पाठविण्यात येईल.',
+   281→    icon: ScrollText,
+   282→    gradient: 'from-blue-500 to-indigo-600',
+   283→  },
+   284→  {
+   285→    number: 31,
+   286→    name: 'Travel Allowance Bill',
+   287→    nameMr: 'प्रवास भत्ता देयक',
+   288→    description: 'ग्रामपंचायत अंतर्गत सरपंच, उपसरपंच, सदस्य व कर्मचारी यांना दिलेल्या प्रवासभत्त्याची नोंद. प्रशिक्षण, चर्चासत्र व शासनाने आयोजित केलेल्या कार्यक्रमाला उपस्थित राहण्यासाठी. ८ कि.मी. अंतराच्या आत प्रवास भत्ता घेता येणार नाही.',
+   289→    icon: Bus,
+   290→    gradient: 'from-teal-500 to-emerald-600',
+   291→  },
+   292→  {
+   293→    number: 32,
+   294→    name: 'Refund Order',
+   295→    nameMr: 'रकमेच्या परताव्यासाठीचा आदेश',
+   296→    description: 'ग्रामपंचायतीकडे नमुना १७ मध्ये नोंद घेऊन स्वीकारलेल्या ठेवी परत करताना केलेल्या कार्यवाहीची नोंद.',
+   297→    icon: RotateCcw,
+   298→    gradient: 'from-amber-400 to-orange-600',
+   299→  },
+   300→  {
+   301→    number: 33,
+   302→    name: 'Tree Register',
+   303→    nameMr: 'वृक्ष नोंदवही',
+   304→    description: 'ग्रामपंचायतीच्या ताब्यात असलेल्या जमिनीवर, रस्त्याच्या कडेला, शासकीय कार्यालयांच्या जागेवरील, अन्य ठिकाणी वृक्ष लागवड केलेल्या झाडांच्या नोंदी. झाडांपासून मिळणारे उत्पन्न, झाडे नष्ट/तोडल्याची नोंद कारणासह.',
+   305→    icon: TreePine,
+   306→    gradient: 'from-green-500 to-emerald-700',
+   307→  },
+   308→];
+   309→
+   310→function formatValue(val: unknown): string {
+   311→  if (val === null || val === undefined) return '-';
+   312→  if (typeof val === 'number') return val.toLocaleString('en-IN');
+   313→  if (typeof val === 'boolean') return val ? 'हो' : 'नाही';
+   314→  if (typeof val === 'object') {
+   315→    const obj = val as Record<string, unknown>;
+   316→    return String(obj.nameMr || obj.name || obj.headNameMr || obj.headName || obj.schemeNameMr || obj.schemeName || JSON.stringify(val));
+   317→  }
+   318→  return String(val);
+   319→}
+   320→
+   321→function formatHeader(key: string): string {
+   322→  return key
+   323→    .replace(/^_/, '')
+   324→    .replace(/([A-Z])/g, ' $1')
+   325→    .replace(/^./, s => s.toUpperCase())
+   326→    .replace('Sr', 'अ.क्र.')
+   327→    .replace('Code', 'कोड')
+   328→    .replace('Name', 'नाव')
+   329→    .replace('nameMr', 'नाव (मराठी)')
+   330→    .replace('Category', 'श्रेणी')
+   331→    .replace('Type', 'प्रकार')
+   332→    .replace('Section', 'विभाग')
+   333→    .replace('Original Budget', 'मूळ अंदाज')
+   334→    .replace('Revised Budget', 'दुरुस्तीत अंदाज')
+   335→    .replace('Actual', 'वास्तव')
+   336→    .replace('Reappropriation', 'पुनर्विनियोजन')
+   337→    .replace('Amount', 'रक्कम')
+   338→    .replace('Date', 'दिनांक')
+   339→    .replace('Voucher', 'वाउचर')
+   340→    .replace('Particulars', 'विवरण')
+   341→    .replace('Head', 'खाते शीर्ष')
+   342→    .replace('Debit', 'जमा')
+   343→    .replace('Credit', 'नामे')
+   344→    .replace('Description', 'वर्णन')
+   345→    .replace('Balance', 'शिल्लक')
+   346→    .replace('Total', 'एकूण')
+   347→    .replace('Count', 'संख्या')
+   348→    .replace('Demand', 'मागणी')
+   349→    .replace('Collection', 'वसूल')
+   350→    .replace('Outstanding', 'बकायपोरी')
+   351→    .replace('Tax', 'कर')
+   352→    .replace('Property', 'मालमत्ता')
+   353→    .replace('Owner', 'मालक')
+   354→    .replace('Area', 'क्षेत्रफळ')
+   355→    .replace('Rate', 'दर')
+   356→    .replace('Variance', 'फरक');
+   357→}
+   358→
+   359→export default function Namuna({ financialYear }: NamunaProps) {
+   360→  const [activeNamuna, setActiveNamuna] = useState<number | null>(null);
+   361→  const [activeSubNamuna, setActiveSubNamuna] = useState<string | null>(null);
+   362→  const [data, setData] = useState<Record<string, unknown> | null>(null);
+   363→  const [loading, setLoading] = useState(false);
+   364→  const [error, setError] = useState<string | null>(null);
+   365→
+   366→  const fetchNamuna = useCallback(async () => {
+   367→    if (!activeNamuna) return;
+   368→    setLoading(true);
+   369→    setError(null);
+   370→    try {
+   371→      const namunaKey = activeSubNamuna || String(activeNamuna);
+   372→      const res = await fetch(`/api/namuna-reports?namuna=${namunaKey}&financialYear=${financialYear}`);
+   373→      if (!res.ok) throw new Error('Fetch failed');
+   374→      const json = await res.json();
+   375→      setData(json);
+   376→    } catch {
+   377→      setError('नमुना डेटा लोड करताना त्रुटी');
+   378→      setData(null);
+   379→    } finally {
+   380→      setLoading(false);
+   381→    }
+   382→  }, [activeNamuna, activeSubNamuna, financialYear]);
+   383→
+   384→  useEffect(() => {
+   385→    if (activeNamuna) fetchNamuna();
+   386→  }, [activeNamuna, activeSubNamuna, fetchNamuna]);
+   387→
+   388→  // Namuna list view
+   389→  if (!activeNamuna) {
+   390→    return (
+   391→      <div className="space-y-4">
+   392→        <h2 className="text-lg font-bold flex items-center gap-2">
+   393→          <span className="h-1 w-8 rounded-full bg-gradient-to-r from-gp-saffron to-gp-green" />
+   394→          नमुने (१-३३)
+   395→          <span className="h-1 w-8 rounded-full bg-gradient-to-r from-gp-green to-gp-teal" />
+   396→        </h2>
+   397→        <p className="text-sm text-muted-foreground">महाराष्ट्र ग्रामपंचायत लेखा संहिता २०११ नुसार ३३ अभिलेख नमुने</p>
+   398→        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+   399→          {NAMUNA_LIST.map((n) => (
+   400→            <div
+   401→              key={n.number}
+   402→              onClick={() => { setActiveNamuna(n.number); setActiveSubNamuna(null); }}
+   403→              className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${n.gradient} p-3 text-white cursor-pointer shadow-md hover:shadow-xl hover:scale-[1.04] transition-all duration-200 group`}
+   404→            >
+   405→              <div className="absolute -bottom-3 -right-3 h-16 w-16 rounded-full bg-white/10" />
+   406→              <div className="flex items-start gap-2 relative z-10">
+   407→                <div className="h-9 w-9 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
+   408→                  <n.icon className="h-4 w-4 text-white" />
+   409→                </div>
+   410→                <div className="min-w-0">
+   411→                  <p className="text-xs font-bold text-white/80">नमुना {n.number}</p>
+   412→                  <p className="text-sm font-bold leading-tight line-clamp-2">{n.nameMr}</p>
+   413→                </div>
+   414→              </div>
+   415→              {/* Sub-namuna indicator */}
+   416→              {n.subNamunas && n.subNamunas.length > 0 && (
+   417→                <div className="absolute top-2 right-2">
+   418→                  <Badge className="bg-white/25 text-white text-[9px] px-1.5 py-0 border-0">
+   419→                    +{n.subNamunas.length} उप
+   420→                  </Badge>
+   421→                </div>
+   422→              )}
+   423→            </div>
+   424→          ))}
+   425→        </div>
+   426→      </div>
+   427→    );
+   428→  }
+   429→
+   430→  // Detail view for a specific Namuna
+   431→  const namunaInfo = NAMUNA_LIST.find(n => n.number === activeNamuna);
+   432→  const currentSubNamuna = namunaInfo?.subNamunas?.find(s => s.key === activeSubNamuna);
+   433→
+   434→  return (
+   435→    <div className="space-y-4">
+   436→      <div className="flex items-center gap-3 flex-wrap">
+   437→        <Button
+   438→          variant="outline"
+   439→          size="sm"
+   440→          onClick={() => { setActiveNamuna(null); setActiveSubNamuna(null); setData(null); }}
+   441→          className="border-gp-teal/30 text-gp-teal hover:bg-gp-teal/10"
+   442→        >
+   443→          <ArrowLeft className="h-4 w-4 mr-1" />मागे
+   444→        </Button>
+   445→        <div className={`h-8 w-8 rounded-lg bg-gradient-to-br ${namunaInfo?.gradient || 'from-teal-400 to-teal-600'} flex items-center justify-center shadow`}>
+   446→          {namunaInfo?.icon && <namunaInfo.icon className="h-4 w-4 text-white" />}
+   447→        </div>
+   448→        <div>
+   449→          <h2 className="text-lg font-bold">
+   450→            {currentSubNamuna
+   451→              ? `नमुना ${activeNamuna} ${currentSubNamuna.key.replace(/[0-9]/g, '').charAt(0) === 'k' ? 'क' : 'ख'}: ${currentSubNamuna.nameMr}`
+   452→              : `नमुना ${activeNamuna}: ${namunaInfo?.nameMr || ''}`}
+   453→          </h2>
+   454→          <p className="text-xs text-muted-foreground">{namunaInfo?.name || ''}</p>
+   455→        </div>
+   456→        <div className="ml-auto">
+   457→          <Button variant="outline" size="sm" onClick={fetchNamuna}>
+   458→            <RefreshCw className="h-4 w-4 mr-1" />रीफ्रेश
+   459→          </Button>
+   460→        </div>
+   461→      </div>
+   462→
+   463→      {/* Description Card */}
+   464→      {(namunaInfo?.description || currentSubNamuna?.description) && (
+   465→        <Card className="border-l-4 border-l-gp-saffron">
+   466→          <CardContent className="p-4">
+   467→            <div className="flex gap-2 items-start">
+   468→              <BookOpen className="h-4 w-4 text-gp-saffron flex-shrink-0 mt-0.5" />
+   469→              <p className="text-sm text-muted-foreground leading-relaxed">
+   470→                {currentSubNamuna?.description || namunaInfo?.description}
+   471→              </p>
+   472→            </div>
+   473→          </CardContent>
+   474→        </Card>
+   475→      )}
+   476→
+   477→      {/* Sub-namuna tabs */}
+   478→      {namunaInfo?.subNamunas && namunaInfo.subNamunas.length > 0 && !activeSubNamuna && (
+   479→        <div className="flex gap-2 flex-wrap">
+   480→          <Button
+   481→            size="sm"
+   482→            variant={activeSubNamuna === null ? 'default' : 'outline'}
+   483→            onClick={() => setActiveSubNamuna(null)}
+   484→            className={activeSubNamuna === null ? 'bg-gp-teal text-white' : 'border-gp-teal/30 text-gp-teal'}
+   485→          >
+   486→            मुख्य नमुना {activeNamuna}
+   487→          </Button>
+   488→          {namunaInfo.subNamunas.map(sub => (
+   489→            <Button
+   490→              key={sub.key}
+   491→              size="sm"
+   492→              variant={activeSubNamuna === sub.key ? 'default' : 'outline'}
+   493→              onClick={() => setActiveSubNamuna(sub.key)}
+   494→              className={activeSubNamuna === sub.key ? 'bg-gp-teal text-white' : 'border-gp-teal/30 text-gp-teal'}
+   495→            >
+   496→              नमुना {sub.key}
+   497→            </Button>
+   498→          ))}
+   499→        </div>
+   500→      )}
+   501→
+   502→      {/* Back to main namuna from sub */}
+   503→      {activeSubNamuna && namunaInfo?.subNamunas && (
+   504→        <div className="flex gap-2 flex-wrap">
+   505→          <Button
+   506→            size="sm"
+   507→            variant="outline"
+   508→            onClick={() => setActiveSubNamuna(null)}
+   509→            className="border-gp-teal/30 text-gp-teal"
+   510→          >
+   511→            ← मुख्य नमुना {activeNamuna}
+   512→          </Button>
+   513→          {namunaInfo.subNamunas.map(sub => (
+   514→            <Button
+   515→              key={sub.key}
+   516→              size="sm"
+   517→              variant={activeSubNamuna === sub.key ? 'default' : 'outline'}
+   518→              onClick={() => setActiveSubNamuna(sub.key)}
+   519→              className={activeSubNamuna === sub.key ? 'bg-gp-teal text-white' : 'border-gp-teal/30 text-gp-teal'}
+   520→            >
+   521→              नमुना {sub.key} — {sub.nameMr}
+   522→            </Button>
+   523→          ))}
+   524→        </div>
+   525→      )}
+   526→
+   527→      {loading ? (
+   528→        <div className="space-y-3">
+   529→          <Skeleton className="h-10 w-full" />
+   530→          <Skeleton className="h-20 w-full" />
+   531→          <Skeleton className="h-20 w-full" />
+   532→        </div>
+   533→      ) : error ? (
+   534→        <Card>
+   535→          <CardContent className="flex flex-col items-center justify-center py-12 gap-4">
+   536→            <AlertCircle className="h-12 w-12 text-destructive" />
+   537→            <p className="text-destructive font-medium">{error}</p>
+   538→            <Button variant="outline" onClick={fetchNamuna}>
+   539→              <RefreshCw className="h-4 w-4 mr-2" />पुन्हा प्रयत्न करा
+   540→            </Button>
+   541→          </CardContent>
+   542→        </Card>
+   543→      ) : data ? (
+   544→        <NamunaDataView data={data} />
+   545→      ) : null}
+   546→    </div>
+   547→  );
+   548→}
+   549→
+   550→function NamunaDataView({ data }: { data: Record<string, unknown> }) {
+   551→  // The API returns: { namuna, title, titleEn, village, financialYear, headers, rows, totals, meta }
+   552→  // Or legacy format: { entries, records, data, summary }
+   553→  const headers = data.headers as string[] | undefined;
+   554→  const rows = (data.rows || data.entries || data.records || data.data || null) as Record<string, unknown>[] | null;
+   555→  const totals = data.totals as Record<string, unknown> | undefined;
+   556→  const title = data.title as string | undefined;
+   557→  const meta = data.meta as Record<string, unknown> | undefined;
+   558→  const village = data.village as Record<string, unknown> | undefined;
+   559→
+   560→  // Determine column keys from rows
+   561→  const columnKeys = rows && rows.length > 0
+   562→    ? Object.keys(rows[0]).filter(k => k !== 'id')
+   563→    : [];
+   564→
+   565→  // Map header to column key (headers[i] corresponds to columnKeys[i] if headers exist)
+   566→  const displayHeaders = headers && headers.length > 0
+   567→    ? headers
+   568→    : columnKeys.map(formatHeader);
+   569→
+   570→  return (
+   571→    <div className="space-y-4">
+   572→      {/* Title badge */}
+   573→      {title && (
+   574→        <Badge className="bg-gradient-to-r from-gp-teal to-gp-teal-dark text-white text-sm px-3 py-1">
+   575→          {title}
+   576→        </Badge>
+   577→      )}
+   578→
+   579→      {/* Village Info */}
+   580→      {village && (
+   581→        <Card className="border-l-4 border-l-gp-teal bg-gp-teal/5">
+   582→          <CardContent className="p-3">
+   583→            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+   584→              {village.gramPanchayatNameMr && (
+   585→                <div><span className="text-muted-foreground">ग्रामपंचायत:</span> <span className="font-medium">{String(village.gramPanchayatNameMr)}</span></div>
+   586→              )}
+   587→              {village.taluka && (
+   588→                <div><span className="text-muted-foreground">तालुका:</span> <span className="font-medium">{String(village.taluka)}</span></div>
+   589→              )}
+   590→              {village.district && (
+   591→                <div><span className="text-muted-foreground">जिल्हा:</span> <span className="font-medium">{String(village.district)}</span></div>
+   592→              )}
+   593→              {village.sarpanchNameMr && (
+   594→                <div><span className="text-muted-foreground">सरपंच:</span> <span className="font-medium">{String(village.sarpanchNameMr)}</span></div>
+   595→              )}
+   596→              {village.secretaryNameMr && (
+   597→                <div><span className="text-muted-foreground">ग्रामसेवक:</span> <span className="font-medium">{String(village.secretaryNameMr)}</span></div>
+   598→              )}
+   599→            </div>
+   600→          </CardContent>
+   601→        </Card>
+   602→      )}
+   603→
+   604→      {/* Summary / Totals Cards */}
+   605→      {totals && Object.keys(totals).length > 0 && (
+   606→        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+   607→          {Object.entries(totals).map(([key, value]) => {
+   608→            if (typeof value === 'object' && value !== null) return null;
+   609→            const label = key
+   610→              .replace(/([A-Z])/g, ' $1')
+   611→              .replace(/^./, s => s.toUpperCase())
+   612→              .replace('Total', 'एकूण')
+   613→              .replace('Count', 'संख्या')
+   614→              .replace('Amount', 'रक्कम')
+   615→              .replace('Balance', 'शिल्लक')
+   616→              .replace('Receipts', 'प्राप्ती')
+   617→              .replace('Payments', 'पावती')
+   618→              .replace('Deposits', 'ठेवी')
+   619→              .replace('Withdrawals', 'उत्तर्या')
+   620→              .replace('Demand', 'मागणी')
+   621→              .replace('Paid', 'वसूल')
+   622→              .replace('Outstanding', 'बकायपोरी')
+   623→              .replace('Collected', 'वसूल')
+   624→              .replace('Depreciation', 'घसारा')
+   625→              .replace('Purchase', 'खरेदी')
+   626→              .replace('Current', 'सध्याचे')
+   627→              .replace('Value', 'मूल्य')
+   628→              .replace('Cost', 'खर्च')
+   629→              .replace('Groups', 'गट')
+   630→              .replace('Schemes', 'योजना')
+   631→              .replace('Income', 'उत्पन्न')
+   632→              .replace('Expenditure', 'खर्च')
+   633→              .replace('Original', 'मूळ')
+   634→              .replace('Revised', 'दुरुस्तीत')
+   635→              .replace('Budget', 'अंदाज')
+   636→              .replace('Actual', 'वास्तव')
+   637→              .replace('Debit', 'जमा')
+   638→              .replace('Credit', 'नामे')
+   639→              .replace('Closing', 'शेवटचे')
+   640→              .replace('Assessed', 'आकारणी')
+   641→              .replace('Collection', 'वसूल')
+   642→              .replace('Asset', 'मालमत्ता')
+   643→              .replace('Liability', 'दायित्व')
+   644→              .replace('Reappropriation', 'पुनर्विनियोजन');
+   645→            return (
+   646→              <Card key={key} className="border-l-4 border-l-gp-teal">
+   647→                <CardContent className="p-3">
+   648→                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</p>
+   649→                  <p className="text-lg font-bold">
+   650→                    {typeof value === 'number'
+   651→                      ? value > 999
+   652→                        ? `₹${value.toLocaleString('en-IN')}`
+   653→                        : value.toLocaleString('en-IN')
+   654→                      : String(value)}
+   655→                  </p>
+   656→                </CardContent>
+   657→              </Card>
+   658→            );
+   659→          })}
+   660→        </div>
+   661→      )}
+   662→
+   663→      {/* Data Table */}
+   664→      {rows && rows.length > 0 ? (
+   665→        <Card>
+   666→          <CardContent className="p-0">
+   667→            <div className="max-h-[500px] overflow-auto">
+   668→              <Table>
+   669→                <TableHeader>
+   670→                  <TableRow className="bg-gradient-to-r from-gp-teal to-gp-teal-dark">
+   671→                    <TableHead className="text-xs text-white w-10">#</TableHead>
+   672→                    {displayHeaders.map((header, idx) => (
+   673→                      <TableHead key={idx} className="text-xs text-white whitespace-nowrap">
+   674→                        {header}
+   675→                      </TableHead>
+   676→                    ))}
+   677→                  </TableRow>
+   678→                </TableHeader>
+   679→                <TableBody>
+   680→                  {rows.map((rec, idx) => (
+   681→                    <TableRow key={String(rec.id || rec._sr || idx)} className={idx % 2 === 0 ? 'bg-muted/30' : ''}>
+   682→                      <TableCell className="text-xs text-muted-foreground">{idx + 1}</TableCell>
+   683→                      {columnKeys.map(key => (
+   684→                        <TableCell key={key} className="text-sm whitespace-nowrap max-w-[200px] truncate">
+   685→                          {formatValue(rec[key])}
+   686→                        </TableCell>
+   687→                      ))}
+   688→                    </TableRow>
+   689→                  ))}
+   690→                </TableBody>
+   691→              </Table>
+   692→            </div>
+   693→          </CardContent>
+   694→        </Card>
+   695→      ) : (
+   696→        <Card>
+   697→          <CardContent className="py-12 text-center">
+   698→            <FileText className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
+   699→            <p className="text-muted-foreground font-medium">या नमुन्यात अद्याप डेटा नाही</p>
+   700→            <p className="text-xs text-muted-foreground/60 mt-1">संबंधित मास्टर डेटा आणि व्यवहार नोंदवल्यावर डेटा दिसेल</p>
+   701→          </CardContent>
+   702→        </Card>
+   703→      )}
+   704→
+   705→      {/* Row count and meta */}
+   706→      <div className="flex items-center gap-3 flex-wrap">
+   707→        {rows && rows.length > 0 && (
+   708→          <Badge variant="outline" className="text-sm">एकूण नोंदी: {rows.length}</Badge>
+   709→        )}
+   710→        {meta?.financialYear && (
+   711→          <Badge variant="outline" className="text-sm">आर्थिक वर्ष: {String(meta.financialYear)}</Badge>
+   712→        )}
+   713→      </div>
+   714→    </div>
+   715→  );
+   716→}
+   717→
