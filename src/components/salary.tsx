@@ -225,10 +225,16 @@ export default function Salary({ financialYear }: SalaryProps) {
     try {
       const netPay = calcNetPay();
       const payload = { ...salForm, netPay, financialYear };
+      let res: Response;
       if (salEditing) {
-        await fetch('/api/salary', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update', id: salEditing.id, ...payload }) });
+        res = await fetch('/api/salary', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update', id: salEditing.id, ...payload }) });
       } else {
-        await fetch('/api/salary', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create', ...payload }) });
+        res = await fetch('/api/salary', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create', ...payload }) });
+      }
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        toast({ title: 'त्रुटी', description: json.error || 'जतन करताना त्रुटी', variant: 'destructive' });
+        return;
       }
       toast({ title: salEditing ? 'पगार अपडेट झाला' : 'पगार जोडला' });
       setSalDialogOpen(false);

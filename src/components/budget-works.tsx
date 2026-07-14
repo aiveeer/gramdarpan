@@ -143,10 +143,16 @@ export default function BudgetWorks({ financialYear }: BudgetWorksProps) {
     try {
       const balance = ((bhForm.revisedAmount || bhForm.budgetAmount) || 0) - (bhForm.expenditure || 0);
       const payload = { ...bhForm, balance, financialYear };
+      let res: Response;
       if (bhEditing) {
-        await fetch('/api/budget', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update', id: bhEditing.id, ...payload }) });
+        res = await fetch('/api/budget', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update', id: bhEditing.id, ...payload }) });
       } else {
-        await fetch('/api/budget', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create', ...payload }) });
+        res = await fetch('/api/budget', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create', ...payload }) });
+      }
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        toast({ title: 'त्रुटी', description: json.error || 'जतन करताना त्रुटी', variant: 'destructive' });
+        return;
       }
       toast({ title: bhEditing ? 'बजेट शिर्षक अपडेट झाले' : 'बजेट शिर्षक जोडले' });
       setBhDialogOpen(false);
@@ -186,10 +192,16 @@ export default function BudgetWorks({ financialYear }: BudgetWorksProps) {
     setSaving(true);
     try {
       const payload = { ...wkForm, financialYear };
+      let res: Response;
       if (wkEditing) {
-        await fetch('/api/works', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update', id: wkEditing.id, ...payload }) });
+        res = await fetch('/api/works', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update', id: wkEditing.id, ...payload }) });
       } else {
-        await fetch('/api/works', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create', ...payload }) });
+        res = await fetch('/api/works', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create', ...payload }) });
+      }
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        toast({ title: 'त्रुटी', description: json.error || 'जतन करताना त्रुटी', variant: 'destructive' });
+        return;
       }
       toast({ title: wkEditing ? 'काम अपडेट झाले' : 'काम जोडले' });
       setWkDialogOpen(false);

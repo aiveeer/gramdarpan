@@ -61,8 +61,12 @@ export async function POST(request: NextRequest) {
     // Create
     const created = await db.budgetHead.create({ data });
     return NextResponse.json({ success: true, data: created });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Budget POST error:', error);
-    return NextResponse.json({ error: 'बजेट शिर्षक जतन करताना त्रुटी' }, { status: 500 });
+    if (error && typeof error === 'object' && 'code' in error && (error as { code: string }).code === 'P2002') {
+      return NextResponse.json({ success: false, error: 'डुप्लिकेट शिर्षक कोड - हा कोड आधीच अस्तित्वात आहे' }, { status: 400 });
+    }
+    const msg = error instanceof Error ? error.message : 'बजेट शिर्षक जतन करताना त्रुटी';
+    return NextResponse.json({ success: false, error: msg }, { status: 500 });
   }
 }

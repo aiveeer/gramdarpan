@@ -197,7 +197,12 @@ export default function Assets({ financialYear }: AssetsProps) {
       const typeParam = dialogType === 'asset' ? '' : `type=${dialogType}&`;
       const url = `/api/assets?${typeParam}financialYear=${financialYear}`;
       const payload = { action: editing ? 'update' : 'create', ...(editing ? { id: editing.id } : {}), ...form, financialYear };
-      await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        toast({ title: 'त्रुटी', description: json.error || 'जतन करताना त्रुटी', variant: 'destructive' });
+        return;
+      }
       toast({ title: editing ? 'अपडेट झाले' : 'जोडले' });
       setDialogOpen(false);
       fetchData();

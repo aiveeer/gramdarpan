@@ -115,9 +115,11 @@ export async function POST(request: NextRequest) {
       data = rest;
     }
 
-    const isUpdate = !!data.id;
-    const id = data.id as string | undefined;
-    const { id: _id, ...createData } = data;
+    // Strip non-data fields that the frontend may send
+    const { action: _action, ...dataWithoutAction } = data;
+    const isUpdate = !!dataWithoutAction.id;
+    const id = dataWithoutAction.id as string | undefined;
+    const { id: _id, ...createData } = dataWithoutAction;
 
     // Convert numeric fields
     const numericFieldsMap: Record<string, string[]> = {

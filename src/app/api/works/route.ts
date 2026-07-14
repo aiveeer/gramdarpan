@@ -53,8 +53,12 @@ export async function POST(request: NextRequest) {
     // Create
     const created = await db.workEntry.create({ data });
     return NextResponse.json({ success: true, data: created });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Works POST error:', error);
-    return NextResponse.json({ error: 'काम जतन करताना त्रुटी' }, { status: 500 });
+    if (error && typeof error === 'object' && 'code' in error && (error as { code: string }).code === 'P2002') {
+      return NextResponse.json({ success: false, error: 'डुप्लिकेट रेकॉर्ड' }, { status: 400 });
+    }
+    const msg = error instanceof Error ? error.message : 'काम जतन करताना त्रुटी';
+    return NextResponse.json({ success: false, error: msg }, { status: 500 });
   }
 }

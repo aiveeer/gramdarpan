@@ -74,7 +74,7 @@ model WardMaster {
   id         String   @id @default(cuid())
   wardNo     Int      @unique
   wardName   String
-  wardNameMr String
+  wardNameMr String?
   population Int?
   households Int?
   area       Float?
