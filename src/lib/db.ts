@@ -5,14 +5,12 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 function createPrismaClient() {
-  // Priority order for database URL:
-  // 1. POSTGRES_PRISMA_URL (Neon optimized for Prisma with connect_timeout=15)
-  // 2. DATABASE_URL (set by Vercel-Neon integration, pooled via pgbouncer)
-  // 3. DATABASE_URL_POOLED (alternative Neon variable)
+  // For Neon PostgreSQL:
+  // - Use POSTGRES_PRISMA_URL or DATABASE_URL for the pooled connection (Prisma Client)
+  // - The directUrl in schema.prisma handles migrations via DATABASE_URL_UNPOOLED
   const databaseUrl =
     process.env.POSTGRES_PRISMA_URL ||
     process.env.DATABASE_URL ||
-    process.env.DATABASE_URL_POOLED ||
     ''
 
   return new PrismaClient({
